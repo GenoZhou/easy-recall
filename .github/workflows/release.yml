@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+# 添加权限配置
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Check distribution
+        run: npm run check-dist
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+
+          # 检查是否为 alpha/beta 预发布版本
+          prerelease_flag=""
+          if [[ "$tag" =~ -(alpha|beta) ]] || [[ "$tag" =~ (alpha|beta)[0-9] ]]; then
+            prerelease_flag="--prerelease"
+            echo "Detected pre-release version: $tag"
+          fi
+
+          # 创建发布
+          gh release create "$tag" \
+            --title="Release $tag" \
+            --generate-notes \
+            $prerelease_flag \
+            main.js manifest.json styles.css
