@@ -7,7 +7,7 @@ import { Schedule } from '../types';
 
 describe('store', () => {
   describe('formatSchedule', () => {
-    it('should format schedule correctly', () => {
+    it('should format SM-2 schedule correctly', () => {
       const schedule: Schedule = {
         interval: 1,
         ease: 250,
@@ -19,7 +19,7 @@ describe('store', () => {
       expect(formatted).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->');
     });
 
-    it('should handle float intervals', () => {
+    it('should handle float intervals (SM-2)', () => {
       const schedule: Schedule = {
         interval: 2.5,
         ease: 250,
@@ -29,6 +29,34 @@ describe('store', () => {
       
       const formatted = formatSchedule(schedule);
       expect(formatted).toBe('<!--SR:2.5,250,2026-02-21T14:19:56.066Z,3-->');
+    });
+
+    it('should format FSRS schedule correctly', () => {
+      const schedule: Schedule = {
+        interval: 0.25,
+        due: new Date('2026-02-26T16:16:11.415Z'),
+        reps: 1,
+        difficulty: 5,
+        stability: 0.25,
+        lapses: 0,
+        algorithm: 'fsrs',
+      };
+      
+      const formatted = formatSchedule(schedule);
+      expect(formatted).toBe('<!--SR:0.25,5,0.25,2026-02-26T16:16:11.415Z,1,0-->');
+    });
+
+    it('should format FSRS schedule with default values when fields missing', () => {
+      const schedule: Schedule = {
+        interval: 1,
+        due: new Date('2026-02-26T16:16:11.415Z'),
+        reps: 1,
+        algorithm: 'fsrs',
+        // difficulty, stability, lapses are undefined
+      };
+      
+      const formatted = formatSchedule(schedule);
+      expect(formatted).toBe('<!--SR:1,5,1,2026-02-26T16:16:11.415Z,1,0-->');
     });
   });
 

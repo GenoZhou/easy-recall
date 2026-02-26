@@ -11,7 +11,7 @@ import { Card } from '../types';
 
 describe('parser', () => {
   describe('extractSchedule', () => {
-    it('should extract schedule from SR comment', () => {
+    it('should extract SM-2 schedule from SR comment (old format)', () => {
       const text = '<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->';
       const schedule = extractSchedule(text);
       
@@ -22,13 +22,27 @@ describe('parser', () => {
       expect(schedule!.due).toEqual(new Date('2026-02-19T14:19:56.066Z'));
     });
 
+    it('should extract FSRS schedule from SR comment (new format)', () => {
+      const text = '<!--SR:0.25,5,0.25,2026-02-26T16:16:11.415Z,1,0-->';
+      const schedule = extractSchedule(text);
+      
+      expect(schedule).not.toBeNull();
+      expect(schedule!.interval).toBe(0.25);
+      expect(schedule!.difficulty).toBe(5);
+      expect(schedule!.stability).toBe(0.25);
+      expect(schedule!.reps).toBe(1);
+      expect(schedule!.lapses).toBe(0);
+      expect(schedule!.algorithm).toBe('fsrs');
+      expect(schedule!.due).toEqual(new Date('2026-02-26T16:16:11.415Z'));
+    });
+
     it('should return null for non-SR comment', () => {
       const text = '<!-- some other comment -->';
       const schedule = extractSchedule(text);
       expect(schedule).toBeNull();
     });
 
-    it('should handle float interval', () => {
+    it('should handle float interval (SM-2)', () => {
       const text = '<!--SR:2.5,250,2026-02-19T14:19:56.066Z,3-->';
       const schedule = extractSchedule(text);
       expect(schedule!.interval).toBe(2.5);

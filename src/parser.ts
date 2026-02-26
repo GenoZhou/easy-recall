@@ -6,38 +6,74 @@ const CLOZE_REGEX = /==([^=]+)==/g;
 // 标签检测：#ob-reviews/xxxx 格式（支持中文和Unicode字符）
 const DECK_TAG_REGEX = /#ob-reviews\/([^\s#]+)/;
 
-// SR 注释格式：<!--SR:interval,ease,due,reps-->
-const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)-->/;
+// SR 注释格式：
+// 旧格式 (SM-2): <!--SR:interval,ease,due,reps-->
+// 新格式 (FSRS): <!--SR:interval,difficulty,stability,due,reps,lapses-->
+const SR_COMMENT_REGEX = /<!--SR:([\d\.]+),([\d\.]+),([\d\.]+),([^,]+),(\d+),(\d+)-->/;  // FSRS 6字段
+const SR_COMMENT_REGEX_OLD = /<!--SR:([\d\.]+),(\d+),([^,]+),(\d+)-->/;  // SM-2 4字段
 
 // Hint callout 检测：> [!hint]
 const HINT_CALLOUT_REGEX = /^> \[!hint\]/i;
 
 /**
  * 从文本中提取调度信息
+ * 支持 FSRS 新格式和 SM-2 旧格式
  * 包含数据验证，确保解析出的日期有效
  */
 export function extractSchedule(text: string): Schedule | null {
-	const match = text.match(SR_COMMENT_REGEX);
-	if (!match) return null;
+	// 先尝试新格式 (FSRS)
+	let match = text.match(SR_COMMENT_REGEX);
+	if (match) {
+		const interval = parseFloat(match[1]);
+		const difficulty = parseFloat(match[2]);
+		const stability = parseFloat(match[3]);
+		const due = new Date(match[4]);
+		const reps = parseInt(match[5], 10);
+		const lapses = parseInt(match[6], 10);
 
-	const interval = parseFloat(match[1]);
-	const ease = parseInt(match[2], 10);
-	const due = new Date(match[3]);
-	const reps = parseInt(match[4], 10);
+		if (isNaN(due.getTime())) {
+			console.warn('[ob-reviews] Invalid date in SR comment:', match[4]);
+			return null;
+		}
 
-	// 验证日期有效性（符合最佳实践：防御性编程）
-	if (isNaN(due.getTime())) {
-		console.warn('[ob-reviews] Invalid date in SR comment:', match[3]);
-		return null;
+		if (isNaN(interval) || isNaN(reps)) {
+			console.warn('[ob-reviews] Invalid numeric values in SR comment');
+			return null;
+		}
+
+		return {
+			interval,
+			difficulty,
+			stability,
+			due,
+			reps,
+			lapses,
+			algorithm: 'fsrs',
+		};
 	}
 
-	// 验证数值范围
-	if (isNaN(interval) || isNaN(ease) || isNaN(reps)) {
-		console.warn('[ob-reviews] Invalid numeric values in SR comment');
-		return null;
+	// 尝试旧格式 (SM-2)
+	match = text.match(SR_COMMENT_REGEX_OLD);
+	if (match) {
+		const interval = parseFloat(match[1]);
+		const ease = parseInt(match[2], 10);
+		const due = new Date(match[3]);
+		const reps = parseInt(match[4], 10);
+
+		if (isNaN(due.getTime())) {
+			console.warn('[ob-reviews] Invalid date in SR comment:', match[3]);
+			return null;
+		}
+
+		if (isNaN(interval) || isNaN(ease) || isNaN(reps)) {
+			console.warn('[ob-reviews] Invalid numeric values in SR comment');
+			return null;
+		}
+
+		return { interval, ease, due, reps };
 	}
 
-	return { interval, ease, due, reps };
+	return null;
 }
 
 /**
