@@ -1,6 +1,6 @@
 import { App, Modal, MarkdownRenderer, TFile, Vault, Component, Notice, Platform } from 'obsidian';
 import { Card, Rating } from '../types';
-import { calcSchedule, getNextReviewShortText } from '../scheduler';
+import { calcSchedule, getNextReviewShortText } from '../scheduler/index';
 import { getRatingButtons } from '../config/constants';
 import { injectSchedule } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';

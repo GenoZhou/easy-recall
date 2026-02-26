@@ -2,7 +2,7 @@ import { App, SuggestModal, Notice, Vault } from 'obsidian';
 import { Deck, Card } from '../types';
 import { ReviewModal } from './review-modal';
 import { scanVault, groupByDecks, getDueCards, getReviewFiles } from '../deck';
-import { formatDueDate, isDue } from '../scheduler';
+import { formatDueDate, isDue } from '../scheduler/index';
 import { error } from '../utils/';
 import { t } from '../i18n';
 

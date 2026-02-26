@@ -7,6 +7,7 @@ export const en = {
 		again: 'Again',
 		hard: 'Hard',
 		good: 'Good',
+		easy: 'Easy',
 	},
 
 	// Commands

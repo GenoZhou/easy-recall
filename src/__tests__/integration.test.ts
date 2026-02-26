@@ -4,10 +4,15 @@
  */
 
 import { parseNote } from '../parser';
-import { calcSchedule, isDue } from '../scheduler';
+import { createSM2Scheduler, DEFAULT_SM2_PARAMS } from '../scheduler/index';
 import { injectSchedule } from '../store';
 import { groupByDecks, getDueCards } from '../deck';
 import { Schedule, Rating } from '../types';
+
+// 使用 SM-2 调度器进行测试
+const sm2Scheduler = createSM2Scheduler(DEFAULT_SM2_PARAMS);
+const calcSchedule = (current: Schedule | null, rating: Rating) => sm2Scheduler.calcSchedule(current, rating);
+const isDue = (schedule: Schedule | undefined) => sm2Scheduler.isDue(schedule);
 
 describe('Integration - Complete Review Flow', () => {
   const mockNow = new Date('2026-02-18T12:00:00Z');

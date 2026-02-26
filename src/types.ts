@@ -1,19 +1,43 @@
 /**
- * 评分等级 (简化版)
- * 1 = 没记住 - 立即放回队尾重新复习
- * 2 = 有点难 - 间隔增长较慢
- * 3 = 记住了 - 标准间隔
+ * 评分等级 (FSRS 4键)
+ * 1 = Again (没记住) - 重置进度，短间隔
+ * 2 = Hard (有点难)  - 间隔增长较慢
+ * 3 = Good (记住了)  - 标准间隔
+ * 4 = Easy (太简单)  - 间隔增长更快
  */
-export type Rating = 1 | 2 | 3;
+export type Rating = 1 | 2 | 3 | 4;
 
 /**
- * 卡片调度信息
+ * 卡片学习状态
+ */
+export type CardState = 'new' | 'learning' | 'review' | 'relearning';
+
+/**
+ * 算法类型
+ */
+export type Algorithm = 'sm2' | 'fsrs';
+
+/**
+ * 卡片调度信息 (兼容 SM-2 和 FSRS)
  */
 export interface Schedule {
-	interval: number;  // 单位：天（0.01 表示约 15 分钟）
-	ease: number;      // 初始 250，范围 130-350
-	due: Date;         // 到期时间
-	reps: number;      // 连续记住次数
+	// 通用字段
+	interval: number;      // 单位：天（0.01 表示约 15 分钟）
+	due: Date;             // 到期时间
+	reps: number;          // 总复习次数
+	
+	// SM-2 字段（向后兼容）
+	ease?: number;         // 简易度 130-350
+	
+	// FSRS 字段（新增）
+	difficulty?: number;   // 难度 1-10，默认 5
+	stability?: number;    // 稳定性（天）
+	lapses?: number;       // 失败次数
+	lastReview?: Date;     // 上次复习时间
+	state?: CardState;     // 学习状态
+	
+	// 算法标识
+	algorithm?: Algorithm; // 默认 'fsrs'
 }
 
 /**

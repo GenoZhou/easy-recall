@@ -9,6 +9,7 @@ export const zh: Translations = {
 		again: '没记住',
 		hard: '有点难',
 		good: '记住了',
+		easy: '太简单',
 	},
 
 	// 命令

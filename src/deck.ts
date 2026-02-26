@@ -1,7 +1,7 @@
 import { TFile, Vault, App, Notice } from 'obsidian';
 import { Card, Deck } from './types';
 import { parseNote } from './parser';
-import { isDue } from './scheduler';
+import { isDue } from './scheduler/index';
 import { error } from './utils/';
 
 /**
