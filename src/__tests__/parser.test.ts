@@ -154,6 +154,95 @@ tags:
       const cards = parseNote(content, 'test.md');
       expect(cards).toHaveLength(0);
     });
+
+    it('should merge adjacent cloze lines into a single card', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+应用：
+1. 风寒感冒：==发汗解表之要药==，==外感风寒表实证==
+2. 咳嗽气喘：==肺气壅遏所致咳喘的要药==
+3. 风水水肿：==水肿，小便不利兼有表证者==`;
+
+      const cards = parseNote(content, 'test.md');
+
+      expect(cards).toHaveLength(1);
+      expect(cards[0].type).toBe('cloze');
+      expect(cards[0].content).toBe(
+        '应用：\n1. 风寒感冒：==发汗解表之要药==，==外感风寒表实证==\n' +
+        '2. 咳嗽气喘：==肺气壅遏所致咳喘的要药==\n' +
+        '3. 风水水肿：==水肿，小便不利兼有表证者=='
+      );
+      expect(cards[0].answer).toBe(
+        '发汗解表之要药 / 外感风寒表实证 / 肺气壅遏所致咳喘的要药 / 水肿，小便不利兼有表证者'
+      );
+    });
+
+    it('should place SR comment before context line when merging', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
+应用：
+1. 风寒感冒：==发汗解表之要药==`;
+
+      const cards = parseNote(content, 'test.md');
+
+      expect(cards).toHaveLength(1);
+      expect(cards[0].type).toBe('cloze');
+      expect(cards[0].content).toBe('应用：\n1. 风寒感冒：==发汗解表之要药==');
+      expect(cards[0].lineStart).toBe(6);
+      expect(cards[0].lineEnd).toBe(7);
+      expect(cards[0].schedule).not.toBeUndefined();
+      expect(cards[0].scheduleLine).toBe(5);
+    });
+
+    it('should keep cloze cards separate when separated by empty lines', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+第一行==答案1==内容。
+
+第二行==答案2==内容。`;
+
+      const cards = parseNote(content, 'test.md');
+
+      expect(cards).toHaveLength(2);
+      expect(cards[0].type).toBe('cloze');
+      expect(cards[0].content).toBe('第一行==答案1==内容。');
+      expect(cards[1].type).toBe('cloze');
+      expect(cards[1].content).toBe('第二行==答案2==内容。');
+    });
+
+    it('should parse multi-line cloze card with hint callout', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+==麻黄==的功效：
+1. ==发汗解表==
+2. ==宣肺平喘==
+> [!hint]
+> 发汗、平喘、利水`;
+
+      const cards = parseNote(content, 'test.md');
+
+      expect(cards).toHaveLength(1);
+      expect(cards[0].type).toBe('cloze');
+      expect(cards[0].content).toBe(
+        '==麻黄==的功效：\n1. ==发汗解表==\n2. ==宣肺平喘=='
+      );
+      expect(cards[0].hint).toBe('> [!hint]\n> 发汗、平喘、利水');
+      expect(cards[0].lineStart).toBe(5);
+      expect(cards[0].lineEnd).toBe(9);
+    });
   });
 
   describe('parseNote - QA cards', () => {

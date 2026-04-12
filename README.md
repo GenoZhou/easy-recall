@@ -36,9 +36,26 @@ Wait for the plugin to be listed on Obsidian Community Plugin Marketplace for di
 
 ### Creating Cards
 
+**Rule: Cards must be separated by blank lines.** A card = a continuous non-empty text block.
+
 **Cloze Cards**
 ```markdown
 Traditional Chinese Medicine studies ==human life movement==.
+```
+
+**Multi-line Cloze Cards**
+Adjacent Cloze lines in the same block are merged into one card:
+```markdown
+Applications:
+1. Cold: ==induce sweating==
+2. Cough: ==relieve asthma==
+```
+
+To create separate cards, use blank lines:
+```markdown
+1. Cold: ==induce sweating==
+
+2. Cough: ==relieve asthma==
 ```
 
 **Q&A Cards**
@@ -175,7 +192,7 @@ ob-reviews/
 │   └── ui/                       # UI components
 │       ├── review-modal.ts
 │       └── deck-suggest-modal.ts # SuggestModal deck selection
-├── src/__tests__/                # Test files (117 tests)
+├── src/__tests__/                # Test files (124 tests)
 ├── styles.css                    # Styles
 ├── manifest.json                 # Plugin manifest
 └── package.json

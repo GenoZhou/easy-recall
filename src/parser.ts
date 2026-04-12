@@ -138,25 +138,193 @@ export function extractFileDeckTag(content: string): string | null {
 }
 
 /**
+ * 从 block 末尾提取 hint callout
+ * @returns hint 文本和有效内容结束索引（不包含 hint）
+ */
+function extractHintFromBlock(blockLines: string[], searchStart: number): { hint: string | null; contentEndIndex: number } {
+	for (let i = searchStart; i < blockLines.length; i++) {
+		if (HINT_CALLOUT_REGEX.test(blockLines[i])) {
+			// 验证从 i 开始到 block 结束的所有行都是 callout 行
+			let valid = true;
+			for (let j = i; j < blockLines.length; j++) {
+				const trimmed = blockLines[j].trimStart();
+				if (!(trimmed.startsWith('> ') || trimmed === '>')) {
+					valid = false;
+					break;
+				}
+			}
+			if (valid) {
+				return {
+					hint: blockLines.slice(i).join('\n'),
+					contentEndIndex: i - 1
+				};
+			}
+		}
+	}
+	return { hint: null, contentEndIndex: blockLines.length - 1 };
+}
+
+/**
+ * 尝试将 block 解析为 QA 卡片
+ */
+function tryParseQABlock(
+	blockLines: string[],
+	startLine: number,
+	filePath: string,
+	cardIndex: number,
+	fileTags: string[],
+	headingPath: string[]
+): Card | null {
+	if (blockLines.length < 2) return null;
+
+	const firstLine = blockLines[0].trim();
+
+	// 情况 1：? 在行尾
+	if ((firstLine.endsWith('?') || firstLine.endsWith('？')) && firstLine.length > 1) {
+		const question = firstLine.slice(0, -1).trim();
+		const { hint, contentEndIndex } = extractHintFromBlock(blockLines, 1);
+		const answerLines = blockLines.slice(1, contentEndIndex + 1);
+		const answer = answerLines.join('\n').trim();
+		const contentLines = blockLines.slice(0, contentEndIndex + 1);
+		const content = contentLines.map(l => l.trim()).join('\n');
+
+		return {
+			id: generateCardId(filePath, startLine, 'qa', cardIndex),
+			type: 'qa',
+			content,
+			question,
+			answer,
+			hint: hint || undefined,
+			tags: [...fileTags],
+			filePath,
+			lineStart: startLine,
+			lineEnd: startLine + blockLines.length - 1,
+			headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
+		};
+	}
+
+	// 情况 2：? 单独一行
+	if (blockLines.length >= 2) {
+		const secondLine = blockLines[1].trim();
+		if (secondLine === '?' || secondLine === '？') {
+			if (blockLines.length < 3) return null;
+			const question = firstLine;
+			const { hint, contentEndIndex } = extractHintFromBlock(blockLines, 2);
+			const answerLines = blockLines.slice(2, contentEndIndex + 1);
+			const answer = answerLines.join('\n').trim();
+			const contentLines = blockLines.slice(0, contentEndIndex + 1);
+			const content = contentLines.map(l => l.trim()).join('\n');
+
+			return {
+				id: generateCardId(filePath, startLine, 'qa', cardIndex),
+				type: 'qa',
+				content,
+				question,
+				answer,
+				hint: hint || undefined,
+				tags: [...fileTags],
+				filePath,
+				lineStart: startLine,
+				lineEnd: startLine + blockLines.length - 1,
+				headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
+			};
+		}
+	}
+
+	return null;
+}
+
+/**
+ * 尝试将 block 解析为 Cloze 卡片
+ */
+function tryParseClozeBlock(
+	blockLines: string[],
+	startLine: number,
+	filePath: string,
+	cardIndex: number,
+	fileTags: string[],
+	headingPath: string[]
+): Card | null {
+	const hasAnyCloze = blockLines.some(line => hasCloze(line));
+	if (!hasAnyCloze) return null;
+
+	const { hint, contentEndIndex } = extractHintFromBlock(blockLines, 0);
+	const contentLines = blockLines.slice(0, contentEndIndex + 1);
+	const content = contentLines.map(l => l.trim()).join('\n');
+
+	return {
+		id: generateCardId(filePath, startLine, 'cloze', cardIndex),
+		type: 'cloze',
+		content,
+		answer: extractClozeAnswers(content),
+		hint: hint || undefined,
+		tags: [...fileTags],
+		filePath,
+		lineStart: startLine,
+		lineEnd: startLine + blockLines.length - 1,
+		headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
+	};
+}
+
+/**
+ * 解析一个 block 为卡片
+ */
+function parseBlock(
+	blockLines: string[],
+	startLine: number,
+	filePath: string,
+	cardIndex: number,
+	fileTags: string[],
+	headingPath: string[]
+): Card | null {
+	const qaCard = tryParseQABlock(blockLines, startLine, filePath, cardIndex, fileTags, headingPath);
+	if (qaCard) return qaCard;
+
+	const clozeCard = tryParseClozeBlock(blockLines, startLine, filePath, cardIndex, fileTags, headingPath);
+	if (clozeCard) return clozeCard;
+
+	return null;
+}
+
+/**
  * 解析单条笔记内容，提取所有卡片
  * 所有卡片共享文件级别的标签（#ob-reviews/xxxx 中的 xxxx）
  * 如果没有找到 ob-reviews/xxx 标签，返回空数组（不解析该文件）
+ * 
+ * 解析规则：卡片之间必须有空行分隔。一个卡片 = 一个非空文本块（block）。
  */
 export function parseNote(content: string, filePath: string): Card[] {
 	const cards: Card[] = [];
 	const lines = content.split('\n');
-	
+
 	// 提取文件级别的标签（所有卡片共享）
 	const deckTag = extractFileDeckTag(content);
-	// 如果没有找到 ob-reviews/xxx 标签，不解析该文件
 	if (!deckTag) {
 		return [];
 	}
 	const fileTags = [deckTag];
-	
+
 	let lineIndex = 0;
 	let cardIndex = 0;
 	const currentHeadingPath: string[] = [];
+	let pendingSchedule: Schedule | null = null;
+	let pendingScheduleLine: number | undefined = undefined;
+
+	/**
+	 * 收集一个 block：从 startIndex 开始，直到遇到空行、注释行、标题或文件结束
+	 */
+	function collectBlock(startIndex: number): { blockLines: string[]; endIndex: number } {
+		let i = startIndex;
+		while (i < lines.length) {
+			const line = lines[i];
+			const trimmed = line.trim();
+			if (trimmed === '' || trimmed.startsWith('<!--') || HEADING_REGEX.test(line)) {
+				break;
+			}
+			i++;
+		}
+		return { blockLines: lines.slice(startIndex, i), endIndex: i - 1 };
+	}
 
 	while (lineIndex < lines.length) {
 		const line = lines[lineIndex];
@@ -167,242 +335,52 @@ export function parseNote(content: string, filePath: string): Card[] {
 		if (headingMatch) {
 			const level = headingMatch[1].length;
 			const title = headingMatch[2].trim();
-			// 调整路径：保留当前层级之前的标题，替换当前层级及之后的标题
 			currentHeadingPath.length = level - 1;
 			currentHeadingPath[level - 1] = title;
 			lineIndex++;
+			pendingSchedule = null;
 			continue;
 		}
 
-		// 跳过空行和注释行（SR 注释除外）
+		// 跳过空行和非 SR 注释
 		if (!trimmedLine || (trimmedLine.startsWith('<!--') && !trimmedLine.startsWith('<!--SR:'))) {
+			lineIndex++;
+			pendingSchedule = null;
+			continue;
+		}
+
+		// 记录 SR 注释（仅当它紧接在下一个卡片 block 之前时才生效）
+		if (trimmedLine.startsWith('<!--SR:')) {
+			pendingSchedule = extractSchedule(line);
+			pendingScheduleLine = lineIndex;
 			lineIndex++;
 			continue;
 		}
 
-		// 检查前一行是否是 SR 注释（SR 注释现在放在题目前）
-		const prevLineIndex = lineIndex - 1;
-		const existingSchedule = prevLineIndex >= 0 ? extractSchedule(lines[prevLineIndex]) : null;
-
-		// 尝试解析 QA 卡片（问题行 + ? + 答案行）
-		const qaCard = tryParseQACard(lines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
-		if (qaCard) {
-			// 检查卡片前一行是否是 SR 注释
-			if (existingSchedule && lines[prevLineIndex].trim().startsWith('<!--SR:')) {
-				qaCard.schedule = existingSchedule;
-				qaCard.scheduleLine = prevLineIndex;
-			}
-			cards.push(qaCard);
-			cardIndex++;
-			lineIndex = qaCard.lineEnd + 1;
+		// 收集当前 block
+		const { blockLines, endIndex } = collectBlock(lineIndex);
+		if (blockLines.length === 0) {
+			lineIndex++;
+			pendingSchedule = null;
 			continue;
 		}
 
-		// 尝试解析 Cloze 卡片（包含 ==高亮== 的行）
-		if (hasCloze(line)) {
-			const clozeCard = parseClozeCard(lines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
-			// 检查卡片前一行是否是 SR 注释
-			if (existingSchedule && lines[prevLineIndex].trim().startsWith('<!--SR:')) {
-				clozeCard.schedule = existingSchedule;
-				clozeCard.scheduleLine = prevLineIndex;
+		// 解析 block
+		const card = parseBlock(blockLines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
+		if (card) {
+			if (pendingSchedule !== null) {
+				card.schedule = pendingSchedule;
+				card.scheduleLine = pendingScheduleLine;
 			}
-			cards.push(clozeCard);
+			cards.push(card);
 			cardIndex++;
-			lineIndex = clozeCard.lineEnd + 1;
-			continue;
 		}
 
-		lineIndex++;
+		lineIndex = endIndex + 1;
+		pendingSchedule = null;
 	}
 
 	return cards;
-}
-
-/**
- * 收集答案行（直到空行、注释行、[hint] callout 或文件结束）
- * @returns 结束行索引（包含）
- */
-function collectAnswerEnd(lines: string[], startIndex: number): number {
-	let endIndex = startIndex;
-	while (endIndex < lines.length) {
-		const trimmedLine = lines[endIndex].trim();
-		
-		// 空行结束
-		if (trimmedLine === '') {
-			break;
-		}
-		
-		// 注释行结束
-		if (trimmedLine.startsWith('<!--')) {
-			break;
-		}
-		
-		// hint callout 结束（避免将 hint 当作答案）
-		if (HINT_CALLOUT_REGEX.test(lines[endIndex])) {
-			break;
-		}
-		
-		endIndex++;
-	}
-	return endIndex - 1; // 回到最后一个非空行
-}
-
-/**
- * 提取 hint callout
- * 格式：> [!hint] 标题（可选）\n> 内容行1\n> 内容行2...
- * @returns 原始 callout 文本（不做任何处理）和结束行号，如果没有则返回 null
- */
-function extractHintBlock(lines: string[], startIndex: number): { hint: string | null; endIndex: number } {
-	if (startIndex >= lines.length) {
-		return { hint: null, endIndex: startIndex - 1 };
-	}
-
-	const line = lines[startIndex];
-	
-	// 检查是否是 hint callout 开始
-	if (!HINT_CALLOUT_REGEX.test(line)) {
-		return { hint: null, endIndex: startIndex - 1 };
-	}
-
-	// 收集原始 callout 行（保留原始格式，包括 '> '）
-	const hintLines: string[] = [];
-	let currentIndex = startIndex;
-	
-	while (currentIndex < lines.length) {
-		const currentLine = lines[currentIndex];
-		const trimmedLine = currentLine.trimStart();
-		
-		// 检查是否以 '> ' 开头或就是 '>'（callout 行）
-		if (trimmedLine.startsWith('> ') || trimmedLine === '>') {
-			// 保留原始行（不去掉前缀）
-			hintLines.push(currentLine);
-			currentIndex++;
-		} else {
-			// 非 callout 行，结束收集
-			break;
-		}
-	}
-
-	if (hintLines.length === 0) {
-		return { hint: null, endIndex: startIndex - 1 };
-	}
-
-	return {
-		hint: hintLines.join('\n'),
-		endIndex: currentIndex - 1
-	};
-}
-
-/**
- * 创建 QA 卡片对象
- */
-function createQACard(
-	lines: string[],
-	startIndex: number,
-	answerStartIndex: number,
-	answerEndIndex: number,
-	question: string,
-	content: string,
-	filePath: string,
-	cardIndex: number,
-	fileTags: string[],
-	headingPath: string[],
-	hint?: string,
-	finalEndIndex?: number
-): Card {
-	const answerLines = lines.slice(answerStartIndex, answerEndIndex + 1);
-	const answer = answerLines.join('\n').trim();
-
-	return {
-		id: generateCardId(filePath, startIndex, 'qa', cardIndex),
-		type: 'qa',
-		content: content + answer,
-		question: question,
-		answer: answer,
-		hint,
-		tags: [...fileTags],
-		filePath,
-		lineStart: startIndex,
-		lineEnd: finalEndIndex ?? answerEndIndex,
-		headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
-	};
-}
-
-/**
- * 尝试解析 QA 卡片
- * 格式：问题行 + ?（单独一行或行尾）+ 答案行（可多行）+ 可选的 hint callout
- */
-function tryParseQACard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[], headingPath: string[]): Card | null {
-	const currentLine = lines[startIndex];
-	const trimmedCurrent = currentLine.trim();
-
-	// 情况 1：? 在行尾，如 "什么是 2+2?"（支持半角?和全角？）
-	if ((trimmedCurrent.endsWith('?') || trimmedCurrent.endsWith('？')) && trimmedCurrent.length > 1) {
-		if (startIndex + 1 < lines.length) {
-			const nextLine = lines[startIndex + 1];
-			if (nextLine.trim() && !nextLine.trim().startsWith('<!--')) {
-				const answerEndIndex = collectAnswerEnd(lines, startIndex + 1);
-				const question = trimmedCurrent.slice(0, -1).trim();
-				
-				// 检查答案后是否有 hint callout
-				const hintStartIndex = answerEndIndex + 1;
-				const { hint, endIndex: hintEndIndex } = extractHintBlock(lines, hintStartIndex);
-				
-				// 更新结束行号（包含 hint）
-				const finalEndIndex = hint ? hintEndIndex : answerEndIndex;
-				
-				return createQACard(lines, startIndex, startIndex + 1, answerEndIndex, question, trimmedCurrent + '\n', filePath, cardIndex, fileTags, headingPath, hint || undefined, finalEndIndex);
-			}
-		}
-	}
-
-	// 情况 2：? 单独一行（支持半角?和全角？）
-	const nextLineTrimmed = startIndex + 1 < lines.length ? lines[startIndex + 1].trim() : '';
-	if (nextLineTrimmed === '?' || nextLineTrimmed === '？') {
-		if (startIndex + 2 < lines.length) {
-			const answerEndIndex = collectAnswerEnd(lines, startIndex + 2);
-			const questionMark = nextLineTrimmed; // 保留原始问号类型（半角或全角）
-			
-			// 检查答案后是否有 hint callout
-			const hintStartIndex = answerEndIndex + 1;
-			const { hint, endIndex: hintEndIndex } = extractHintBlock(lines, hintStartIndex);
-			
-			// 更新结束行号（包含 hint）
-			const finalEndIndex = hint ? hintEndIndex : answerEndIndex;
-			
-			return createQACard(lines, startIndex, startIndex + 2, answerEndIndex, trimmedCurrent, trimmedCurrent + '\n' + questionMark + '\n', filePath, cardIndex, fileTags, headingPath, hint || undefined, finalEndIndex);
-		}
-	}
-
-	return null;
-}
-
-/**
- * 解析 Cloze 卡片
- * 支持可选的 hint callout
- */
-function parseClozeCard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[], headingPath: string[]): Card {
-	const content = lines[startIndex].trim();
-	
-	// 检查当前行后是否有 hint callout
-	const hintStartIndex = startIndex + 1;
-	const { hint, endIndex: hintEndIndex } = extractHintBlock(lines, hintStartIndex);
-	
-	// 更新结束行号（包含 hint）
-	const finalEndIndex = hint ? hintEndIndex : startIndex;
-
-	return {
-		id: generateCardId(filePath, startIndex, 'cloze', cardIndex),
-		type: 'cloze',
-		content: content,
-		answer: extractClozeAnswers(content),
-		hint: hint || undefined,
-		tags: [...fileTags], // 使用文件级别标签
-		filePath: filePath,
-		lineStart: startIndex,
-		lineEnd: finalEndIndex,
-		headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
-	};
 }
 
 /**
