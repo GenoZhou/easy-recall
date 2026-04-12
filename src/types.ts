@@ -37,6 +37,7 @@ export interface Card {
 	lineStart: number;    // 起始行号（0-based）
 	lineEnd: number;      // 结束行号（0-based，包含）
 	scheduleLine?: number; // SR 注释所在行号（0-based），如果没有则为 undefined
+	headingPath?: string[]; // 卡片所在位置的标题路径（不含文件名）
 }
 
 /**

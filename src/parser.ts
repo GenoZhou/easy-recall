@@ -12,6 +12,9 @@ const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)-->/;
 // Hint callout 检测：> [!hint]
 const HINT_CALLOUT_REGEX = /^> \[!hint\]/i;
 
+// 标题检测：# 标题 到 ###### 标题
+const HEADING_REGEX = /^(#{1,6})\s+(.+)$/;
+
 /**
  * 从文本中提取调度信息
  * 包含数据验证，确保解析出的日期有效
@@ -153,10 +156,23 @@ export function parseNote(content: string, filePath: string): Card[] {
 	
 	let lineIndex = 0;
 	let cardIndex = 0;
+	const currentHeadingPath: string[] = [];
 
 	while (lineIndex < lines.length) {
 		const line = lines[lineIndex];
 		const trimmedLine = line.trim();
+
+		// 检测标题并更新路径
+		const headingMatch = line.match(HEADING_REGEX);
+		if (headingMatch) {
+			const level = headingMatch[1].length;
+			const title = headingMatch[2].trim();
+			// 调整路径：保留当前层级之前的标题，替换当前层级及之后的标题
+			currentHeadingPath.length = level - 1;
+			currentHeadingPath[level - 1] = title;
+			lineIndex++;
+			continue;
+		}
 
 		// 跳过空行和注释行（SR 注释除外）
 		if (!trimmedLine || (trimmedLine.startsWith('<!--') && !trimmedLine.startsWith('<!--SR:'))) {
@@ -169,7 +185,7 @@ export function parseNote(content: string, filePath: string): Card[] {
 		const existingSchedule = prevLineIndex >= 0 ? extractSchedule(lines[prevLineIndex]) : null;
 
 		// 尝试解析 QA 卡片（问题行 + ? + 答案行）
-		const qaCard = tryParseQACard(lines, lineIndex, filePath, cardIndex, fileTags);
+		const qaCard = tryParseQACard(lines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
 		if (qaCard) {
 			// 检查卡片前一行是否是 SR 注释
 			if (existingSchedule && lines[prevLineIndex].trim().startsWith('<!--SR:')) {
@@ -184,7 +200,7 @@ export function parseNote(content: string, filePath: string): Card[] {
 
 		// 尝试解析 Cloze 卡片（包含 ==高亮== 的行）
 		if (hasCloze(line)) {
-			const clozeCard = parseClozeCard(lines, lineIndex, filePath, cardIndex, fileTags);
+			const clozeCard = parseClozeCard(lines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
 			// 检查卡片前一行是否是 SR 注释
 			if (existingSchedule && lines[prevLineIndex].trim().startsWith('<!--SR:')) {
 				clozeCard.schedule = existingSchedule;
@@ -290,6 +306,7 @@ function createQACard(
 	filePath: string,
 	cardIndex: number,
 	fileTags: string[],
+	headingPath: string[],
 	hint?: string,
 	finalEndIndex?: number
 ): Card {
@@ -307,6 +324,7 @@ function createQACard(
 		filePath,
 		lineStart: startIndex,
 		lineEnd: finalEndIndex ?? answerEndIndex,
+		headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
 	};
 }
 
@@ -314,7 +332,7 @@ function createQACard(
  * 尝试解析 QA 卡片
  * 格式：问题行 + ?（单独一行或行尾）+ 答案行（可多行）+ 可选的 hint callout
  */
-function tryParseQACard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[]): Card | null {
+function tryParseQACard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[], headingPath: string[]): Card | null {
 	const currentLine = lines[startIndex];
 	const trimmedCurrent = currentLine.trim();
 
@@ -333,7 +351,7 @@ function tryParseQACard(lines: string[], startIndex: number, filePath: string, c
 				// 更新结束行号（包含 hint）
 				const finalEndIndex = hint ? hintEndIndex : answerEndIndex;
 				
-				return createQACard(lines, startIndex, startIndex + 1, answerEndIndex, question, trimmedCurrent + '\n', filePath, cardIndex, fileTags, hint || undefined, finalEndIndex);
+				return createQACard(lines, startIndex, startIndex + 1, answerEndIndex, question, trimmedCurrent + '\n', filePath, cardIndex, fileTags, headingPath, hint || undefined, finalEndIndex);
 			}
 		}
 	}
@@ -352,7 +370,7 @@ function tryParseQACard(lines: string[], startIndex: number, filePath: string, c
 			// 更新结束行号（包含 hint）
 			const finalEndIndex = hint ? hintEndIndex : answerEndIndex;
 			
-			return createQACard(lines, startIndex, startIndex + 2, answerEndIndex, trimmedCurrent, trimmedCurrent + '\n' + questionMark + '\n', filePath, cardIndex, fileTags, hint || undefined, finalEndIndex);
+			return createQACard(lines, startIndex, startIndex + 2, answerEndIndex, trimmedCurrent, trimmedCurrent + '\n' + questionMark + '\n', filePath, cardIndex, fileTags, headingPath, hint || undefined, finalEndIndex);
 		}
 	}
 
@@ -363,7 +381,7 @@ function tryParseQACard(lines: string[], startIndex: number, filePath: string, c
  * 解析 Cloze 卡片
  * 支持可选的 hint callout
  */
-function parseClozeCard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[]): Card {
+function parseClozeCard(lines: string[], startIndex: number, filePath: string, cardIndex: number, fileTags: string[], headingPath: string[]): Card {
 	const content = lines[startIndex].trim();
 	
 	// 检查当前行后是否有 hint callout
@@ -383,6 +401,7 @@ function parseClozeCard(lines: string[], startIndex: number, filePath: string, c
 		filePath: filePath,
 		lineStart: startIndex,
 		lineEnd: finalEndIndex,
+		headingPath: headingPath.length > 0 ? [...headingPath] : undefined,
 	};
 }
 

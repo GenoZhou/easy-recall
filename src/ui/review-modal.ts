@@ -77,6 +77,18 @@ export class ReviewModal extends Modal {
 	}
 
 	/**
+	 * 构建标题路径文本：文件名 / 一级标题 / 二级标题
+	 */
+	private buildHeadingPath(card: Card): string | null {
+		const fileName = card.filePath.split('/').pop()?.replace(/\.md$/i, '') || card.filePath;
+		const parts = [fileName, ...(card.headingPath || [])];
+		if (parts.length <= 1 && !card.headingPath?.length) {
+			return null;
+		}
+		return parts.join(' / ');
+	}
+
+	/**
 	 * 显示答案
 	 */
 	private handleShowAnswer() {
@@ -125,6 +137,15 @@ export class ReviewModal extends Modal {
 					text: `#${tag}`,
 					cls: 'obr-tag'
 				});
+			});
+		}
+
+		// 显示标题路径
+		const headingPath = this.buildHeadingPath(card);
+		if (headingPath) {
+			this.cardContentEl.createDiv({
+				text: headingPath,
+				cls: 'obr-heading-path'
 			});
 		}
 

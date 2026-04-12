@@ -309,6 +309,68 @@ tags:
     });
   });
 
+  describe('parseNote - heading path', () => {
+    it('should capture heading path for cards under headings', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+# 第一章
+
+## 第一节
+
+第一行==答案1==内容。
+
+## 第二节
+
+问题?
+答案
+
+# 第二章
+
+第二行==答案2==内容。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(3);
+      expect(cards[0].headingPath).toEqual(['第一章', '第一节']);
+      expect(cards[1].headingPath).toEqual(['第一章', '第二节']);
+      expect(cards[2].headingPath).toEqual(['第二章']);
+    });
+
+    it('should handle nested headings up to level 3', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+# 一级标题
+
+## 二级标题
+
+### 三级标题
+
+==答案==在这里。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].headingPath).toEqual(['一级标题', '二级标题', '三级标题']);
+    });
+
+    it('should not include heading path when no headings exist', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+==答案==在这里。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].headingPath).toBeUndefined();
+    });
+  });
+
   describe('renderQAContent', () => {
     it('should show only question when not showing answer', () => {
       const rendered = renderQAContent('Question?', 'Answer', false);
