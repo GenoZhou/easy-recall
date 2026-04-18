@@ -161,49 +161,7 @@ npm test
 npm run test:coverage
 ```
 
-## 项目结构
-
-```
-ob-reviews/
-├── src/
-│   ├── main.ts                   # 插件入口（仅生命周期管理）
-│   ├── parser.ts                 # 卡片解析（支持全角问号）
-│   ├── scheduler.ts              # SM-2 算法
-│   ├── store.ts                  # 数据存储
-│   ├── deck.ts                   # 卡组管理
-│   ├── types.ts                  # 类型定义
-│   ├── commands/                 # 命令实现
-│   │   ├── index.ts              # 命令注册
-│   │   ├── types.ts              # 命令类型
-│   │   ├── start-review.ts
-│   │   └── review-current-note.ts
-│   ├── config/                   # 配置文件
-│   │   └── constants.ts
-│   ├── settings/                 # 设置管理
-│   │   └── index.ts
-│   ├── utils/                    # 工具函数
-│   │   ├── index.ts
-│   │   ├── logger.ts
-│   │   └── errors.ts
-│   ├── i18n/                     # 多语言支持
-│   │   ├── index.ts
-│   │   ├── en.ts
-│   │   └── zh.ts
-│   └── ui/                       # UI 组件
-│       ├── review-modal.ts
-│       └── deck-suggest-modal.ts # SuggestModal 卡组选择
-├── src/__tests__/                # 测试文件（124 个测试）
-├── styles.css                    # 样式
-├── manifest.json                 # 插件清单
-└── package.json
-```
-
-## 技术栈
-
-- TypeScript
-- Obsidian Plugin API
-- esbuild
-- Jest
+仓库规范、模块职责和实现边界见 `AGENTS.md`。
 
 ## 许可证
 

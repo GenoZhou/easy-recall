@@ -30,9 +30,6 @@ npm-debug.log*
 .env
 .env.local
 
-# Agent documentation (project internal)
-AGENTS.md
-
 # Temporary files
 *.tmp
 .cache/

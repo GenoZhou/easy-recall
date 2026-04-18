@@ -161,49 +161,7 @@ npm test
 npm run test:coverage
 ```
 
-## Project Structure
-
-```
-ob-reviews/
-├── src/
-│   ├── main.ts                   # Plugin entry (lifecycle only)
-│   ├── parser.ts                 # Card parsing (supports full-width question mark)
-│   ├── scheduler.ts              # SM-2 algorithm
-│   ├── store.ts                  # Data storage
-│   ├── deck.ts                   # Deck management
-│   ├── types.ts                  # Type definitions
-│   ├── commands/                 # Command implementations
-│   │   ├── index.ts              # Command registration
-│   │   ├── types.ts              # Command types
-│   │   ├── start-review.ts
-│   │   └── review-current-note.ts
-│   ├── config/                   # Configuration
-│   │   └── constants.ts
-│   ├── settings/                 # Settings management
-│   │   └── index.ts
-│   ├── utils/                    # Utility functions
-│   │   ├── index.ts
-│   │   ├── logger.ts
-│   │   └── errors.ts
-│   ├── i18n/                     # Internationalization
-│   │   ├── index.ts
-│   │   ├── en.ts
-│   │   └── zh.ts
-│   └── ui/                       # UI components
-│       ├── review-modal.ts
-│       └── deck-suggest-modal.ts # SuggestModal deck selection
-├── src/__tests__/                # Test files (124 tests)
-├── styles.css                    # Styles
-├── manifest.json                 # Plugin manifest
-└── package.json
-```
-
-## Tech Stack
-
-- TypeScript
-- Obsidian Plugin API
-- esbuild
-- Jest
+For repository conventions and implementation boundaries, see `AGENTS.md`.
 
 ## License
 
