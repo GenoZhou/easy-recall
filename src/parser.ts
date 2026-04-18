@@ -103,6 +103,20 @@ function extractYamlDeckTag(content: string): string | null {
 	return null;
 }
 
+function getFrontmatterEndLine(lines: string[]): number | null {
+	if (lines.length < 2 || lines[0].trim() !== '---') {
+		return null;
+	}
+
+	for (let i = 1; i < lines.length; i++) {
+		if (lines[i].trim() === '---') {
+			return i;
+		}
+	}
+
+	return null;
+}
+
 /**
  * 从文件内容提取文件级别的卡组标签（#ob-reviews/xxxx 或 YAML frontmatter 中的 xxxx）
  */
@@ -304,7 +318,8 @@ export function parseNote(content: string, filePath: string): Card[] {
 	}
 	const fileTags = [deckTag];
 
-	let lineIndex = 0;
+	const frontmatterEndLine = getFrontmatterEndLine(lines);
+	let lineIndex = frontmatterEndLine !== null ? frontmatterEndLine + 1 : 0;
 	let cardIndex = 0;
 	const currentHeadingPath: string[] = [];
 	let pendingSchedule: Schedule | null = null;

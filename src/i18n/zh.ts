@@ -24,6 +24,7 @@ export const zh: Translations = {
 		noDueCardsInNote: '当前笔记没有到期的卡片',
 		failedToStart: '启动复习失败，请检查控制台',
 		failedToSave: '❌ 保存失败，请重试',
+		failedToOpenFile: '❌ 打开原文失败，请重试',
 		fileChanged: (path: string) => `复习文件已变更: ${path}`,
 	},
 
@@ -63,6 +64,7 @@ export const zh: Translations = {
 		progress: (current: number, total: number) => `复习卡片 (${current}/${total})`,
 		showAnswer: '显示答案',
 		showHint: '显示提示',
+		openSource: '打开原文',
 		hint: '提示',
 		complete: {
 			title: '复习完成',

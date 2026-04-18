@@ -1,4 +1,4 @@
-import { App, Modal, MarkdownRenderer, TFile, Vault, Component, Notice, Platform } from 'obsidian';
+import { App, Modal, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView } from 'obsidian';
 import { Card, Rating } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons } from '../config/constants';
@@ -13,6 +13,44 @@ export interface ReviewModalOptions {
 	onComplete?: () => void;
 }
 
+export function buildHeadingPathLabel(card: Card): string | null {
+	if (!card.headingPath?.length) {
+		return null;
+	}
+
+	const fileName = card.filePath.split('/').pop()?.replace(/\.md$/i, '') || card.filePath;
+	const parts = [fileName, ...card.headingPath];
+	return parts.join(' / ');
+}
+
+export async function openCardSource(app: App, vault: Vault, card: Card): Promise<boolean> {
+	const file = vault.getAbstractFileByPath(card.filePath);
+	if (!(file instanceof TFile)) {
+		return false;
+	}
+
+	const leaf = app.workspace.getLeaf(false);
+	await leaf.openFile(file, {
+		active: true,
+		eState: {
+			mode: 'source',
+			line: card.lineStart
+		}
+	});
+
+	await app.workspace.revealLeaf(leaf);
+
+	if (leaf.isDeferred) {
+		await leaf.loadIfDeferred();
+	}
+
+	if (leaf.view instanceof MarkdownView) {
+		leaf.view.editor?.setCursor({ line: card.lineStart, ch: 0 });
+	}
+
+	return true;
+}
+
 export class ReviewModal extends Modal {
 	private cards: Card[];
 	private currentIndex: number = 0;
@@ -22,6 +60,7 @@ export class ReviewModal extends Modal {
 	private onComplete?: () => void;
 	private cardContentEl: HTMLElement | null = null;
 	private buttonsContainerEl: HTMLElement | null = null;
+	private shouldTriggerComplete: boolean = true;
 
 	constructor(app: App, options: ReviewModalOptions) {
 		super(app);
@@ -76,16 +115,20 @@ export class ReviewModal extends Modal {
 		});
 	}
 
-	/**
-	 * 构建标题路径文本：文件名 / 一级标题 / 二级标题
-	 */
-	private buildHeadingPath(card: Card): string | null {
-		const fileName = card.filePath.split('/').pop()?.replace(/\.md$/i, '') || card.filePath;
-		const parts = [fileName, ...(card.headingPath || [])];
-		if (parts.length <= 1 && !card.headingPath?.length) {
-			return null;
+	private async handleOpenCardSource(card: Card) {
+		try {
+			const opened = await openCardSource(this.app, this.vault, card);
+			if (!opened) {
+				new Notice(t().notifications.failedToOpenFile, 3000);
+				return;
+			}
+
+			this.shouldTriggerComplete = false;
+			this.close();
+		} catch (err) {
+			error('Failed to open card source:', err);
+			new Notice(t().notifications.failedToOpenFile, 3000);
 		}
-		return parts.join(' / ');
 	}
 
 	/**
@@ -141,11 +184,17 @@ export class ReviewModal extends Modal {
 		}
 
 		// 显示标题路径
-		const headingPath = this.buildHeadingPath(card);
+		const headingPath = buildHeadingPathLabel(card);
 		if (headingPath) {
-			this.cardContentEl.createDiv({
+			const headingLink = this.cardContentEl.createEl('a', {
 				text: headingPath,
-				cls: 'obr-heading-path'
+				cls: 'obr-heading-path obr-heading-path-link'
+			});
+			headingLink.href = '#';
+			headingLink.setAttribute('aria-label', `${headingPath} - ${lang.review.openSource}`);
+			headingLink.addEventListener('click', (evt) => {
+				evt.preventDefault();
+				void this.handleOpenCardSource(card);
 			});
 		}
 
@@ -350,7 +399,7 @@ export class ReviewModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
-		if (this.onComplete) {
+		if (this.onComplete && this.shouldTriggerComplete) {
 			this.onComplete();
 		}
 	}

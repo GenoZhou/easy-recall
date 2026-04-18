@@ -7,6 +7,7 @@ import {
   renderClozeContent,
   renderQAContent,
 } from '../parser';
+import { injectSchedule } from '../store';
 import { Card } from '../types';
 
 describe('parser', () => {
@@ -242,6 +243,45 @@ tags:
       expect(cards[0].hint).toBe('> [!hint]\n> 发汗、平喘、利水');
       expect(cards[0].lineStart).toBe(5);
       expect(cards[0].lineEnd).toBe(9);
+    });
+
+    it('should keep lineStart after frontmatter when body starts immediately', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+第一行==答案==内容。`;
+
+      const cards = parseNote(content, 'test.md');
+
+      expect(cards).toHaveLength(1);
+      expect(cards[0].type).toBe('cloze');
+      expect(cards[0].content).toBe('第一行==答案==内容。');
+      expect(cards[0].lineStart).toBe(4);
+      expect(cards[0].lineEnd).toBe(4);
+    });
+
+    it('should inject SR comment below frontmatter when body starts immediately', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+第一行==答案==内容。`;
+
+      const cards = parseNote(content, 'test.md');
+      const result = injectSchedule(content, {
+        interval: 1,
+        ease: 250,
+        due: new Date('2026-02-19T14:19:56.066Z'),
+        reps: 1,
+      }, cards[0].lineStart, cards[0].scheduleLine);
+
+      expect(result).toBe(`---
+tags:
+  - ob-reviews/test
+---
+<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
+第一行==答案==内容。`);
     });
   });
 

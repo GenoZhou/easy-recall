@@ -22,6 +22,7 @@ export const en = {
 		noDueCardsInNote: 'No due cards in current note',
 		failedToStart: 'Failed to start review, please check console',
 		failedToSave: '❌ Failed to save, please retry',
+		failedToOpenFile: '❌ Failed to open source note, please retry',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
 	},
 
@@ -61,6 +62,7 @@ export const en = {
 		progress: (current: number, total: number) => `Review (${current}/${total})`,
 		showAnswer: 'Show Answer',
 		showHint: 'Show Hint',
+		openSource: 'Open source',
 		hint: 'Hint',
 		complete: {
 			title: 'Review Complete',
