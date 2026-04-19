@@ -95,6 +95,7 @@ export const zh: Translations = {
 			overview: '学习进度',
 			upcoming: '后续复习窗口',
 			total: '总卡片数',
+			totalDecks: '总卡组数',
 			newCards: '新卡',
 			relearningCards: '重学中',
 			learningCards: '学习中',
@@ -105,7 +106,6 @@ export const zh: Translations = {
 			upcoming7d: '7 天内',
 			upcoming30d: '30 天内',
 			later: '更晚',
-			decks: '卡组分布',
 			explanations: {
 				newCards: '还没有复习过的卡片。',
 				relearningCards: '最近答错，正在重新巩固。',

@@ -93,6 +93,7 @@ export const en = {
 			overview: 'Progress',
 			upcoming: 'Upcoming Review Windows',
 			total: 'Total cards',
+			totalDecks: 'Decks',
 			newCards: 'New cards',
 			relearningCards: 'Relearning',
 			learningCards: 'Learning',
@@ -103,7 +104,6 @@ export const en = {
 			upcoming7d: 'Within 7 days',
 			upcoming30d: 'Within 30 days',
 			later: 'Later',
-			decks: 'Deck Breakdown',
 			explanations: {
 				newCards: 'Not reviewed yet.',
 				relearningCards: 'Failed recently and back in relearning.',

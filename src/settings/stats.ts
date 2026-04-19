@@ -2,6 +2,7 @@ import { Card } from '../types';
 
 export interface ReviewStats {
 	total: number;
+	totalDecks: number;
 	newCards: number;
 	relearningCards: number;
 	learningCards: number;
@@ -12,19 +13,25 @@ export interface ReviewStats {
 	upcoming7d: number;
 	upcoming30d: number;
 	later: number;
-	decks: DeckReviewStats[];
+	stageDecks: StageDeckBreakdown;
 }
 
 export interface DeckReviewStats {
 	deck: string;
-	total: number;
-	dueNow: number;
-	matureCards: number;
+	count: number;
+}
+
+export interface StageDeckBreakdown {
+	newCards: DeckReviewStats[];
+	relearningCards: DeckReviewStats[];
+	learningCards: DeckReviewStats[];
+	matureCards: DeckReviewStats[];
 }
 
 export function calculateReviewStats(cards: Card[], now: Date = new Date()): ReviewStats {
 	const stats: ReviewStats = {
 		total: cards.length,
+		totalDecks: 0,
 		newCards: 0,
 		relearningCards: 0,
 		learningCards: 0,
@@ -35,42 +42,45 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		upcoming7d: 0,
 		upcoming30d: 0,
 		later: 0,
-		decks: [],
+		stageDecks: {
+			newCards: [],
+			relearningCards: [],
+			learningCards: [],
+			matureCards: [],
+		},
 	};
-	const deckMap = new Map<string, DeckReviewStats>();
+	const deckSet = new Set<string>();
+	const stageDeckMaps = {
+		newCards: new Map<string, number>(),
+		relearningCards: new Map<string, number>(),
+		learningCards: new Map<string, number>(),
+		matureCards: new Map<string, number>(),
+	};
 
 	for (const card of cards) {
 		const primaryDeck = card.tags[0] ?? 'default';
-		if (!deckMap.has(primaryDeck)) {
-			deckMap.set(primaryDeck, {
-				deck: primaryDeck,
-				total: 0,
-				dueNow: 0,
-				matureCards: 0,
-			});
-		}
-		const deckStats = deckMap.get(primaryDeck)!;
-		deckStats.total++;
+		deckSet.add(primaryDeck);
 
 		if (!card.schedule) {
 			stats.newCards++;
 			stats.dueNow++;
-			deckStats.dueNow++;
+			stageDeckMaps.newCards.set(primaryDeck, (stageDeckMaps.newCards.get(primaryDeck) ?? 0) + 1);
 			continue;
 		}
 
 		if (card.schedule.reps === 0) {
 			stats.relearningCards++;
+			stageDeckMaps.relearningCards.set(primaryDeck, (stageDeckMaps.relearningCards.get(primaryDeck) ?? 0) + 1);
 		} else if (card.schedule.reps === 1) {
 			stats.learningCards++;
+			stageDeckMaps.learningCards.set(primaryDeck, (stageDeckMaps.learningCards.get(primaryDeck) ?? 0) + 1);
 		} else {
 			stats.matureCards++;
-			deckStats.matureCards++;
+			stageDeckMaps.matureCards.set(primaryDeck, (stageDeckMaps.matureCards.get(primaryDeck) ?? 0) + 1);
 		}
 
 		if (card.schedule.due <= now) {
 			stats.dueNow++;
-			deckStats.dueNow++;
 			continue;
 		}
 
@@ -90,11 +100,20 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		}
 	}
 
-	stats.decks = [...deckMap.values()].sort((a, b) => {
-		if (b.dueNow !== a.dueNow) return b.dueNow - a.dueNow;
-		if (b.total !== a.total) return b.total - a.total;
-		return a.deck.localeCompare(b.deck);
-	});
+	stats.totalDecks = deckSet.size;
+	stats.stageDecks = {
+		newCards: toSortedDeckStats(stageDeckMaps.newCards),
+		relearningCards: toSortedDeckStats(stageDeckMaps.relearningCards),
+		learningCards: toSortedDeckStats(stageDeckMaps.learningCards),
+		matureCards: toSortedDeckStats(stageDeckMaps.matureCards),
+	};
 
 	return stats;
+}
+
+function toSortedDeckStats(deckMap: Map<string, number>): DeckReviewStats[] {
+	return [...deckMap.entries()].map(([deck, count]) => ({ deck, count })).sort((a, b) => {
+		if (b.count !== a.count) return b.count - a.count;
+		return a.deck.localeCompare(b.deck);
+	});
 }

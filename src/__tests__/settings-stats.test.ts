@@ -122,8 +122,12 @@ describe('calculateReviewStats', () => {
     expect(stats.upcoming7d).toBe(1);
     expect(stats.upcoming30d).toBe(1);
     expect(stats.later).toBe(1);
-    expect(stats.decks).toEqual([
-      { deck: 'test', total: 7, dueNow: 2, matureCards: 4 },
-    ]);
+    expect(stats.totalDecks).toBe(1);
+    expect(stats.stageDecks).toEqual({
+      newCards: [{ deck: 'test', count: 1 }],
+      relearningCards: [{ deck: 'test', count: 1 }],
+      learningCards: [{ deck: 'test', count: 1 }],
+      matureCards: [{ deck: 'test', count: 4 }],
+    });
   });
 });

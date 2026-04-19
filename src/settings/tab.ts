@@ -7,7 +7,7 @@ import { PluginSettingTab, Setting, App } from 'obsidian';
 import OBReviewsPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { scanVault } from '../deck';
-import { calculateReviewStats } from './stats';
+import { calculateReviewStats, DeckReviewStats } from './stats';
 import { error } from '../utils/';
 
 export class SettingsTab extends PluginSettingTab {
@@ -92,31 +92,28 @@ export class SettingsTab extends PluginSettingTab {
 			}
 
 			this.renderHighlights(containerEl, [
-				[lang.settings.stats.total, stats.total, undefined],
+				[lang.settings.stats.total, stats.total, `${lang.settings.stats.totalDecks} ${stats.totalDecks}`],
 				[lang.settings.stats.dueNow, stats.dueNow, this.formatPercent(stats.dueNow, stats.total)],
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.overview });
 			this.renderCompositionSection(containerEl, stats.total, [
-				['new', lang.settings.stats.newCards, lang.settings.stats.explanations.newCards, stats.newCards],
-				['relearning', lang.settings.stats.relearningCards, lang.settings.stats.explanations.relearningCards, stats.relearningCards],
-				['learning', lang.settings.stats.learningCards, lang.settings.stats.explanations.learningCards, stats.learningCards],
-				['mature', lang.settings.stats.matureCards, lang.settings.stats.explanations.matureCards, stats.matureCards],
+				['new', lang.settings.stats.newCards, lang.settings.stats.explanations.newCards, stats.newCards, stats.stageDecks.newCards],
+				['relearning', lang.settings.stats.relearningCards, lang.settings.stats.explanations.relearningCards, stats.relearningCards, stats.stageDecks.relearningCards],
+				['learning', lang.settings.stats.learningCards, lang.settings.stats.explanations.learningCards, stats.learningCards, stats.stageDecks.learningCards],
+				['mature', lang.settings.stats.matureCards, lang.settings.stats.explanations.matureCards, stats.matureCards, stats.stageDecks.matureCards],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
 			this.renderCompactStatList(containerEl, stats.total, [
-				['due', lang.settings.stats.dueNow, lang.settings.stats.explanations.dueNow, stats.dueNow],
-				['soon', lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
-				['soon', lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
-				['soon', lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
-				['later', lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
-				['later', lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
+				['plain', lang.settings.stats.dueNow, lang.settings.stats.explanations.dueNow, stats.dueNow],
+				['plain', lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
+				['plain', lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
+				['plain', lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
+				['plain', lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
+				['plain', lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
 			]);
-
-			containerEl.createEl('h3', { text: lang.settings.stats.decks });
-			this.renderDeckList(containerEl, stats.decks.slice(0, 5), stats.total);
 		} catch (err) {
 			containerEl.empty();
 			containerEl.createEl('p', { text: lang.settings.stats.loadFailed });
@@ -136,10 +133,15 @@ export class SettingsTab extends PluginSettingTab {
 		});
 	}
 
-	private renderCompositionSection(containerEl: HTMLElement, total: number, rows: Array<[string, string, string, number]>): void {
+	private renderCompositionSection(
+		containerEl: HTMLElement,
+		total: number,
+		rows: Array<[string, string, string, number, DeckReviewStats[]]>
+	): void {
+		const visibleRows = rows.filter(([, , , value]) => value > 0);
 		const barWrap = containerEl.createDiv({ cls: 'obr-settings-composition' });
 		const barEl = barWrap.createDiv({ cls: 'obr-settings-composition-bar' });
-		rows.forEach(([tone, label, _desc, value]) => {
+		visibleRows.forEach(([tone, label, _desc, value]) => {
 			if (value <= 0) return;
 			const segmentEl = barEl.createDiv({ cls: `obr-settings-composition-segment is-${tone}` });
 			segmentEl.style.width = `${this.getPercent(value, total)}%`;
@@ -147,18 +149,28 @@ export class SettingsTab extends PluginSettingTab {
 		});
 
 		const legendEl = barWrap.createDiv({ cls: 'obr-settings-composition-list' });
-		rows.forEach(([tone, label, desc, value]) => {
+		visibleRows.forEach(([tone, label, desc, value, decks]) => {
 			const itemEl = legendEl.createDiv({ cls: 'obr-settings-composition-row' });
 			const leftEl = itemEl.createDiv({ cls: 'obr-settings-composition-text' });
 			const titleEl = leftEl.createDiv({ cls: 'obr-settings-composition-title' });
 			titleEl.createDiv({ cls: `obr-settings-composition-dot is-${tone}` });
 			titleEl.createSpan({ text: label });
 			leftEl.createDiv({ cls: 'obr-settings-composition-desc', text: desc });
+			if (decks.length > 0) {
+				leftEl.createDiv({
+					cls: 'obr-settings-composition-decks',
+					text: this.formatDeckBreakdown(decks),
+				});
+			}
 
 			const rightEl = itemEl.createDiv({ cls: 'obr-settings-composition-value' });
 			rightEl.createEl('strong', { text: String(value) });
 			rightEl.createSpan({ text: this.formatPercent(value, total) });
 		});
+	}
+
+	private formatDeckBreakdown(decks: DeckReviewStats[]): string {
+		return decks.map(deck => `${deck.deck}（${deck.count}）`).join('，');
 	}
 
 	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, string, number]>): void {
@@ -172,21 +184,6 @@ export class SettingsTab extends PluginSettingTab {
 			const valueEl = rowEl.createDiv({ cls: 'obr-settings-compact-value' });
 			valueEl.createEl('strong', { text: String(value) });
 			valueEl.createSpan({ text: this.formatPercent(value, total) });
-		});
-	}
-
-	private renderDeckList(containerEl: HTMLElement, decks: Array<{ deck: string; total: number; dueNow: number; matureCards: number }>, total: number): void {
-		const lang = t();
-		const listEl = containerEl.createDiv({ cls: 'obr-settings-deck-list' });
-		decks.forEach(deck => {
-			const rowEl = listEl.createDiv({ cls: 'obr-settings-deck-row' });
-			const titleEl = rowEl.createDiv({ cls: 'obr-settings-deck-title' });
-			titleEl.createSpan({ text: deck.deck });
-			titleEl.createEl('strong', { text: `${deck.total} · ${this.formatPercent(deck.total, total)}` });
-
-			const metaEl = rowEl.createDiv({ cls: 'obr-settings-deck-meta' });
-			metaEl.createSpan({ text: `${lang.settings.stats.dueNow}: ${deck.dueNow}` });
-			metaEl.createSpan({ text: `${lang.settings.stats.matureCards}: ${deck.matureCards}` });
 		});
 	}
 
