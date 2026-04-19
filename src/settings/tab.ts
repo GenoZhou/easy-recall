@@ -7,7 +7,7 @@ import { PluginSettingTab, Setting, App } from 'obsidian';
 import OBReviewsPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { scanVault } from '../deck';
-import { calculateReviewStats, DeckReviewStats } from './stats';
+import { calculateReviewStats } from './stats';
 import { error } from '../utils/';
 
 export class SettingsTab extends PluginSettingTab {
@@ -97,17 +97,8 @@ export class SettingsTab extends PluginSettingTab {
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 
-			containerEl.createEl('h3', { text: lang.settings.stats.overview });
-			this.renderCompositionSection(containerEl, stats.total, [
-				['new', lang.settings.stats.newCards, lang.settings.stats.explanations.newCards, stats.newCards, stats.stageDecks.newCards],
-				['relearning', lang.settings.stats.relearningCards, lang.settings.stats.explanations.relearningCards, stats.relearningCards, stats.stageDecks.relearningCards],
-				['learning', lang.settings.stats.learningCards, lang.settings.stats.explanations.learningCards, stats.learningCards, stats.stageDecks.learningCards],
-				['mature', lang.settings.stats.matureCards, lang.settings.stats.explanations.matureCards, stats.matureCards, stats.stageDecks.matureCards],
-			]);
-
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
 			this.renderCompactStatList(containerEl, stats.total, [
-				['plain', lang.settings.stats.dueNow, lang.settings.stats.explanations.dueNow, stats.dueNow],
 				['plain', lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
 				['plain', lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
 				['plain', lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
@@ -131,46 +122,6 @@ export class SettingsTab extends PluginSettingTab {
 				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
 			}
 		});
-	}
-
-	private renderCompositionSection(
-		containerEl: HTMLElement,
-		total: number,
-		rows: Array<[string, string, string, number, DeckReviewStats[]]>
-	): void {
-		const visibleRows = rows.filter(([, , , value]) => value > 0);
-		const barWrap = containerEl.createDiv({ cls: 'obr-settings-composition' });
-		const barEl = barWrap.createDiv({ cls: 'obr-settings-composition-bar' });
-		visibleRows.forEach(([tone, label, _desc, value]) => {
-			if (value <= 0) return;
-			const segmentEl = barEl.createDiv({ cls: `obr-settings-composition-segment is-${tone}` });
-			segmentEl.style.width = `${this.getPercent(value, total)}%`;
-			segmentEl.setAttribute('aria-label', `${label}: ${value}`);
-		});
-
-		const legendEl = barWrap.createDiv({ cls: 'obr-settings-composition-list' });
-		visibleRows.forEach(([tone, label, desc, value, decks]) => {
-			const itemEl = legendEl.createDiv({ cls: 'obr-settings-composition-row' });
-			const leftEl = itemEl.createDiv({ cls: 'obr-settings-composition-text' });
-			const titleEl = leftEl.createDiv({ cls: 'obr-settings-composition-title' });
-			titleEl.createDiv({ cls: `obr-settings-composition-dot is-${tone}` });
-			titleEl.createSpan({ text: label });
-			leftEl.createDiv({ cls: 'obr-settings-composition-desc', text: desc });
-			if (decks.length > 0) {
-				leftEl.createDiv({
-					cls: 'obr-settings-composition-decks',
-					text: this.formatDeckBreakdown(decks),
-				});
-			}
-
-			const rightEl = itemEl.createDiv({ cls: 'obr-settings-composition-value' });
-			rightEl.createEl('strong', { text: String(value) });
-			rightEl.createSpan({ text: this.formatPercent(value, total) });
-		});
-	}
-
-	private formatDeckBreakdown(decks: DeckReviewStats[]): string {
-		return decks.map(deck => `${deck.deck}（${deck.count}）`).join('，');
 	}
 
 	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, string, number]>): void {
