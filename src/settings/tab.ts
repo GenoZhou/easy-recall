@@ -99,11 +99,11 @@ export class SettingsTab extends PluginSettingTab {
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
 			this.renderCompactStatList(containerEl, stats.total, [
-				['plain', lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
-				['plain', lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
-				['plain', lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
-				['plain', lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
-				['plain', lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
+				[lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
+				[lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
+				[lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
+				[lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
+				[lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
 			]);
 		} catch (err) {
 			containerEl.empty();
@@ -124,10 +124,10 @@ export class SettingsTab extends PluginSettingTab {
 		});
 	}
 
-	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, string, number]>): void {
+	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {
 		const listEl = containerEl.createDiv({ cls: 'obr-settings-compact-list' });
-		rows.forEach(([tone, label, desc, value]) => {
-			const rowEl = listEl.createDiv({ cls: `obr-settings-compact-row is-${tone}` });
+		rows.forEach(([label, desc, value]) => {
+			const rowEl = listEl.createDiv({ cls: 'obr-settings-compact-row' });
 			const textEl = rowEl.createDiv({ cls: 'obr-settings-compact-text' });
 			textEl.createDiv({ cls: 'obr-settings-compact-label', text: label });
 			textEl.createDiv({ cls: 'obr-settings-compact-desc', text: desc });
