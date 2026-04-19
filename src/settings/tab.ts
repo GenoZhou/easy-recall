@@ -74,22 +74,6 @@ export class SettingsTab extends PluginSettingTab {
 			);
 
 		void this.renderStats(statsContainer);
-
-		// 重置按钮
-		new Setting(containerEl)
-			.setName(lang.settings.reset.name)
-			.setDesc(lang.settings.reset.desc)
-			.addButton(button =>
-				button
-					.setButtonText(lang.settings.reset.button)
-					.setWarning()
-					.onClick(async () => {
-						await this.plugin.settingsManager.reset();
-						this.plugin.settings = this.plugin.settingsManager.get();
-						// 刷新界面
-						this.display();
-					})
-			);
 	}
 
 	private async renderStats(containerEl: HTMLElement): Promise<void> {
@@ -107,24 +91,32 @@ export class SettingsTab extends PluginSettingTab {
 				return;
 			}
 
+			this.renderHighlights(containerEl, [
+				[lang.settings.stats.total, stats.total, undefined],
+				[lang.settings.stats.dueNow, stats.dueNow, this.formatPercent(stats.dueNow, stats.total)],
+				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
+			]);
+
 			containerEl.createEl('h3', { text: lang.settings.stats.overview });
-			this.renderStatList(containerEl, [
-				[lang.settings.stats.total, stats.total],
+			this.renderProgressList(containerEl, stats.total, [
 				[lang.settings.stats.newCards, stats.newCards],
 				[lang.settings.stats.relearningCards, stats.relearningCards],
 				[lang.settings.stats.learningCards, stats.learningCards],
 				[lang.settings.stats.matureCards, stats.matureCards],
-				[lang.settings.stats.dueNow, stats.dueNow],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
-			this.renderStatList(containerEl, [
+			this.renderProgressList(containerEl, stats.total, [
+				[lang.settings.stats.dueNow, stats.dueNow],
 				[lang.settings.stats.upcoming1d, stats.upcoming1d],
 				[lang.settings.stats.upcoming3d, stats.upcoming3d],
 				[lang.settings.stats.upcoming7d, stats.upcoming7d],
 				[lang.settings.stats.upcoming30d, stats.upcoming30d],
 				[lang.settings.stats.later, stats.later],
 			]);
+
+			containerEl.createEl('h3', { text: lang.settings.stats.decks });
+			this.renderDeckList(containerEl, stats.decks.slice(0, 8), stats.total);
 		} catch (err) {
 			containerEl.empty();
 			containerEl.createEl('p', { text: lang.settings.stats.loadFailed });
@@ -132,12 +124,52 @@ export class SettingsTab extends PluginSettingTab {
 		}
 	}
 
-	private renderStatList(containerEl: HTMLElement, rows: Array<[string, number]>): void {
-		const listEl = containerEl.createEl('ul');
-		rows.forEach(([label, value]) => {
-			const itemEl = listEl.createEl('li');
-			itemEl.createSpan({ text: `${label}: ` });
-			itemEl.createEl('strong', { text: String(value) });
+	private renderHighlights(containerEl: HTMLElement, rows: Array<[string, number, string | undefined]>): void {
+		const gridEl = containerEl.createDiv({ cls: 'obr-settings-stats-grid' });
+		rows.forEach(([label, value, meta]) => {
+			const cardEl = gridEl.createDiv({ cls: 'obr-settings-stat-card' });
+			cardEl.createDiv({ cls: 'obr-settings-stat-label', text: label });
+			cardEl.createDiv({ cls: 'obr-settings-stat-value', text: String(value) });
+			if (meta) {
+				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
+			}
 		});
+	}
+
+	private renderProgressList(containerEl: HTMLElement, total: number, rows: Array<[string, number]>): void {
+		const listEl = containerEl.createDiv({ cls: 'obr-settings-progress-list' });
+		rows.forEach(([label, value]) => {
+			const rowEl = listEl.createDiv({ cls: 'obr-settings-progress-row' });
+			const headerEl = rowEl.createDiv({ cls: 'obr-settings-progress-header' });
+			headerEl.createSpan({ text: label });
+			headerEl.createEl('strong', { text: `${value} · ${this.formatPercent(value, total)}` });
+
+			const trackEl = rowEl.createDiv({ cls: 'obr-settings-progress-track' });
+			const fillEl = trackEl.createDiv({ cls: 'obr-settings-progress-fill' });
+			fillEl.style.width = `${this.getPercent(value, total)}%`;
+		});
+	}
+
+	private renderDeckList(containerEl: HTMLElement, decks: Array<{ deck: string; total: number; dueNow: number; matureCards: number }>, total: number): void {
+		const listEl = containerEl.createDiv({ cls: 'obr-settings-deck-list' });
+		decks.forEach(deck => {
+			const rowEl = listEl.createDiv({ cls: 'obr-settings-deck-row' });
+			const titleEl = rowEl.createDiv({ cls: 'obr-settings-deck-title' });
+			titleEl.createSpan({ text: deck.deck });
+			titleEl.createEl('strong', { text: `${deck.total} · ${this.formatPercent(deck.total, total)}` });
+
+			const metaEl = rowEl.createDiv({ cls: 'obr-settings-deck-meta' });
+			metaEl.createSpan({ text: `${t().settings.stats.dueNow}: ${deck.dueNow}` });
+			metaEl.createSpan({ text: `${t().settings.stats.matureCards}: ${deck.matureCards}` });
+		});
+	}
+
+	private getPercent(value: number, total: number): number {
+		if (total <= 0) return 0;
+		return Math.round((value / total) * 100);
+	}
+
+	private formatPercent(value: number, total: number): string {
+		return `${this.getPercent(value, total)}%`;
 	}
 }

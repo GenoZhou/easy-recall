@@ -83,11 +83,6 @@ export const en = {
 			name: 'Debug Mode',
 			desc: 'Show debug logs in console (requires restart).',
 		},
-		reset: {
-			name: 'Reset Settings',
-			desc: 'Reset all settings to default values.',
-			button: 'Reset',
-		},
 		stats: {
 			name: 'Review Stats',
 			desc: 'Overview of card progress and upcoming review windows.',
@@ -108,6 +103,7 @@ export const en = {
 			upcoming7d: 'Within 7 days',
 			upcoming30d: 'Within 30 days',
 			later: 'Later',
+			decks: 'Deck Breakdown',
 		},
 	},
 

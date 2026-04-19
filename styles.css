@@ -669,3 +669,88 @@
 	font-size: 0.8em;
 	color: var(--text-muted);
 }
+
+/* ==================== 设置页统计 ==================== */
+
+.obr-settings-stats {
+	margin: 12px 0 24px;
+}
+
+.obr-settings-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.obr-settings-stat-card {
+	padding: 14px;
+	background: linear-gradient(180deg, var(--background-secondary), var(--background-secondary-alt));
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+}
+
+.obr-settings-stat-label {
+	font-size: 0.85em;
+	color: var(--text-muted);
+	margin-bottom: 6px;
+}
+
+.obr-settings-stat-value {
+	font-size: 1.6em;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.obr-settings-stat-meta {
+	margin-top: 6px;
+	font-size: 0.85em;
+	color: var(--text-accent);
+}
+
+.obr-settings-progress-list,
+.obr-settings-deck-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 18px;
+}
+
+.obr-settings-progress-row,
+.obr-settings-deck-row {
+	padding: 10px 12px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.obr-settings-progress-header,
+.obr-settings-deck-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.obr-settings-progress-track {
+	width: 100%;
+	height: 8px;
+	background-color: var(--background-modifier-border);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.obr-settings-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--interactive-accent), var(--text-accent));
+	border-radius: 999px;
+}
+
+.obr-settings-deck-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+	font-size: 0.9em;
+	color: var(--text-muted);
+}

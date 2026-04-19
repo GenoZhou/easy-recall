@@ -122,5 +122,8 @@ describe('calculateReviewStats', () => {
     expect(stats.upcoming7d).toBe(1);
     expect(stats.upcoming30d).toBe(1);
     expect(stats.later).toBe(1);
+    expect(stats.decks).toEqual([
+      { deck: 'test', total: 7, dueNow: 2, matureCards: 4 },
+    ]);
   });
 });

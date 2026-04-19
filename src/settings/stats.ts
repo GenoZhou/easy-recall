@@ -12,6 +12,14 @@ export interface ReviewStats {
 	upcoming7d: number;
 	upcoming30d: number;
 	later: number;
+	decks: DeckReviewStats[];
+}
+
+export interface DeckReviewStats {
+	deck: string;
+	total: number;
+	dueNow: number;
+	matureCards: number;
 }
 
 export function calculateReviewStats(cards: Card[], now: Date = new Date()): ReviewStats {
@@ -27,12 +35,27 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		upcoming7d: 0,
 		upcoming30d: 0,
 		later: 0,
+		decks: [],
 	};
+	const deckMap = new Map<string, DeckReviewStats>();
 
 	for (const card of cards) {
+		const primaryDeck = card.tags[0] ?? 'default';
+		if (!deckMap.has(primaryDeck)) {
+			deckMap.set(primaryDeck, {
+				deck: primaryDeck,
+				total: 0,
+				dueNow: 0,
+				matureCards: 0,
+			});
+		}
+		const deckStats = deckMap.get(primaryDeck)!;
+		deckStats.total++;
+
 		if (!card.schedule) {
 			stats.newCards++;
 			stats.dueNow++;
+			deckStats.dueNow++;
 			continue;
 		}
 
@@ -42,10 +65,12 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 			stats.learningCards++;
 		} else {
 			stats.matureCards++;
+			deckStats.matureCards++;
 		}
 
 		if (card.schedule.due <= now) {
 			stats.dueNow++;
+			deckStats.dueNow++;
 			continue;
 		}
 
@@ -64,6 +89,12 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 			stats.later++;
 		}
 	}
+
+	stats.decks = [...deckMap.values()].sort((a, b) => {
+		if (b.dueNow !== a.dueNow) return b.dueNow - a.dueNow;
+		if (b.total !== a.total) return b.total - a.total;
+		return a.deck.localeCompare(b.deck);
+	});
 
 	return stats;
 }

@@ -85,11 +85,6 @@ export const zh: Translations = {
 			name: '调试模式',
 			desc: '在控制台显示调试日志（需重启生效）。',
 		},
-		reset: {
-			name: '重置设置',
-			desc: '将所有设置恢复为默认值。',
-			button: '重置',
-		},
 		stats: {
 			name: '复习统计',
 			desc: '查看卡片学习进度和接下来几个复习窗口。',
@@ -110,6 +105,7 @@ export const zh: Translations = {
 			upcoming7d: '7 天内',
 			upcoming30d: '30 天内',
 			later: '更晚',
+			decks: '卡组分布',
 		},
 	},
 
