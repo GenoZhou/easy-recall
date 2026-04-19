@@ -97,27 +97,16 @@ export class SettingsTab extends PluginSettingTab {
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 
-			this.renderCompositionBar(containerEl, stats.total, [
-				['new', lang.settings.stats.newCards, stats.newCards],
-				['relearning', lang.settings.stats.relearningCards, stats.relearningCards],
-				['learning', lang.settings.stats.learningCards, stats.learningCards],
-				['mature', lang.settings.stats.matureCards, stats.matureCards],
-			]);
-
-			const columnsEl = containerEl.createDiv({ cls: 'obr-settings-columns' });
-
-			const overviewEl = columnsEl.createDiv({ cls: 'obr-settings-column' });
-			overviewEl.createEl('h3', { text: lang.settings.stats.overview });
-			this.renderCompactStatList(overviewEl, stats.total, [
+			containerEl.createEl('h3', { text: lang.settings.stats.overview });
+			this.renderCompositionSection(containerEl, stats.total, [
 				['new', lang.settings.stats.newCards, lang.settings.stats.explanations.newCards, stats.newCards],
 				['relearning', lang.settings.stats.relearningCards, lang.settings.stats.explanations.relearningCards, stats.relearningCards],
 				['learning', lang.settings.stats.learningCards, lang.settings.stats.explanations.learningCards, stats.learningCards],
 				['mature', lang.settings.stats.matureCards, lang.settings.stats.explanations.matureCards, stats.matureCards],
 			]);
 
-			const upcomingEl = columnsEl.createDiv({ cls: 'obr-settings-column' });
-			upcomingEl.createEl('h3', { text: lang.settings.stats.upcoming });
-			this.renderCompactStatList(upcomingEl, stats.total, [
+			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
+			this.renderCompactStatList(containerEl, stats.total, [
 				['due', lang.settings.stats.dueNow, lang.settings.stats.explanations.dueNow, stats.dueNow],
 				['soon', lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
 				['soon', lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
@@ -147,22 +136,28 @@ export class SettingsTab extends PluginSettingTab {
 		});
 	}
 
-	private renderCompositionBar(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {
+	private renderCompositionSection(containerEl: HTMLElement, total: number, rows: Array<[string, string, string, number]>): void {
 		const barWrap = containerEl.createDiv({ cls: 'obr-settings-composition' });
 		const barEl = barWrap.createDiv({ cls: 'obr-settings-composition-bar' });
-		rows.forEach(([tone, label, value]) => {
+		rows.forEach(([tone, label, _desc, value]) => {
 			if (value <= 0) return;
 			const segmentEl = barEl.createDiv({ cls: `obr-settings-composition-segment is-${tone}` });
 			segmentEl.style.width = `${this.getPercent(value, total)}%`;
 			segmentEl.setAttribute('aria-label', `${label}: ${value}`);
 		});
 
-		const legendEl = barWrap.createDiv({ cls: 'obr-settings-composition-legend' });
-		rows.forEach(([tone, label, value]) => {
-			if (value <= 0) return;
-			const itemEl = legendEl.createDiv({ cls: 'obr-settings-composition-item' });
-			itemEl.createDiv({ cls: `obr-settings-composition-dot is-${tone}` });
-			itemEl.createSpan({ text: `${label} ${value}` });
+		const legendEl = barWrap.createDiv({ cls: 'obr-settings-composition-list' });
+		rows.forEach(([tone, label, desc, value]) => {
+			const itemEl = legendEl.createDiv({ cls: 'obr-settings-composition-row' });
+			const leftEl = itemEl.createDiv({ cls: 'obr-settings-composition-text' });
+			const titleEl = leftEl.createDiv({ cls: 'obr-settings-composition-title' });
+			titleEl.createDiv({ cls: `obr-settings-composition-dot is-${tone}` });
+			titleEl.createSpan({ text: label });
+			leftEl.createDiv({ cls: 'obr-settings-composition-desc', text: desc });
+
+			const rightEl = itemEl.createDiv({ cls: 'obr-settings-composition-value' });
+			rightEl.createEl('strong', { text: String(value) });
+			rightEl.createSpan({ text: this.formatPercent(value, total) });
 		});
 	}
 
