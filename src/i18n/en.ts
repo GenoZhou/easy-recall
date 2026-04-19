@@ -104,6 +104,18 @@ export const en = {
 			upcoming30d: 'Within 30 days',
 			later: 'Later',
 			decks: 'Deck Breakdown',
+			explanations: {
+				newCards: 'Not reviewed yet.',
+				relearningCards: 'Failed recently and back in relearning.',
+				learningCards: 'Passed once and still stabilizing.',
+				matureCards: 'Reviewed multiple times and relatively stable.',
+				dueNow: 'Available to review immediately.',
+				upcoming1d: 'Likely to come back very soon.',
+				upcoming3d: 'Short-term reinforcement window.',
+				upcoming7d: 'Near-future review load.',
+				upcoming30d: 'Mid-term scheduled reviews.',
+				later: 'Longer-term queue beyond 30 days.',
+			},
 		},
 	},
 

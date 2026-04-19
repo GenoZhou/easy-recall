@@ -5,7 +5,7 @@
 
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import OBReviewsPlugin from '../main';
-import { t, setLanguage, Language } from '../i18n';
+import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
 import { error } from '../utils/';
@@ -42,7 +42,7 @@ export class SettingsTab extends PluginSettingTab {
 						await this.plugin.settingsManager.update({ language: newLang });
 						this.plugin.settings = this.plugin.settingsManager.get();
 						// 立即应用语言变更
-						setLanguage(newLang === 'auto' ? 'zh' : newLang);
+						setLanguage(resolveLanguage(newLang));
 						// 刷新界面显示
 						this.display();
 					})
@@ -98,21 +98,21 @@ export class SettingsTab extends PluginSettingTab {
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.overview });
-			this.renderProgressList(containerEl, stats.total, [
-				[lang.settings.stats.newCards, stats.newCards],
-				[lang.settings.stats.relearningCards, stats.relearningCards],
-				[lang.settings.stats.learningCards, stats.learningCards],
-				[lang.settings.stats.matureCards, stats.matureCards],
+			this.renderCompactStatList(containerEl, stats.total, [
+				[lang.settings.stats.newCards, lang.settings.stats.explanations.newCards, stats.newCards],
+				[lang.settings.stats.relearningCards, lang.settings.stats.explanations.relearningCards, stats.relearningCards],
+				[lang.settings.stats.learningCards, lang.settings.stats.explanations.learningCards, stats.learningCards],
+				[lang.settings.stats.matureCards, lang.settings.stats.explanations.matureCards, stats.matureCards],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
-			this.renderProgressList(containerEl, stats.total, [
-				[lang.settings.stats.dueNow, stats.dueNow],
-				[lang.settings.stats.upcoming1d, stats.upcoming1d],
-				[lang.settings.stats.upcoming3d, stats.upcoming3d],
-				[lang.settings.stats.upcoming7d, stats.upcoming7d],
-				[lang.settings.stats.upcoming30d, stats.upcoming30d],
-				[lang.settings.stats.later, stats.later],
+			this.renderCompactStatList(containerEl, stats.total, [
+				[lang.settings.stats.dueNow, lang.settings.stats.explanations.dueNow, stats.dueNow],
+				[lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
+				[lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
+				[lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
+				[lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
+				[lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.decks });
@@ -136,21 +136,22 @@ export class SettingsTab extends PluginSettingTab {
 		});
 	}
 
-	private renderProgressList(containerEl: HTMLElement, total: number, rows: Array<[string, number]>): void {
-		const listEl = containerEl.createDiv({ cls: 'obr-settings-progress-list' });
-		rows.forEach(([label, value]) => {
-			const rowEl = listEl.createDiv({ cls: 'obr-settings-progress-row' });
-			const headerEl = rowEl.createDiv({ cls: 'obr-settings-progress-header' });
-			headerEl.createSpan({ text: label });
-			headerEl.createEl('strong', { text: `${value} · ${this.formatPercent(value, total)}` });
+	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {
+		const listEl = containerEl.createDiv({ cls: 'obr-settings-compact-list' });
+		rows.forEach(([label, desc, value]) => {
+			const rowEl = listEl.createDiv({ cls: 'obr-settings-compact-row' });
+			const textEl = rowEl.createDiv({ cls: 'obr-settings-compact-text' });
+			textEl.createDiv({ cls: 'obr-settings-compact-label', text: label });
+			textEl.createDiv({ cls: 'obr-settings-compact-desc', text: desc });
 
-			const trackEl = rowEl.createDiv({ cls: 'obr-settings-progress-track' });
-			const fillEl = trackEl.createDiv({ cls: 'obr-settings-progress-fill' });
-			fillEl.style.width = `${this.getPercent(value, total)}%`;
+			const valueEl = rowEl.createDiv({ cls: 'obr-settings-compact-value' });
+			valueEl.createEl('strong', { text: String(value) });
+			valueEl.createSpan({ text: this.formatPercent(value, total) });
 		});
 	}
 
 	private renderDeckList(containerEl: HTMLElement, decks: Array<{ deck: string; total: number; dueNow: number; matureCards: number }>, total: number): void {
+		const lang = t();
 		const listEl = containerEl.createDiv({ cls: 'obr-settings-deck-list' });
 		decks.forEach(deck => {
 			const rowEl = listEl.createDiv({ cls: 'obr-settings-deck-row' });
@@ -159,8 +160,8 @@ export class SettingsTab extends PluginSettingTab {
 			titleEl.createEl('strong', { text: `${deck.total} · ${this.formatPercent(deck.total, total)}` });
 
 			const metaEl = rowEl.createDiv({ cls: 'obr-settings-deck-meta' });
-			metaEl.createSpan({ text: `${t().settings.stats.dueNow}: ${deck.dueNow}` });
-			metaEl.createSpan({ text: `${t().settings.stats.matureCards}: ${deck.matureCards}` });
+			metaEl.createSpan({ text: `${lang.settings.stats.dueNow}: ${deck.dueNow}` });
+			metaEl.createSpan({ text: `${lang.settings.stats.matureCards}: ${deck.matureCards}` });
 		});
 	}
 

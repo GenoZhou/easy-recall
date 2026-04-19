@@ -106,6 +106,18 @@ export const zh: Translations = {
 			upcoming30d: '30 天内',
 			later: '更晚',
 			decks: '卡组分布',
+			explanations: {
+				newCards: '还没有复习过的卡片。',
+				relearningCards: '最近答错，正在重新巩固。',
+				learningCards: '至少答对过一次，但还不稳定。',
+				matureCards: '复习多次后相对稳定的卡片。',
+				dueNow: '现在就可以开始复习。',
+				upcoming1d: '很快会再次出现的卡片。',
+				upcoming3d: '短期巩固窗口内的复习量。',
+				upcoming7d: '近期一周内的复习压力。',
+				upcoming30d: '中期排期内的复习量。',
+				later: '30 天以后才会进入队列。',
+			},
 		},
 	},
 
