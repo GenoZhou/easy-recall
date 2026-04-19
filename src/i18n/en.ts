@@ -70,6 +70,47 @@ export const en = {
 		},
 	},
 
+	settings: {
+		title: 'ob-reviews Settings',
+		language: {
+			name: 'Language',
+			desc: 'Interface language. Auto will follow Obsidian settings.',
+			auto: 'Auto',
+			en: 'English',
+			zh: 'Chinese',
+		},
+		debug: {
+			name: 'Debug Mode',
+			desc: 'Show debug logs in console (requires restart).',
+		},
+		reset: {
+			name: 'Reset Settings',
+			desc: 'Reset all settings to default values.',
+			button: 'Reset',
+		},
+		stats: {
+			name: 'Review Stats',
+			desc: 'Overview of card progress and upcoming review windows.',
+			refresh: 'Refresh',
+			loading: 'Loading review stats...',
+			loadFailed: 'Failed to load review stats.',
+			empty: 'No review cards found yet.',
+			overview: 'Progress',
+			upcoming: 'Upcoming Review Windows',
+			total: 'Total cards',
+			newCards: 'New cards',
+			relearningCards: 'Relearning',
+			learningCards: 'Learning',
+			matureCards: 'Mature',
+			dueNow: 'Due now',
+			upcoming1d: 'Within 1 day',
+			upcoming3d: 'Within 3 days',
+			upcoming7d: 'Within 7 days',
+			upcoming30d: 'Within 30 days',
+			later: 'Later',
+		},
+	},
+
 	// Time formatting
 	time: {
 		now: 'now',

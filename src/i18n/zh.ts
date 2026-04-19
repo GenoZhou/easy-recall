@@ -72,6 +72,47 @@ export const zh: Translations = {
 		},
 	},
 
+	settings: {
+		title: 'ob-reviews 设置',
+		language: {
+			name: '界面语言',
+			desc: '界面语言。自动模式会跟随 Obsidian 设置。',
+			auto: '自动',
+			en: 'English',
+			zh: '中文',
+		},
+		debug: {
+			name: '调试模式',
+			desc: '在控制台显示调试日志（需重启生效）。',
+		},
+		reset: {
+			name: '重置设置',
+			desc: '将所有设置恢复为默认值。',
+			button: '重置',
+		},
+		stats: {
+			name: '复习统计',
+			desc: '查看卡片学习进度和接下来几个复习窗口。',
+			refresh: '刷新',
+			loading: '正在加载复习统计...',
+			loadFailed: '加载复习统计失败。',
+			empty: '还没有找到复习卡片。',
+			overview: '学习进度',
+			upcoming: '后续复习窗口',
+			total: '总卡片数',
+			newCards: '新卡',
+			relearningCards: '重学中',
+			learningCards: '学习中',
+			matureCards: '成熟卡',
+			dueNow: '当前到期',
+			upcoming1d: '1 天内',
+			upcoming3d: '3 天内',
+			upcoming7d: '7 天内',
+			upcoming30d: '30 天内',
+			later: '更晚',
+		},
+	},
+
 	// 时间格式化
 	time: {
 		now: '现在',

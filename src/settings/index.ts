@@ -11,8 +11,6 @@ import { Plugin } from 'obsidian';
 export interface OBReviewsSettings {
 	/** 界面语言 */
 	language: 'auto' | 'en' | 'zh';
-	/** 新卡片默认难度 (ease) */
-	defaultEase: number;
 	/** 是否显示调试日志 */
 	debugMode: boolean;
 }
@@ -22,7 +20,6 @@ export interface OBReviewsSettings {
  */
 export const DEFAULT_SETTINGS: OBReviewsSettings = {
 	language: 'auto',
-	defaultEase: 250,
 	debugMode: false,
 };
 
@@ -44,7 +41,10 @@ export class SettingsManager {
 	async load(): Promise<void> {
 		const loaded = await this.plugin.loadData();
 		if (loaded) {
-			this.settings = { ...DEFAULT_SETTINGS, ...loaded };
+			this.settings = {
+				language: loaded.language ?? DEFAULT_SETTINGS.language,
+				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
+			};
 		}
 	}
 

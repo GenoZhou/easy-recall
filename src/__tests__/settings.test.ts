@@ -31,7 +31,6 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
-			expect(settings.defaultEase).toBe(250);
 			expect(settings.debugMode).toBe(false);
 		});
 
@@ -42,8 +41,24 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
-			expect(settings.defaultEase).toBe(250); // default
 			expect(settings.debugMode).toBe(true);
+		});
+
+		it('should ignore removed legacy settings fields', async () => {
+			mockLoadData.mockResolvedValue({
+				language: 'zh',
+				defaultEase: 300,
+				debugMode: true,
+			});
+
+			await manager.load();
+
+			const settings = manager.get();
+			expect(settings).toEqual({
+				language: 'zh',
+				debugMode: true,
+			});
+			expect((settings as OBReviewsSettings & { defaultEase?: number }).defaultEase).toBeUndefined();
 		});
 
 		it('should handle empty object', async () => {
@@ -76,7 +91,7 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
-			expect(settings.defaultEase).toBe(250); // unchanged
+			expect(settings.debugMode).toBe(false); // unchanged
 		});
 
 		it('should save after update', async () => {
@@ -127,7 +142,6 @@ describe('SettingsManager', () => {
 describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
-		expect(DEFAULT_SETTINGS.defaultEase).toBe(250);
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
 	});
 });
