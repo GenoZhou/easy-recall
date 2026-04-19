@@ -6,6 +6,8 @@ export const INITIAL_EASE = 250;
 export const MIN_EASE = 130;
 export const MAX_EASE = 350;
 export const MAX_INTERVAL = 365;
+export const MATURE_REPS = 2;
+export const MATURE_AGAIN_INTERVAL_FACTOR = 0.25;
 
 // 新卡片首次复习的间隔（天）
 const NEW_CARD_INTERVALS: Record<Rating, number> = {
@@ -18,8 +20,22 @@ const NEW_CARD_INTERVALS: Record<Rating, number> = {
 const EASE_DELTAS: Record<Rating, number> = {
 	1: -20,    // 没记住: ease 降低
 	2: -15,    // 有点难: ease 略降
-	3: 0,      // 记住了: ease 不变
+	3: 5,      // 记住了: ease 缓慢恢复
 };
+
+function clampEase(ease: number): number {
+	return Math.max(MIN_EASE, Math.min(MAX_EASE, ease));
+}
+
+function createDueDate(intervalDays: number, now: Date = new Date()): Date {
+	const due = new Date(now);
+	if (intervalDays < 1) {
+		due.setMinutes(due.getMinutes() + Math.round(intervalDays * 24 * 60));
+	} else {
+		due.setDate(due.getDate() + Math.round(intervalDays));
+	}
+	return due;
+}
 
 /**
  * 创建初始调度（新卡片）
@@ -41,14 +57,8 @@ function calcNewCardSchedule(rating: Rating, ease: number = INITIAL_EASE): Sched
 	const now = new Date();
 	// 新卡片使用对应评分的间隔
 	const intervalDays = NEW_CARD_INTERVALS[rating];
-	const newEase = Math.max(MIN_EASE, Math.min(MAX_EASE, ease + EASE_DELTAS[rating]));
-	
-	const due = new Date(now);
-	if (intervalDays < 1) {
-		due.setMinutes(due.getMinutes() + Math.round(intervalDays * 24 * 60));
-	} else {
-		due.setDate(due.getDate() + Math.round(intervalDays));
-	}
+	const newEase = clampEase(ease + EASE_DELTAS[rating]);
+	const due = createDueDate(intervalDays, now);
 	
 	return {
 		interval: intervalDays,
@@ -64,15 +74,12 @@ function calcNewCardSchedule(rating: Rating, ease: number = INITIAL_EASE): Sched
 function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
 	const now = new Date();
 	const easeDelta = EASE_DELTAS[rating];
-	const newEase = Math.max(MIN_EASE, Math.min(MAX_EASE, current.ease + easeDelta));
+	const newEase = clampEase(current.ease + easeDelta);
 	
 	let newInterval: number;
 	if (rating === 1) {
-		// 没记住: 立即重新复习
-		newInterval = 0;
-	} else if (current.reps === 0) {
-		// 第一次复习后记住
-		newInterval = NEW_CARD_INTERVALS[rating];
+		// 成熟卡没记住: 回退到较短周期，而不是打回新卡
+		newInterval = Math.max(1, current.interval * MATURE_AGAIN_INTERVAL_FACTOR);
 	} else if (rating === 2) {
 		// 有点难: 间隔增长较慢
 		newInterval = current.interval * 1.2;
@@ -83,19 +90,13 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
 	
 	// 限制最大间隔
 	newInterval = Math.min(newInterval, MAX_INTERVAL);
-	
-	const due = new Date(now);
-	if (newInterval < 1) {
-		due.setMinutes(due.getMinutes() + Math.round(newInterval * 24 * 60));
-	} else {
-		due.setDate(due.getDate() + Math.round(newInterval));
-	}
+	const due = createDueDate(newInterval, now);
 	
 	return {
 		interval: newInterval,
 		ease: newEase,
 		due,
-		reps: rating === 1 ? 0 : current.reps + 1,
+		reps: rating === 1 ? current.reps : current.reps + 1,
 	};
 }
 
@@ -106,7 +107,12 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
  */
 export function calcSchedule(current: Schedule | null, rating: Rating): Schedule {
 	if (!current || current.reps === 0) {
-		// 新卡片或从未复习过
+		// 新卡片或已被打回学习阶段的卡片
+		return calcNewCardSchedule(rating, current?.ease);
+	}
+
+	if (rating === 1 && current.reps < MATURE_REPS) {
+		// 学习中卡片没记住: 重新进入学习
 		return calcNewCardSchedule(rating, current?.ease);
 	}
 	return calcExistingCardSchedule(current, rating);

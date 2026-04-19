@@ -86,7 +86,7 @@ tags:
   });
 
   describe('Flow 2: Review a card with Again after learning phase', () => {
-    it('should reset schedule and keep card due for same day', () => {
+    it('should roll back mature card without clearing reps', () => {
       let noteContent = `---
 tags:
   - ob-reviews/test
@@ -102,8 +102,8 @@ tags:
 
       // Mark as Again (没记住)
       const newSchedule = calcSchedule(cards[0].schedule!, 1);
-      expect(newSchedule.interval).toBe(0); // 立即重新复习
-      expect(newSchedule.reps).toBe(0);
+      expect(newSchedule.interval).toBeCloseTo(1.25, 5); // 5 * 0.25
+      expect(newSchedule.reps).toBe(3);
       expect(newSchedule.ease).toBe(230); // 250 - 20
 
       noteContent = injectSchedule(
@@ -115,9 +115,9 @@ tags:
 
       cards = parseNote(noteContent, 'test.md');
 
-      // Card is set for immediate review with reset reps
-      expect(cards[0].schedule!.interval).toBe(0);
-      expect(cards[0].schedule!.reps).toBe(0);
+      // Mature card is rolled back but not reset as a new card
+      expect(cards[0].schedule!.interval).toBeCloseTo(1.25, 5);
+      expect(cards[0].schedule!.reps).toBe(3);
     });
   });
 
@@ -134,9 +134,9 @@ tags:
       const hardSchedule = calcSchedule(baseSchedule, 2);
       const goodSchedule = calcSchedule(baseSchedule, 3);
 
-      // 没记住: reset to 0 (immediate review)
-      expect(againSchedule.interval).toBe(0);
-      expect(againSchedule.reps).toBe(0);
+      // 没记住: mature card rolls back to shorter interval
+      expect(againSchedule.interval).toBeCloseTo(2.5, 5);
+      expect(againSchedule.reps).toBe(5);
 
       // 有点难: 10 * 1.2 = 12
       expect(hardSchedule.interval).toBe(12);
@@ -159,7 +159,7 @@ tags:
 
       expect(calcSchedule(baseSchedule, 1).ease).toBe(230); // -20
       expect(calcSchedule(baseSchedule, 2).ease).toBe(235); // -15
-      expect(calcSchedule(baseSchedule, 3).ease).toBe(250); // 0
+      expect(calcSchedule(baseSchedule, 3).ease).toBe(255); // +5
     });
   });
 
@@ -169,17 +169,19 @@ tags:
       let schedule = calcSchedule(null, 3); // Good
       expect(schedule.interval).toBe(1);
       expect(schedule.reps).toBe(1);
+      expect(schedule.ease).toBe(255);
 
       // Second review with Good
       schedule = calcSchedule(schedule, 3);
-      expect(schedule.interval).toBe(2.5); // 1 * 250 / 100
+      expect(schedule.interval).toBeCloseTo(2.55, 5); // 1 * 255 / 100
       expect(schedule.reps).toBe(2);
+      expect(schedule.ease).toBe(260);
 
       // Third review with Good
       schedule = calcSchedule(schedule, 3);
-      expect(schedule.interval).toBe(6.25); // 2.5 * 250 / 100
+      expect(schedule.interval).toBeCloseTo(6.63, 2); // 2.55 * 260 / 100
       expect(schedule.reps).toBe(3);
-      expect(schedule.ease).toBe(250); // unchanged
+      expect(schedule.ease).toBe(265); // +5 each time
     });
 
     it('should handle Again during learning', () => {
@@ -192,7 +194,7 @@ tags:
       schedule = calcSchedule(schedule, 1);
       expect(schedule.interval).toBe(0); // 立即重新复习
       expect(schedule.reps).toBe(0);
-      expect(schedule.ease).toBe(230);
+      expect(schedule.ease).toBe(235);
 
       // Back to learning - Good again
       schedule = calcSchedule(schedule, 3);
@@ -226,12 +228,12 @@ tags:
         reps: 3,
       };
 
-      // Multiple Good ratings - ease unchanged
+      // Multiple Good ratings - ease slowly recovers up to max
       for (let i = 0; i < 10; i++) {
         schedule = calcSchedule(schedule, 3);
       }
 
-      expect(schedule.ease).toBe(340);
+      expect(schedule.ease).toBe(350);
     });
   });
 

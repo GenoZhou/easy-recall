@@ -89,19 +89,33 @@ describe('scheduler', () => {
       expect(newSchedule.reps).toBe(1);
     });
 
-    it('should calculate interval using ease formula when reps > 0', () => {
+    it('should let learning cards progress with Good after first success', () => {
+      const current: Schedule = {
+        interval: 1,
+        ease: 255,
+        due: mockNow,
+        reps: 1,
+      };
+
+      const newSchedule = calcSchedule(current, 3);
+
+      expect(newSchedule.interval).toBeCloseTo(2.55, 5);
+      expect(newSchedule.reps).toBe(2);
+    });
+
+    it('should calculate interval using ease formula when reps >= 2', () => {
       const current: Schedule = {
         interval: 1,
         ease: 250,
         due: mockNow,
-        reps: 1,
+        reps: 2,
       };
       
       const newSchedule = calcSchedule(current, 3);
       
       // interval = 1 * 250 / 100 = 2.5
-      expect(newSchedule.interval).toBe(2.5);
-      expect(newSchedule.reps).toBe(2);
+      expect(newSchedule.interval).toBeCloseTo(2.5, 5);
+      expect(newSchedule.reps).toBe(3);
     });
 
     it('should cap interval at maximum 365 days', () => {
@@ -117,7 +131,7 @@ describe('scheduler', () => {
       expect(newSchedule.interval).toBe(365);
     });
 
-    it('should preserve ease with Good rating', () => {
+    it('should increase ease slowly with Good rating', () => {
       const current: Schedule = {
         interval: 3,
         ease: 280,
@@ -127,12 +141,12 @@ describe('scheduler', () => {
       
       const newSchedule = calcSchedule(current, 3);
       
-      expect(newSchedule.ease).toBe(280);
+      expect(newSchedule.ease).toBe(285);
     });
   });
 
   describe('calcSchedule - existing cards with Again (1)', () => {
-    it('should reset interval to 0 for immediate review', () => {
+    it('should roll mature cards back to 25% interval', () => {
       const current: Schedule = {
         interval: 10,
         ease: 250,
@@ -142,7 +156,7 @@ describe('scheduler', () => {
       
       const newSchedule = calcSchedule(current, 1);
       
-      expect(newSchedule.interval).toBe(0);
+      expect(newSchedule.interval).toBe(2.5);
     });
 
     it('should decrease ease by 20', () => {
@@ -171,7 +185,7 @@ describe('scheduler', () => {
       expect(newSchedule.ease).toBe(130);
     });
 
-    it('should reset reps to 0', () => {
+    it('should preserve reps for mature cards', () => {
       const current: Schedule = {
         interval: 5,
         ease: 250,
@@ -181,12 +195,12 @@ describe('scheduler', () => {
       
       const newSchedule = calcSchedule(current, 1);
       
-      expect(newSchedule.reps).toBe(0);
+      expect(newSchedule.reps).toBe(10);
     });
 
-    it('should set due to now for immediate review', () => {
+    it('should set due based on rolled-back interval', () => {
       const current: Schedule = {
-        interval: 5,
+        interval: 8,
         ease: 250,
         due: new Date('2026-02-20T12:00:00Z'),
         reps: 3,
@@ -194,7 +208,22 @@ describe('scheduler', () => {
       
       const newSchedule = calcSchedule(current, 1);
       
-      expect(newSchedule.due).toEqual(mockNow);
+      const expectedDue = new Date(mockNow);
+      expectedDue.setDate(expectedDue.getDate() + 2);
+      expect(newSchedule.due).toEqual(expectedDue);
+    });
+
+    it('should keep mature Again interval at least 1 day', () => {
+      const current: Schedule = {
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 3,
+      };
+
+      const newSchedule = calcSchedule(current, 1);
+
+      expect(newSchedule.interval).toBe(1);
     });
   });
 
@@ -241,7 +270,7 @@ describe('scheduler', () => {
       expect(newSchedule.interval).toBe(25);
     });
 
-    it('should keep ease unchanged', () => {
+    it('should recover ease by 5', () => {
       const current: Schedule = {
         interval: 5,
         ease: 250,
@@ -251,20 +280,20 @@ describe('scheduler', () => {
       
       const newSchedule = calcSchedule(current, 3);
       
-      expect(newSchedule.ease).toBe(250);
+      expect(newSchedule.ease).toBe(255);
     });
 
-    it('should keep high ease unchanged', () => {
+    it('should cap recovered ease at maximum', () => {
       const current: Schedule = {
         interval: 5,
-        ease: 340,
+        ease: 348,
         due: mockNow,
         reps: 3,
       };
       
       const newSchedule = calcSchedule(current, 3);
       
-      expect(newSchedule.ease).toBe(340);
+      expect(newSchedule.ease).toBe(350);
     });
   });
 
@@ -349,7 +378,7 @@ describe('scheduler', () => {
         reps: 2,
       };
       const text = getNextReviewText(schedule, 1);
-      expect(text).toBe('立即');
+      expect(text).toBe('明天');
     });
 
     it('should return appropriate time for Hard', () => {
