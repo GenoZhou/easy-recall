@@ -13,8 +13,10 @@ export interface OBReviewsSettings {
 	language: 'auto' | 'en' | 'zh';
 	/** 是否显示调试日志 */
 	debugMode: boolean;
-	/** 复习界面展示方式 */
-	reviewSurface: ReviewSurface;
+	/** 桌面端复习界面展示方式 */
+	desktopReviewSurface: ReviewSurface;
+	/** 手机端复习界面展示方式 */
+	mobileReviewSurface: ReviewSurface;
 }
 
 export type ReviewSurface = 'modal' | 'tab';
@@ -25,7 +27,8 @@ export type ReviewSurface = 'modal' | 'tab';
 export const DEFAULT_SETTINGS: OBReviewsSettings = {
 	language: 'auto',
 	debugMode: false,
-	reviewSurface: 'modal',
+	desktopReviewSurface: 'modal',
+	mobileReviewSurface: 'modal',
 };
 
 /**
@@ -46,10 +49,12 @@ export class SettingsManager {
 	async load(): Promise<void> {
 		const loaded = await this.plugin.loadData();
 		if (loaded) {
+			const legacyReviewSurface = loaded.reviewSurface as ReviewSurface | undefined;
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
 				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
-				reviewSurface: loaded.reviewSurface ?? DEFAULT_SETTINGS.reviewSurface,
+				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
+				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
 			};
 		}
 	}
@@ -90,6 +95,10 @@ export class SettingsManager {
  */
 export function createSettingsManager(plugin: Plugin): SettingsManager {
 	return new SettingsManager(plugin);
+}
+
+export function getActiveReviewSurface(settings: OBReviewsSettings, isMobile: boolean): ReviewSurface {
+	return isMobile ? settings.mobileReviewSurface : settings.desktopReviewSurface;
 }
 
 // 设置面板单独导出（避免测试时加载 Obsidian UI 依赖）

@@ -2,12 +2,13 @@
  * 复习当前笔记命令
  */
 
-import { TFile, Notice } from 'obsidian';
+import { TFile, Notice, Platform } from 'obsidian';
 import { getDueCardsFromFile } from '../deck';
 import { t } from '../i18n';
 import { info } from '../utils/';
 import type { CommandContext, FileCheckCallback } from './types';
 import { openReview } from '../ui/open-review';
+import { getActiveReviewSurface } from '../settings';
 
 /**
  * 执行当前笔记复习
@@ -29,13 +30,14 @@ export async function executeReviewCurrentNote(
 			return;
 		}
 
+		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
 		await openReview(app, {
 			cards: dueCards,
 			vault: app.vault,
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
-		}, plugin.settings.reviewSurface);
+		}, reviewSurface);
 
 	} catch (err) {
 		console.error('Failed to start file review:', err);

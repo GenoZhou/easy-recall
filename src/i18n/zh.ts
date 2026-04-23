@@ -86,8 +86,10 @@ export const zh: Translations = {
 			desc: '在控制台显示调试日志（需重启生效）。',
 		},
 		reviewSurface: {
-			name: '复习界面',
-			desc: '选择复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
+			desktopName: '桌面端复习界面',
+			desktopDesc: '选择桌面端复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
+			mobileName: '手机端复习界面',
+			mobileDesc: '选择手机端复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
 			modal: '模态窗口',
 			tab: '标签页',
 		},

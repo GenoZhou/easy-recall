@@ -84,8 +84,10 @@ export const en = {
 			desc: 'Show debug logs in console (requires restart).',
 		},
 		reviewSurface: {
-			name: 'Review Interface',
-			desc: 'Choose whether reviews open in a modal window or a reusable Obsidian tab.',
+			desktopName: 'Desktop Review Interface',
+			desktopDesc: 'Choose whether desktop reviews open in a modal window or a reusable Obsidian tab.',
+			mobileName: 'Mobile Review Interface',
+			mobileDesc: 'Choose whether mobile reviews open in a modal window or a reusable Obsidian tab.',
 			modal: 'Modal',
 			tab: 'Tab',
 		},

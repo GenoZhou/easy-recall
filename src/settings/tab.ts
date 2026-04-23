@@ -63,15 +63,29 @@ export class SettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName(lang.settings.reviewSurface.name)
-			.setDesc(lang.settings.reviewSurface.desc)
+			.setName(lang.settings.reviewSurface.desktopName)
+			.setDesc(lang.settings.reviewSurface.desktopDesc)
 			.addDropdown(dropdown =>
 				dropdown
 					.addOption('modal', lang.settings.reviewSurface.modal)
 					.addOption('tab', lang.settings.reviewSurface.tab)
-					.setValue(this.plugin.settings.reviewSurface)
+					.setValue(this.plugin.settings.desktopReviewSurface)
 					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ reviewSurface: value as ReviewSurface });
+						await this.plugin.settingsManager.update({ desktopReviewSurface: value as ReviewSurface });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(lang.settings.reviewSurface.mobileName)
+			.setDesc(lang.settings.reviewSurface.mobileDesc)
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('modal', lang.settings.reviewSurface.modal)
+					.addOption('tab', lang.settings.reviewSurface.tab)
+					.setValue(this.plugin.settings.mobileReviewSurface)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ mobileReviewSurface: value as ReviewSurface });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

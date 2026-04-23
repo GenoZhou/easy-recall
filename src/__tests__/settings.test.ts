@@ -2,7 +2,7 @@
  * Tests for settings module
  */
 
-import { SettingsManager, DEFAULT_SETTINGS, OBReviewsSettings } from '../settings';
+import { SettingsManager, DEFAULT_SETTINGS, OBReviewsSettings, getActiveReviewSurface } from '../settings';
 
 // Mock Obsidian's Plugin class
 const mockLoadData = jest.fn();
@@ -32,7 +32,8 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
 			expect(settings.debugMode).toBe(false);
-			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.desktopReviewSurface).toBe('modal');
+			expect(settings.mobileReviewSurface).toBe('modal');
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -43,16 +44,33 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
 			expect(settings.debugMode).toBe(true);
-			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.desktopReviewSurface).toBe('modal');
+			expect(settings.mobileReviewSurface).toBe('modal');
 		});
 
-		it('should load tab review surface', async () => {
+		it('should load separate desktop and mobile review surfaces', async () => {
+			mockLoadData.mockResolvedValue({
+				language: 'en',
+				debugMode: true,
+				desktopReviewSurface: 'tab',
+				mobileReviewSurface: 'modal',
+			});
+
+			await manager.load();
+
+			const settings = manager.get();
+			expect(settings.desktopReviewSurface).toBe('tab');
+			expect(settings.mobileReviewSurface).toBe('modal');
+		});
+
+		it('should migrate legacy review surface to both platform settings', async () => {
 			mockLoadData.mockResolvedValue({ language: 'en', debugMode: true, reviewSurface: 'tab' });
 
 			await manager.load();
 
 			const settings = manager.get();
-			expect(settings.reviewSurface).toBe('tab');
+			expect(settings.desktopReviewSurface).toBe('tab');
+			expect(settings.mobileReviewSurface).toBe('tab');
 		});
 
 		it('should ignore removed legacy settings fields', async () => {
@@ -68,9 +86,11 @@ describe('SettingsManager', () => {
 			expect(settings).toEqual({
 				language: 'zh',
 				debugMode: true,
-				reviewSurface: 'modal',
+				desktopReviewSurface: 'modal',
+				mobileReviewSurface: 'modal',
 			});
-			expect((settings as OBReviewsSettings & { defaultEase?: number }).defaultEase).toBeUndefined();
+			expect((settings as OBReviewsSettings & { defaultEase?: number; reviewSurface?: string }).defaultEase).toBeUndefined();
+			expect((settings as OBReviewsSettings & { reviewSurface?: string }).reviewSurface).toBeUndefined();
 		});
 
 		it('should handle empty object', async () => {
@@ -104,17 +124,19 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
 			expect(settings.debugMode).toBe(false); // unchanged
-			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.desktopReviewSurface).toBe('modal');
+			expect(settings.mobileReviewSurface).toBe('modal');
 		});
 
-		it('should update review surface', async () => {
+		it('should update platform review surfaces', async () => {
 			mockLoadData.mockResolvedValue(null);
 			await manager.load();
 
-			await manager.update({ reviewSurface: 'tab' });
+			await manager.update({ desktopReviewSurface: 'tab', mobileReviewSurface: 'modal' });
 
 			const settings = manager.get();
-			expect(settings.reviewSurface).toBe('tab');
+			expect(settings.desktopReviewSurface).toBe('tab');
+			expect(settings.mobileReviewSurface).toBe('modal');
 		});
 
 		it('should save after update', async () => {
@@ -166,6 +188,29 @@ describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
-		expect(DEFAULT_SETTINGS.reviewSurface).toBe('modal');
+		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
+		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
+	});
+});
+
+describe('getActiveReviewSurface', () => {
+	it('should return desktop surface for desktop platform', () => {
+		const settings: OBReviewsSettings = {
+			...DEFAULT_SETTINGS,
+			desktopReviewSurface: 'tab',
+			mobileReviewSurface: 'modal',
+		};
+
+		expect(getActiveReviewSurface(settings, false)).toBe('tab');
+	});
+
+	it('should return mobile surface for mobile platform', () => {
+		const settings: OBReviewsSettings = {
+			...DEFAULT_SETTINGS,
+			desktopReviewSurface: 'tab',
+			mobileReviewSurface: 'modal',
+		};
+
+		expect(getActiveReviewSurface(settings, true)).toBe('modal');
 	});
 });

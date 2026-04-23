@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.3--beta.1-blue)
+![Version](https://img.shields.io/badge/version-1.2.3--beta.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -113,7 +113,7 @@ Card content...
    - **2 - Hard** (🟠): Interval ×1.2, ease -15
    - **3 - Good** (🔵): Standard interval, ease unchanged
 
-By default, reviews open in a modal window. In plugin settings, change **Review Interface** to **Tab** to reuse a dedicated Obsidian tab for reviews.
+By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 
 ## Shortcuts
 
