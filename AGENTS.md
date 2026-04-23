@@ -21,6 +21,8 @@
 | 构建 | `npm run build` |
 | 测试 | `npm test` |
 | 发布前检查 | `npm run prepublish` |
+| 准备预发布 | `npm run prerelease` |
+| 发布预发布 | `npm run release:prerelease` |
 
 ## 架构约束
 
@@ -122,6 +124,10 @@
 - 当前 `npm run version` 脚本只会执行默认 bump；若需要 `minor` / `major`，优先直接调用：
   - `node scripts/version-bump.mjs minor`
   - `node scripts/version-bump.mjs major`
+- 预发布优先使用：
+  - `npm run prerelease`：推导下一个 `beta` 版本、同步版本文件/README 徽章并运行发布前检查
+  - `npm run release:prerelease`：在上述基础上提交、打 tag、推送并创建/更新 GitHub prerelease
+  - 显式版本可用：`npm run prerelease -- --version 1.2.3-beta.2`
 
 ## 不要做的事
 
@@ -135,3 +141,4 @@
 - 用户文档：`README.md` / `README.zh.md`
 - 发布检查：`scripts/check-dist.mjs`
 - 版本脚本：`scripts/version-bump.mjs`
+- 预发布脚本：`scripts/prerelease.mjs`
