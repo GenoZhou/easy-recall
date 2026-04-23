@@ -6,6 +6,7 @@
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import OBReviewsPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
+import { ReviewSurface } from './index';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
 import { error } from '../utils/';
@@ -57,6 +58,20 @@ export class SettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.debugMode)
 					.onChange(async (value) => {
 						await this.plugin.settingsManager.update({ debugMode: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(lang.settings.reviewSurface.name)
+			.setDesc(lang.settings.reviewSurface.desc)
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('modal', lang.settings.reviewSurface.modal)
+					.addOption('tab', lang.settings.reviewSurface.tab)
+					.setValue(this.plugin.settings.reviewSurface)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ reviewSurface: value as ReviewSurface });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

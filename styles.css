@@ -6,6 +6,33 @@
 	padding: 20px;
 }
 
+/* ==================== 复习标签页 ==================== */
+
+.obr-review-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 20px;
+	overflow: hidden;
+}
+
+.obr-review-view-title {
+	margin: 0 0 15px;
+	flex-shrink: 0;
+}
+
+.obr-review-view .obr-card-content {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+}
+
+.obr-review-view .obr-buttons {
+	flex-shrink: 0;
+	padding-top: 15px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
 /* 移动端全高显示 */
 @media (max-width: 768px) {
 	.obr-review-modal {

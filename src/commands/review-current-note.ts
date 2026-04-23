@@ -3,11 +3,11 @@
  */
 
 import { TFile, Notice } from 'obsidian';
-import { ReviewModal } from '../ui/review-modal';
 import { getDueCardsFromFile } from '../deck';
 import { t } from '../i18n';
 import { info } from '../utils/';
 import type { CommandContext, FileCheckCallback } from './types';
+import { openReview } from '../ui/open-review';
 
 /**
  * 执行当前笔记复习
@@ -16,7 +16,7 @@ export async function executeReviewCurrentNote(
 	context: CommandContext,
 	file: TFile
 ): Promise<void> {
-	const { app } = context;
+	const { app, plugin } = context;
 	const lang = t();
 	
 	info('Starting file review:', file.path);
@@ -29,14 +29,13 @@ export async function executeReviewCurrentNote(
 			return;
 		}
 
-		const modal = new ReviewModal(app, {
+		await openReview(app, {
 			cards: dueCards,
 			vault: app.vault,
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
-		});
-		modal.open();
+		}, plugin.settings.reviewSurface);
 
 	} catch (err) {
 		console.error('Failed to start file review:', err);

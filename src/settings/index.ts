@@ -13,7 +13,11 @@ export interface OBReviewsSettings {
 	language: 'auto' | 'en' | 'zh';
 	/** 是否显示调试日志 */
 	debugMode: boolean;
+	/** 复习界面展示方式 */
+	reviewSurface: ReviewSurface;
 }
+
+export type ReviewSurface = 'modal' | 'tab';
 
 /**
  * 默认设置
@@ -21,6 +25,7 @@ export interface OBReviewsSettings {
 export const DEFAULT_SETTINGS: OBReviewsSettings = {
 	language: 'auto',
 	debugMode: false,
+	reviewSurface: 'modal',
 };
 
 /**
@@ -44,6 +49,7 @@ export class SettingsManager {
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
 				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
+				reviewSurface: loaded.reviewSurface ?? DEFAULT_SETTINGS.reviewSurface,
 			};
 		}
 	}

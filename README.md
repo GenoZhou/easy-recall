@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue)
+![Version](https://img.shields.io/badge/version-1.2.3--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -17,6 +17,7 @@ A minimalist spaced repetition plugin focused on core memorization features—ze
 - **Instant Feedback** - "Again" cards go back to queue tail immediately, continue reviewing in current session
 - **Multi-language Support** - Auto-adapts to Obsidian language settings (English/Chinese)
 - **SuggestModal Deck Selector** - Quick Switcher-like deck selection experience
+- **Review Surface Option** - Review in the default modal window or reuse an Obsidian tab
 - **Mobile Support** - Perfectly adapted for phones and tablets
 
 ## Installation
@@ -111,6 +112,8 @@ Card content...
    - **1 - Again** (🔴): Put back to queue tail immediately, continue reviewing in current session
    - **2 - Hard** (🟠): Interval ×1.2, ease -15
    - **3 - Good** (🔵): Standard interval, ease unchanged
+
+By default, reviews open in a modal window. In plugin settings, change **Review Interface** to **Tab** to reuse a dedicated Obsidian tab for reviews.
 
 ## Shortcuts
 

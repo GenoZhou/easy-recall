@@ -149,5 +149,55 @@ describe('review-modal helpers', () => {
       expect(result).toBe(false);
       expect(app.workspace.getLeaf).not.toHaveBeenCalled();
     });
+
+    it('should open source in a new tab when requested', async () => {
+      const file = Object.assign(Object.create(TFile.prototype), {
+        path: 'cards/test.md',
+      });
+      const view = Object.assign(Object.create(MarkdownView.prototype), {
+        editor: {
+          setCursor: jest.fn(),
+        },
+      });
+      const leaf = {
+        openFile: jest.fn().mockResolvedValue(undefined),
+        isDeferred: false,
+        loadIfDeferred: jest.fn().mockResolvedValue(undefined),
+        view,
+      };
+
+      const app = {
+        workspace: {
+          getLeaf: jest.fn().mockReturnValue(leaf),
+          revealLeaf: jest.fn().mockResolvedValue(undefined),
+        },
+      } as any;
+
+      const vault = {
+        getAbstractFileByPath: jest.fn().mockReturnValue(file),
+      } as any;
+
+      const card: Card = {
+        id: '1',
+        type: 'cloze',
+        content: '==答案==',
+        tags: [],
+        filePath: 'cards/test.md',
+        lineStart: 7,
+        lineEnd: 7,
+      };
+
+      const result = await openCardSource(app, vault, card, true);
+
+      expect(result).toBe(true);
+      expect(app.workspace.getLeaf).toHaveBeenCalledWith('tab');
+      expect(leaf.openFile).toHaveBeenCalledWith(file, {
+        active: true,
+        eState: {
+          mode: 'source',
+          line: 7,
+        },
+      });
+    });
   });
 });

@@ -9,6 +9,7 @@ import { SettingsManager, createSettingsManager, OBReviewsSettings } from './set
 import { SettingsTab } from './settings/tab';
 import { registerCommands } from './commands';
 import { executeStartReview } from './commands/start-review';
+import { REVIEW_VIEW_TYPE, ReviewView } from './ui/review-view';
 import type { CommandContext } from './commands/types';
 
 // 插件图标（使用简单的复习卡片图标 SVG）
@@ -51,6 +52,8 @@ export default class OBReviewsPlugin extends Plugin {
 
 		// 注册图标
 		addIcon('ob-reviews', REVIEW_ICON);
+
+		this.registerView(REVIEW_VIEW_TYPE, (leaf) => new ReviewView(leaf));
 
 		// 注册所有命令
 		registerCommands(this);

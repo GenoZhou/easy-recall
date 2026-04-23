@@ -83,6 +83,12 @@ export const en = {
 			name: 'Debug Mode',
 			desc: 'Show debug logs in console (requires restart).',
 		},
+		reviewSurface: {
+			name: 'Review Interface',
+			desc: 'Choose whether reviews open in a modal window or a reusable Obsidian tab.',
+			modal: 'Modal',
+			tab: 'Tab',
+		},
 		stats: {
 			name: 'Review Stats',
 			desc: 'Summary of review counts and upcoming review windows.',

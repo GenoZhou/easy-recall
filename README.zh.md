@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue)
+![Version](https://img.shields.io/badge/version-1.2.3--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -17,6 +17,7 @@
 - **即时反馈** - "没记住"卡片立即放回队尾，当前 session 继续复习
 - **多语言支持** - 自动适配 Obsidian 语言设置（英文/中文）
 - **SuggestModal 选卡组** - Quick Switcher 式卡组选择体验
+- **复习界面可选** - 默认模态窗口，也可复用 Obsidian 标签页复习
 - **移动端支持** - 完美适配手机和平板
 
 ## 安装
@@ -111,6 +112,8 @@ tags:
    - **1 - 没记住** (🔴): 立即放回队尾，当前 session 重新复习
    - **2 - 有点难** (🟠): 间隔 ×1.2，ease -15
    - **3 - 记住了** (🔵): 标准间隔，ease 不变
+
+复习默认使用模态窗口。可在插件设置中将「复习界面」改为「标签页」，之后会复用一个专用 Obsidian 标签页进行复习。
 
 ## 快捷键
 

@@ -32,6 +32,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
 			expect(settings.debugMode).toBe(false);
+			expect(settings.reviewSurface).toBe('modal');
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -42,6 +43,16 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
 			expect(settings.debugMode).toBe(true);
+			expect(settings.reviewSurface).toBe('modal');
+		});
+
+		it('should load tab review surface', async () => {
+			mockLoadData.mockResolvedValue({ language: 'en', debugMode: true, reviewSurface: 'tab' });
+
+			await manager.load();
+
+			const settings = manager.get();
+			expect(settings.reviewSurface).toBe('tab');
 		});
 
 		it('should ignore removed legacy settings fields', async () => {
@@ -57,6 +68,7 @@ describe('SettingsManager', () => {
 			expect(settings).toEqual({
 				language: 'zh',
 				debugMode: true,
+				reviewSurface: 'modal',
 			});
 			expect((settings as OBReviewsSettings & { defaultEase?: number }).defaultEase).toBeUndefined();
 		});
@@ -92,6 +104,17 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
 			expect(settings.debugMode).toBe(false); // unchanged
+			expect(settings.reviewSurface).toBe('modal');
+		});
+
+		it('should update review surface', async () => {
+			mockLoadData.mockResolvedValue(null);
+			await manager.load();
+
+			await manager.update({ reviewSurface: 'tab' });
+
+			const settings = manager.get();
+			expect(settings.reviewSurface).toBe('tab');
 		});
 
 		it('should save after update', async () => {
@@ -143,5 +166,6 @@ describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
+		expect(DEFAULT_SETTINGS.reviewSurface).toBe('modal');
 	});
 });

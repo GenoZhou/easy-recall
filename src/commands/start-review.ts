@@ -12,13 +12,13 @@ import type { CommandContext } from './types';
  * 执行全局复习
  */
 export async function executeStartReview(context: CommandContext): Promise<void> {
-	const { app } = context;
+	const { app, plugin } = context;
 	const lang = t();
 	
 	info('Starting global review');
 	
 	try {
-		await openDeckModal(app, app.vault, () => {
+		await openDeckModal(app, app.vault, plugin.settings.reviewSurface, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
 		});
 	} catch (err) {

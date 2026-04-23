@@ -1,10 +1,11 @@
 import { App, SuggestModal, Notice, Vault } from 'obsidian';
 import { Deck, Card } from '../types';
-import { ReviewModal } from './review-modal';
-import { scanVault, groupByDecks, getDueCards, getReviewFiles } from '../deck';
+import { scanVault, groupByDecks, getDueCards } from '../deck';
 import { formatDueDate, isDue } from '../scheduler';
 import { error } from '../utils/';
 import { t } from '../i18n';
+import { ReviewSurface } from '../settings';
+import { openReview } from './open-review';
 
 /**
  * 带统计信息的卡组数据
@@ -26,10 +27,12 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private allCards: Card[] = [];
 	private onReviewComplete?: () => void;
 	private hasDueCards: boolean = false;
+	private reviewSurface: ReviewSurface;
 
-	constructor(app: App, vault: Vault, onReviewComplete?: () => void) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, onReviewComplete?: () => void) {
 		super(app);
 		this.vault = vault;
+		this.reviewSurface = reviewSurface;
 		this.onReviewComplete = onReviewComplete;
 		
 		const lang = t();
@@ -238,7 +241,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		
 		// 延迟打开，避免模态框动画冲突
 		setTimeout(() => {
-			new ReviewModal(this.app, {
+			void openReview(this.app, {
 				cards: cardsToReview,
 				vault: this.vault,
 				onComplete: () => {
@@ -246,7 +249,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 						this.onReviewComplete();
 					}
 				}
-			}).open();
+			}, this.reviewSurface);
 		}, 100);
 	}
 
@@ -265,6 +268,11 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 /**
  * 打开卡组选择器的便捷函数
  */
-export async function openDeckModal(app: App, vault: Vault, onComplete?: () => void): Promise<void> {
-	new DeckSuggestModal(app, vault, onComplete).open();
+export async function openDeckModal(
+	app: App,
+	vault: Vault,
+	reviewSurface: ReviewSurface,
+	onComplete?: () => void
+): Promise<void> {
+	new DeckSuggestModal(app, vault, reviewSurface, onComplete).open();
 }

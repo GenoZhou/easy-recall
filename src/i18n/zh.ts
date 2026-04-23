@@ -85,6 +85,12 @@ export const zh: Translations = {
 			name: '调试模式',
 			desc: '在控制台显示调试日志（需重启生效）。',
 		},
+		reviewSurface: {
+			name: '复习界面',
+			desc: '选择复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
+			modal: '模态窗口',
+			tab: '标签页',
+		},
 		stats: {
 			name: '复习统计',
 			desc: '查看复习摘要和接下来几个复习窗口。',
