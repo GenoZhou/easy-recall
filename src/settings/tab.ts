@@ -121,23 +121,15 @@ export class SettingsTab extends PluginSettingTab {
 			}
 
 			this.renderHighlights(containerEl, [
-				[lang.settings.stats.total, stats.total, `${lang.settings.stats.totalDecks} ${stats.totalDecks}`],
-				[lang.settings.stats.dueNow, stats.dueNow, this.formatPercent(stats.dueNow, stats.total)],
-				[lang.settings.stats.mistakeCards, stats.mistakeCards, this.formatPercent(stats.mistakeCards, stats.total)],
-				[lang.settings.stats.mastery, stats.masteredCards, this.formatPercent(stats.masteredCards, stats.total)],
-				[lang.settings.stats.masteryEstimate, stats.estimatedMasteryDays, lang.settings.stats.days(stats.estimatedMasteryDays)],
-				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
+				[lang.settings.stats.total, stats.total, `${lang.settings.stats.totalDecks} ${stats.totalDecks}`, lang.settings.stats.explanations.total],
+				[lang.settings.stats.dueNow, stats.dueNow, this.formatPercent(stats.dueNow, stats.total), lang.settings.stats.explanations.dueNow],
+				[lang.settings.stats.mistakeCards, stats.mistakeCards, this.formatPercent(stats.mistakeCards, stats.total), lang.settings.stats.explanations.mistakeCards],
+				[lang.settings.stats.mastery, stats.masteredCards, this.formatPercent(stats.masteredCards, stats.total), lang.settings.stats.explanations.mastery],
+				[lang.settings.stats.masteryEstimate, lang.settings.stats.days(stats.estimatedMasteryDays), undefined, lang.settings.stats.explanations.masteryEstimate],
+				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total), lang.settings.stats.explanations.matureCards],
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
-			this.renderTimelineBars(containerEl, [
-				[lang.settings.stats.dueNow, stats.dueNow],
-				[lang.settings.stats.upcoming1d, stats.upcoming1d],
-				[lang.settings.stats.upcoming3d, stats.upcoming3d],
-				[lang.settings.stats.upcoming7d, stats.upcoming7d],
-				[lang.settings.stats.upcoming30d, stats.upcoming30d],
-				[lang.settings.stats.later, stats.later],
-			]);
 			this.renderCompactStatList(containerEl, stats.total, [
 				[lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
 				[lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
@@ -152,32 +144,16 @@ export class SettingsTab extends PluginSettingTab {
 		}
 	}
 
-	private renderHighlights(containerEl: HTMLElement, rows: Array<[string, number, string | undefined]>): void {
+	private renderHighlights(containerEl: HTMLElement, rows: Array<[string, number | string, string | undefined, string]>): void {
 		const gridEl = containerEl.createDiv({ cls: 'obr-settings-stats-grid' });
-		rows.forEach(([label, value, meta]) => {
+		rows.forEach(([label, value, meta, desc]) => {
 			const cardEl = gridEl.createDiv({ cls: 'obr-settings-stat-card' });
 			cardEl.createDiv({ cls: 'obr-settings-stat-label', text: label });
 			cardEl.createDiv({ cls: 'obr-settings-stat-value', text: String(value) });
+			cardEl.createDiv({ cls: 'obr-settings-stat-desc', text: desc });
 			if (meta) {
 				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
 			}
-		});
-	}
-
-	private renderTimelineBars(containerEl: HTMLElement, rows: Array<[string, number]>): void {
-		const maxValue = Math.max(...rows.map(([, value]) => value), 1);
-		const timelineEl = containerEl.createDiv({ cls: 'obr-settings-timeline' });
-
-		rows.forEach(([label, value]) => {
-			const itemEl = timelineEl.createDiv({ cls: 'obr-settings-timeline-item' });
-			itemEl.createDiv({ cls: 'obr-settings-timeline-label', text: label });
-
-			const trackEl = itemEl.createDiv({ cls: 'obr-settings-timeline-track' });
-			const barEl = trackEl.createDiv({ cls: 'obr-settings-timeline-bar' });
-			barEl.style.width = `${Math.max(4, Math.round((value / maxValue) * 100))}%`;
-			barEl.setAttribute('aria-label', `${label}: ${value}`);
-
-			itemEl.createDiv({ cls: 'obr-settings-timeline-value', text: String(value) });
 		});
 	}
 

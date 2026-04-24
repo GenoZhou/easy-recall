@@ -120,6 +120,7 @@ export const zh: Translations = {
 			upcoming30d: '30 天内',
 			later: '更晚',
 			explanations: {
+				total: '所有 ob-reviews 卡组中扫描到的卡片。',
 				matureCards: '复习多次后相对稳定的卡片。',
 				mistakeCards: '最近需要额外关注的卡片。',
 				mastery: '复习间隔已经达到 30 天以上的卡片。',

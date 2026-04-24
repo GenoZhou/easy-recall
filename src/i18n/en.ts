@@ -118,6 +118,7 @@ export const en = {
 			upcoming30d: 'Within 30 days',
 			later: 'Later',
 			explanations: {
+				total: 'All cards found in ob-reviews decks.',
 				matureCards: 'Reviewed multiple times and relatively stable.',
 				mistakeCards: 'Cards that recently need extra attention.',
 				mastery: 'Cards with a review interval of at least 30 days.',
