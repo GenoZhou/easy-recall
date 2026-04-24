@@ -34,6 +34,20 @@ describe('parser', () => {
       const schedule = extractSchedule(text);
       expect(schedule!.interval).toBe(2.5);
     });
+
+    it('should extract compressed review history from SR comment', () => {
+      const text = '<!--SR:2.5,230,2026-02-19T14:19:56.066Z,3;t=5,a=2,h=1,g=2,r=13231,l=2026-02-18T12:00:00.000Z-->';
+      const schedule = extractSchedule(text);
+
+      expect(schedule!.history).toEqual({
+        total: 5,
+        again: 2,
+        hard: 1,
+        good: 2,
+        recent: [1, 3, 2, 3, 1],
+        lastReviewed: new Date('2026-02-18T12:00:00.000Z'),
+      });
+    });
   });
 
   describe('extractFileDeckTag', () => {

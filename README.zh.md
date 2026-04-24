@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.3-blue)
+![Version](https://img.shields.io/badge/version-1.2.4--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -134,6 +134,14 @@ tags:
 ```
 
 格式：`<!--SR:interval,ease,due,reps-->`
+
+新版可能会在同一行注释中追加压缩复习摘要：
+
+```markdown
+<!--SR:1,250,2026-02-18T10:00:00Z,1;t=3,a=1,h=0,g=2,r=133,l=2026-02-17T10:00:00Z-->
+```
+
+这份摘要用于识别易错题和估算掌握时间。旧版 SR 注释仍然支持。
 
 **你的笔记永远属于你**，数据不依赖任何外部服务。
 

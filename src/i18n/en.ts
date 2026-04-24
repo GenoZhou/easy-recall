@@ -64,6 +64,11 @@ export const en = {
 		showHint: 'Show Hint',
 		openSource: 'Open source',
 		hint: 'Hint',
+		mistakeReasons: {
+			consecutiveAgain: 'Frequent mistakes',
+			highErrorRate: 'High miss rate',
+			unstable: 'Unstable',
+		},
 		complete: {
 			title: 'Review Complete',
 			button: 'Done',
@@ -102,6 +107,10 @@ export const en = {
 			total: 'Total cards',
 			totalDecks: 'Decks',
 			matureCards: 'Mature',
+			mistakeCards: 'Frequent mistakes',
+			mastery: 'Mastered',
+			masteryEstimate: 'Estimated mastery',
+			days: (count: number) => `${count} days`,
 			dueNow: 'Due now',
 			upcoming1d: 'Within 1 day',
 			upcoming3d: 'Within 3 days',
@@ -110,6 +119,9 @@ export const en = {
 			later: 'Later',
 			explanations: {
 				matureCards: 'Reviewed multiple times and relatively stable.',
+				mistakeCards: 'Cards that recently need extra attention.',
+				mastery: 'Cards with a review interval of at least 30 days.',
+				masteryEstimate: 'Estimated time until every card reaches a 30-day interval at 30 reviews per day.',
 				dueNow: 'Available to review immediately.',
 				upcoming1d: 'Likely to come back very soon.',
 				upcoming3d: 'Short-term reinforcement window.',

@@ -66,6 +66,11 @@ export const zh: Translations = {
 		showHint: '显示提示',
 		openSource: '打开原文',
 		hint: '提示',
+		mistakeReasons: {
+			consecutiveAgain: '连续答错',
+			highErrorRate: '错误率高',
+			unstable: '长期不稳定',
+		},
 		complete: {
 			title: '复习完成',
 			button: '完成',
@@ -104,6 +109,10 @@ export const zh: Translations = {
 			total: '总卡片数',
 			totalDecks: '总卡组数',
 			matureCards: '成熟卡',
+			mistakeCards: '易错题',
+			mastery: '已掌握',
+			masteryEstimate: '预计掌握',
+			days: (count: number) => `约 ${count} 天`,
 			dueNow: '当前到期',
 			upcoming1d: '1 天内',
 			upcoming3d: '3 天内',
@@ -112,6 +121,9 @@ export const zh: Translations = {
 			later: '更晚',
 			explanations: {
 				matureCards: '复习多次后相对稳定的卡片。',
+				mistakeCards: '最近需要额外关注的卡片。',
+				mastery: '复习间隔已经达到 30 天以上的卡片。',
+				masteryEstimate: '按每天复习 30 张估算，全部卡片达到 30 天间隔所需时间。',
 				dueNow: '现在就可以开始复习。',
 				upcoming1d: '很快会再次出现的卡片。',
 				upcoming3d: '短期巩固窗口内的复习量。',

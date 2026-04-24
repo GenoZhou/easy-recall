@@ -1,7 +1,7 @@
 import { TFile, Vault, App, Notice } from 'obsidian';
 import { Card, Deck } from './types';
 import { parseNote } from './parser';
-import { isDue } from './scheduler';
+import { compareCardsForReview, isDue } from './scheduler';
 import { error } from './utils/';
 
 /**
@@ -100,7 +100,9 @@ export function groupByDecks(cards: Card[]): Deck[] {
  * 筛选出到期的卡片
  */
 export function getDueCards(cards: Card[]): Card[] {
-	return cards.filter(card => isDue(card.schedule));
+	return cards
+		.filter(card => isDue(card.schedule))
+		.sort(compareCardsForReview);
 }
 
 /**

@@ -98,6 +98,11 @@
 	font-size: 0.85em;
 }
 
+.obr-tag-mistake {
+	background-color: var(--background-modifier-error);
+	color: var(--text-error);
+}
+
 /* 标题路径 */
 .obr-heading-path {
 	font-size: 0.85em;

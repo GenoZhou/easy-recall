@@ -1,6 +1,6 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope } from 'obsidian';
 import { Card, Rating } from '../types';
-import { calcSchedule, getNextReviewShortText } from '../scheduler';
+import { calcSchedule, compareCardsForReview, getMistakeProfile, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons } from '../config/constants';
 import { injectSchedule } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
@@ -121,7 +121,8 @@ export class ReviewSession {
 		this.host.contentEl.empty();
 		this.host.buttonsEl.empty();
 
-		if (card.tags.length > 0) {
+		const mistakeReason = getMistakeProfile(card).reason;
+		if (card.tags.length > 0 || mistakeReason) {
 			const tagEl = this.host.contentEl.createDiv({ cls: 'obr-tags' });
 			card.tags.forEach(tag => {
 				tagEl.createSpan({
@@ -129,6 +130,13 @@ export class ReviewSession {
 					cls: 'obr-tag'
 				});
 			});
+
+			if (mistakeReason) {
+				tagEl.createSpan({
+					text: lang.review.mistakeReasons[mistakeReason],
+					cls: 'obr-tag obr-tag-mistake'
+				});
+			}
 		}
 
 		const headingPath = buildHeadingPathLabel(card);
@@ -165,11 +173,7 @@ export class ReviewSession {
 		const now = new Date();
 		return cards
 			.filter(card => !card.schedule || card.schedule.due <= now)
-			.sort((a, b) => {
-				const dueA = a.schedule?.due?.getTime() || 0;
-				const dueB = b.schedule?.due?.getTime() || 0;
-				return dueA - dueB;
-			});
+			.sort(compareCardsForReview);
 	}
 
 	private async handleOpenCardSource(card: Card) {
@@ -267,7 +271,7 @@ export class ReviewSession {
 					return injectSchedule(content, newSchedule, card.lineStart, card.scheduleLine);
 				});
 
-				const isNewScheduleLine = !card.scheduleLine;
+				const isNewScheduleLine = card.scheduleLine === undefined;
 				const lineShift = isNewScheduleLine ? 1 : 0;
 				const originalLineStart = card.lineStart;
 

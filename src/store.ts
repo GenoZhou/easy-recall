@@ -6,7 +6,24 @@ import { Schedule } from './types';
  */
 export function formatSchedule(schedule: Schedule): string {
 	const dueISO = schedule.due.toISOString();
-	return `<!--SR:${schedule.interval},${schedule.ease},${dueISO},${schedule.reps}-->`;
+	const history = schedule.history;
+	if (!history) {
+		return `<!--SR:${schedule.interval},${schedule.ease},${dueISO},${schedule.reps}-->`;
+	}
+
+	const historyParts = [
+		`t=${history.total}`,
+		`a=${history.again}`,
+		`h=${history.hard}`,
+		`g=${history.good}`,
+		`r=${history.recent.join('')}`,
+	];
+
+	if (history.lastReviewed) {
+		historyParts.push(`l=${history.lastReviewed.toISOString()}`);
+	}
+
+	return `<!--SR:${schedule.interval},${schedule.ease},${dueISO},${schedule.reps};${historyParts.join(',')}-->`;
 }
 
 /**
@@ -48,6 +65,6 @@ export function injectSchedule(text: string, schedule: Schedule, lineStart: numb
  * 从文本中移除 SR 注释（用于重置卡片）
  */
 export function removeSchedule(text: string): string {
-	const SR_COMMENT_REGEX = /<!--SR:[\d\.]+,\d+,[^,]+,\d+-->\n?/g;
+	const SR_COMMENT_REGEX = /<!--SR:[\d\.]+,\d+,[^,]+,\d+(?:;[^>]*)?-->\n?/g;
 	return text.replace(SR_COMMENT_REGEX, '');
 }

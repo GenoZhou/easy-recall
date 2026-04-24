@@ -6,6 +6,15 @@
  */
 export type Rating = 1 | 2 | 3;
 
+export interface ReviewHistory {
+	total: number;
+	again: number;
+	hard: number;
+	good: number;
+	recent: Rating[];
+	lastReviewed?: Date;
+}
+
 /**
  * 卡片调度信息
  */
@@ -14,6 +23,7 @@ export interface Schedule {
 	ease: number;      // 初始 250，范围 130-350
 	due: Date;         // 到期时间
 	reps: number;      // 连续记住次数
+	history?: ReviewHistory; // 压缩评分历史，用于易错题识别
 }
 
 /**

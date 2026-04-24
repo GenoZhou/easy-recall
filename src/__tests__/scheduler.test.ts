@@ -1,11 +1,15 @@
 import {
   createInitialSchedule,
   calcSchedule,
+  compareCardsForReview,
+  estimateMasteryWork,
   isDue,
+  getMistakeProfile,
+  isMastered,
   formatDueDate,
   getNextReviewText,
 } from '../scheduler';
-import { Schedule, Rating } from '../types';
+import { Card, Schedule } from '../types';
 
 describe('scheduler', () => {
   const mockNow = new Date('2026-02-18T12:00:00Z');
@@ -38,6 +42,13 @@ describe('scheduler', () => {
       expect(newSchedule.interval).toBe(0);
       expect(newSchedule.reps).toBe(0);
       expect(newSchedule.due).toEqual(mockNow);
+      expect(newSchedule.history).toMatchObject({
+        total: 1,
+        again: 1,
+        hard: 0,
+        good: 0,
+        recent: [1],
+      });
     });
 
     it('should schedule for 6 hours with Hard on first review', () => {
@@ -294,6 +305,158 @@ describe('scheduler', () => {
       const newSchedule = calcSchedule(current, 3);
       
       expect(newSchedule.ease).toBe(350);
+    });
+  });
+
+  describe('review history and mistake profiles', () => {
+    function makeCard(schedule: Schedule): Card {
+      return {
+        id: 'card',
+        type: 'cloze',
+        content: '==answer==',
+        tags: ['test'],
+        filePath: 'test.md',
+        lineStart: 0,
+        lineEnd: 0,
+        schedule,
+      };
+    }
+
+    it('should append ratings to existing compressed history and cap recent ratings', () => {
+      const current: Schedule = {
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        history: {
+          total: 8,
+          again: 1,
+          hard: 2,
+          good: 5,
+          recent: [3, 3, 2, 3, 1, 2, 3, 3],
+          lastReviewed: new Date('2026-02-17T12:00:00Z'),
+        },
+      };
+
+      const newSchedule = calcSchedule(current, 1);
+
+      expect(newSchedule.history).toMatchObject({
+        total: 9,
+        again: 2,
+        hard: 2,
+        good: 5,
+        recent: [3, 2, 3, 1, 2, 3, 3, 1],
+        lastReviewed: mockNow,
+      });
+    });
+
+    it('should classify consecutive Again first', () => {
+      const profile = getMistakeProfile(makeCard({
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        history: {
+          total: 4,
+          again: 2,
+          hard: 0,
+          good: 2,
+          recent: [3, 3, 1, 1],
+        },
+      }));
+
+      expect(profile.reason).toBe('consecutiveAgain');
+      expect(profile.score).toBeGreaterThan(0);
+    });
+
+    it('should classify high miss rate', () => {
+      const profile = getMistakeProfile(makeCard({
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        history: {
+          total: 5,
+          again: 2,
+          hard: 1,
+          good: 2,
+          recent: [1, 3, 2, 3, 1],
+        },
+      }));
+
+      expect(profile.reason).toBe('highErrorRate');
+    });
+
+    it('should classify unstable cards', () => {
+      const profile = getMistakeProfile(makeCard({
+        interval: 2,
+        ease: 210,
+        due: mockNow,
+        reps: 2,
+        history: {
+          total: 5,
+          again: 1,
+          hard: 2,
+          good: 2,
+          recent: [2, 3, 2, 1, 3],
+        },
+      }));
+
+      expect(profile.reason).toBe('unstable');
+    });
+
+    it('should prioritize mistake cards before older ordinary due cards', () => {
+      const ordinary = makeCard({
+        interval: 2,
+        ease: 250,
+        due: new Date('2026-02-17T12:00:00Z'),
+        reps: 2,
+      });
+      ordinary.id = 'ordinary';
+
+      const mistake = makeCard({
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        history: {
+          total: 4,
+          again: 2,
+          hard: 0,
+          good: 2,
+          recent: [3, 3, 1, 1],
+        },
+      });
+      mistake.id = 'mistake';
+
+      expect([ordinary, mistake].sort(compareCardsForReview).map(card => card.id)).toEqual(['mistake', 'ordinary']);
+    });
+
+    it('should estimate mastered cards and remaining work', () => {
+      const mastered = makeCard({
+        interval: 30,
+        ease: 260,
+        due: new Date('2026-03-20T12:00:00Z'),
+        reps: 6,
+        history: {
+          total: 6,
+          again: 0,
+          hard: 1,
+          good: 5,
+          recent: [3, 3, 2, 3, 3, 3],
+        },
+      });
+
+      const learning = makeCard({
+        interval: 4,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+      });
+
+      expect(isMastered(mastered)).toBe(true);
+      expect(estimateMasteryWork(mastered)).toBe(0);
+      expect(estimateMasteryWork(learning)).toBe(3);
     });
   });
 

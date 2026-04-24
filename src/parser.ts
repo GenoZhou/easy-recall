@@ -1,4 +1,4 @@
-import { Card, CardType, Schedule } from './types';
+import { Card, CardType, Rating, ReviewHistory, Schedule } from './types';
 
 // 挖空检测：==内容==
 const CLOZE_REGEX = /==([^=]+)==/g;
@@ -6,14 +6,52 @@ const CLOZE_REGEX = /==([^=]+)==/g;
 // 标签检测：#ob-reviews/xxxx 格式（支持中文和Unicode字符）
 const DECK_TAG_REGEX = /#ob-reviews\/([^\s#]+)/;
 
-// SR 注释格式：<!--SR:interval,ease,due,reps-->
-const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)-->/;
+// SR 注释格式：<!--SR:interval,ease,due,reps[;history]-->
+const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)(?:;([^>]*))?-->/;
 
 // Hint callout 检测：> [!hint]
 const HINT_CALLOUT_REGEX = /^> \[!hint\]/i;
 
 // 标题检测：# 标题 到 ###### 标题
 const HEADING_REGEX = /^(#{1,6})\s+(.+)$/;
+
+function parseHistory(raw: string | undefined): ReviewHistory | undefined {
+	if (!raw) return undefined;
+
+	const values = new Map<string, string>();
+	raw.split(',').forEach(part => {
+		const [key, value] = part.split('=');
+		if (key && value !== undefined) {
+			values.set(key.trim(), value.trim());
+		}
+	});
+
+	const total = parseInt(values.get('t') ?? '', 10);
+	const again = parseInt(values.get('a') ?? '', 10);
+	const hard = parseInt(values.get('h') ?? '', 10);
+	const good = parseInt(values.get('g') ?? '', 10);
+
+	if ([total, again, hard, good].some(value => isNaN(value))) {
+		return undefined;
+	}
+
+	const recent = (values.get('r') ?? '')
+		.split('')
+		.map(value => parseInt(value, 10))
+		.filter((value): value is Rating => value === 1 || value === 2 || value === 3);
+
+	const lastReviewedValue = values.get('l');
+	const lastReviewed = lastReviewedValue ? new Date(lastReviewedValue) : undefined;
+
+	return {
+		total,
+		again,
+		hard,
+		good,
+		recent,
+		lastReviewed: lastReviewed && !isNaN(lastReviewed.getTime()) ? lastReviewed : undefined,
+	};
+}
 
 /**
  * 从文本中提取调度信息
@@ -40,7 +78,8 @@ export function extractSchedule(text: string): Schedule | null {
 		return null;
 	}
 
-	return { interval, ease, due, reps };
+	const history = parseHistory(match[5]);
+	return history ? { interval, ease, due, reps, history } : { interval, ease, due, reps };
 }
 
 /**

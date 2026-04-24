@@ -261,5 +261,51 @@ describe('deck', () => {
       expect(dueCards.map(c => c.id)).toContain('3');
       expect(dueCards.map(c => c.id)).not.toContain('2');
     });
+
+    it('should prioritize due mistake cards', () => {
+      const cards: Card[] = [
+        {
+          id: 'ordinary',
+          type: 'cloze',
+          content: 'Due yesterday',
+          tags: ['test'],
+          filePath: 'test.md',
+          lineStart: 0,
+          lineEnd: 0,
+          schedule: {
+            interval: 1,
+            ease: 250,
+            due: new Date('2026-02-17T12:00:00Z'),
+            reps: 2,
+          },
+        },
+        {
+          id: 'mistake',
+          type: 'cloze',
+          content: 'Due now',
+          tags: ['test'],
+          filePath: 'test.md',
+          lineStart: 1,
+          lineEnd: 1,
+          schedule: {
+            interval: 1,
+            ease: 250,
+            due: mockNow,
+            reps: 2,
+            history: {
+              total: 4,
+              again: 2,
+              hard: 0,
+              good: 2,
+              recent: [3, 3, 1, 1],
+            },
+          },
+        },
+      ];
+
+      const dueCards = getDueCards(cards);
+
+      expect(dueCards.map(card => card.id)).toEqual(['mistake', 'ordinary']);
+    });
   });
 });

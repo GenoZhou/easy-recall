@@ -1,4 +1,4 @@
-import { Schedule, Rating } from './types';
+import { Card, Schedule, Rating, ReviewHistory } from './types';
 import { t } from './i18n';
 
 // SM-2 算法参数
@@ -8,6 +8,16 @@ export const MAX_EASE = 350;
 export const MAX_INTERVAL = 365;
 export const MATURE_REPS = 2;
 export const MATURE_AGAIN_INTERVAL_FACTOR = 0.25;
+export const RECENT_RATING_LIMIT = 8;
+export const MASTERY_INTERVAL_DAYS = 30;
+export const DAILY_REVIEW_CAPACITY = 30;
+
+export type MistakeReason = 'consecutiveAgain' | 'highErrorRate' | 'unstable';
+
+export interface MistakeProfile {
+	score: number;
+	reason?: MistakeReason;
+}
 
 // 新卡片首次复习的间隔（天）
 const NEW_CARD_INTERVALS: Record<Rating, number> = {
@@ -35,6 +45,25 @@ function createDueDate(intervalDays: number, now: Date = new Date()): Date {
 		due.setDate(due.getDate() + Math.round(intervalDays));
 	}
 	return due;
+}
+
+function updateReviewHistory(history: ReviewHistory | undefined, rating: Rating, now: Date): ReviewHistory {
+	const current: ReviewHistory = history ?? {
+		total: 0,
+		again: 0,
+		hard: 0,
+		good: 0,
+		recent: [],
+	};
+
+	return {
+		total: current.total + 1,
+		again: current.again + (rating === 1 ? 1 : 0),
+		hard: current.hard + (rating === 2 ? 1 : 0),
+		good: current.good + (rating === 3 ? 1 : 0),
+		recent: [...current.recent, rating].slice(-RECENT_RATING_LIMIT),
+		lastReviewed: now,
+	};
 }
 
 /**
@@ -65,6 +94,7 @@ function calcNewCardSchedule(rating: Rating, ease: number = INITIAL_EASE): Sched
 		ease: newEase,
 		due,
 		reps: rating === 1 ? 0 : 1,
+		history: updateReviewHistory(undefined, rating, now),
 	};
 }
 
@@ -97,6 +127,7 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
 		ease: newEase,
 		due,
 		reps: rating === 1 ? current.reps : current.reps + 1,
+		history: updateReviewHistory(current.history, rating, now),
 	};
 }
 
@@ -108,7 +139,11 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
 export function calcSchedule(current: Schedule | null, rating: Rating): Schedule {
 	if (!current || current.reps === 0) {
 		// 新卡片或已被打回学习阶段的卡片
-		return calcNewCardSchedule(rating, current?.ease);
+		const schedule = calcNewCardSchedule(rating, current?.ease);
+		if (current?.history) {
+			schedule.history = updateReviewHistory(current.history, rating, new Date());
+		}
+		return schedule;
 	}
 
 	if (rating === 1 && current.reps < MATURE_REPS) {
@@ -116,6 +151,80 @@ export function calcSchedule(current: Schedule | null, rating: Rating): Schedule
 		return calcNewCardSchedule(rating, current?.ease);
 	}
 	return calcExistingCardSchedule(current, rating);
+}
+
+export function getMistakeProfile(card: Card): MistakeProfile {
+	const history = card.schedule?.history;
+	if (!history || history.total === 0) {
+		return { score: 0 };
+	}
+
+	const recent = history.recent;
+	const endsWithConsecutiveAgain = recent.length >= 2
+		&& recent[recent.length - 1] === 1
+		&& recent[recent.length - 2] === 1;
+	const againRate = history.again / history.total;
+	const difficultRate = (history.again + history.hard) / history.total;
+
+	let reason: MistakeReason | undefined;
+	if (endsWithConsecutiveAgain) {
+		reason = 'consecutiveAgain';
+	} else if (history.total >= 3 && againRate >= 0.4) {
+		reason = 'highErrorRate';
+	} else if (history.total >= 4 && (difficultRate >= 0.6 || card.schedule!.ease <= 200)) {
+		reason = 'unstable';
+	}
+
+	const recentPenalty = recent.slice(-3).reduce((sum, rating) => {
+		if (rating === 1) return sum + 5;
+		if (rating === 2) return sum + 2;
+		return sum;
+	}, 0);
+
+	const score = history.again * 3
+		+ history.hard
+		+ recentPenalty
+		+ (card.schedule!.ease <= 200 ? 3 : 0);
+
+	return { score: reason ? Math.max(score, 1) : 0, reason };
+}
+
+export function compareCardsForReview(a: Card, b: Card): number {
+	const profileA = getMistakeProfile(a);
+	const profileB = getMistakeProfile(b);
+
+	if (profileA.score !== profileB.score) {
+		return profileB.score - profileA.score;
+	}
+
+	const dueA = a.schedule?.due?.getTime() || 0;
+	const dueB = b.schedule?.due?.getTime() || 0;
+	return dueA - dueB;
+}
+
+export function isMastered(card: Card): boolean {
+	const schedule = card.schedule;
+	if (!schedule || schedule.interval < MASTERY_INTERVAL_DAYS) {
+		return false;
+	}
+
+	const recent = schedule.history?.recent;
+	return !recent?.length || recent[recent.length - 1] !== 1;
+}
+
+export function estimateMasteryWork(card: Card): number {
+	if (isMastered(card)) {
+		return 0;
+	}
+
+	if (!card.schedule) {
+		return 3;
+	}
+
+	const interval = Math.max(card.schedule.interval, 1);
+	const baseWork = Math.max(1, Math.ceil(Math.log2(MASTERY_INTERVAL_DAYS / interval)));
+	const multiplier = getMistakeProfile(card).reason ? 1.5 : 1;
+	return Math.ceil(baseWork * multiplier);
 }
 
 /**

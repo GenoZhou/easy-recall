@@ -113,6 +113,9 @@ describe('calculateReviewStats', () => {
 
     expect(stats.total).toBe(7);
     expect(stats.matureCards).toBe(4);
+    expect(stats.mistakeCards).toBe(0);
+    expect(stats.masteredCards).toBe(2);
+    expect(stats.estimatedMasteryDays).toBe(1);
     expect(stats.dueNow).toBe(2);
     expect(stats.upcoming1d).toBe(1);
     expect(stats.upcoming3d).toBe(1);
@@ -120,5 +123,38 @@ describe('calculateReviewStats', () => {
     expect(stats.upcoming30d).toBe(1);
     expect(stats.later).toBe(1);
     expect(stats.totalDecks).toBe(1);
+  });
+
+  it('should count mistake cards in stats', () => {
+    const cards: Card[] = [
+      {
+        id: 'mistake',
+        type: 'cloze',
+        content: '==答案==',
+        tags: ['test'],
+        filePath: 'mistake.md',
+        lineStart: 0,
+        lineEnd: 0,
+        schedule: {
+          interval: 1,
+          ease: 230,
+          due: now,
+          reps: 2,
+          history: {
+            total: 4,
+            again: 2,
+            hard: 0,
+            good: 2,
+            recent: [3, 3, 1, 1],
+          },
+        },
+      },
+    ];
+
+    const stats = calculateReviewStats(cards, now);
+
+    expect(stats.mistakeCards).toBe(1);
+    expect(stats.masteredCards).toBe(0);
+    expect(stats.estimatedMasteryDays).toBe(1);
   });
 });

@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.3-blue)
+![Version](https://img.shields.io/badge/version-1.2.4--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -134,6 +134,14 @@ Traditional Chinese Medicine studies ==human life movement==.
 ```
 
 Format: `<!--SR:interval,ease,due,reps-->`
+
+Newer versions may append a compact review summary to the same comment:
+
+```markdown
+<!--SR:1,250,2026-02-18T10:00:00Z,1;t=3,a=1,h=0,g=2,r=133,l=2026-02-17T10:00:00Z-->
+```
+
+This summary helps identify frequent-mistake cards and estimate mastery time. Older SR comments remain supported.
 
 **Your notes always belong to you**, data does not depend on any external service.
 

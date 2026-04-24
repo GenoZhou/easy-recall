@@ -30,6 +30,26 @@ describe('store', () => {
       const formatted = formatSchedule(schedule);
       expect(formatted).toBe('<!--SR:2.5,250,2026-02-21T14:19:56.066Z,3-->');
     });
+
+    it('should format compressed review history when present', () => {
+      const schedule: Schedule = {
+        interval: 2.5,
+        ease: 230,
+        due: new Date('2026-02-21T14:19:56.066Z'),
+        reps: 3,
+        history: {
+          total: 5,
+          again: 2,
+          hard: 1,
+          good: 2,
+          recent: [1, 3, 2, 3, 1],
+          lastReviewed: new Date('2026-02-18T12:00:00.000Z'),
+        },
+      };
+
+      const formatted = formatSchedule(schedule);
+      expect(formatted).toBe('<!--SR:2.5,230,2026-02-21T14:19:56.066Z,3;t=5,a=2,h=1,g=2,r=13231,l=2026-02-18T12:00:00.000Z-->');
+    });
   });
 
   describe('injectSchedule - replacing existing', () => {
@@ -197,6 +217,15 @@ describe('store', () => {
       
       const result = removeSchedule(text);
       
+      expect(result).not.toContain('<!--SR:');
+      expect(result.trim()).toBe('答案');
+    });
+
+    it('should remove SR comments with compressed review history', () => {
+      const text = `答案\n<!--SR:1,250,2026-02-19T14:19:56.066Z,1;t=2,a=1,h=0,g=1,r=13-->\n`;
+
+      const result = removeSchedule(text);
+
       expect(result).not.toContain('<!--SR:');
       expect(result.trim()).toBe('答案');
     });

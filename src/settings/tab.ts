@@ -123,6 +123,9 @@ export class SettingsTab extends PluginSettingTab {
 			this.renderHighlights(containerEl, [
 				[lang.settings.stats.total, stats.total, `${lang.settings.stats.totalDecks} ${stats.totalDecks}`],
 				[lang.settings.stats.dueNow, stats.dueNow, this.formatPercent(stats.dueNow, stats.total)],
+				[lang.settings.stats.mistakeCards, stats.mistakeCards, this.formatPercent(stats.mistakeCards, stats.total)],
+				[lang.settings.stats.mastery, stats.masteredCards, this.formatPercent(stats.masteredCards, stats.total)],
+				[lang.settings.stats.masteryEstimate, stats.estimatedMasteryDays, lang.settings.stats.days(stats.estimatedMasteryDays)],
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 

@@ -1,9 +1,13 @@
 import { Card } from '../types';
+import { estimateMasteryWork, getMistakeProfile, isMastered, DAILY_REVIEW_CAPACITY } from '../scheduler';
 
 export interface ReviewStats {
 	total: number;
 	totalDecks: number;
 	matureCards: number;
+	mistakeCards: number;
+	masteredCards: number;
+	estimatedMasteryDays: number;
 	dueNow: number;
 	upcoming1d: number;
 	upcoming3d: number;
@@ -17,6 +21,9 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		total: cards.length,
 		totalDecks: 0,
 		matureCards: 0,
+		mistakeCards: 0,
+		masteredCards: 0,
+		estimatedMasteryDays: 0,
 		dueNow: 0,
 		upcoming1d: 0,
 		upcoming3d: 0,
@@ -25,10 +32,12 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		later: 0,
 	};
 	const deckSet = new Set<string>();
+	let masteryWork = 0;
 
 	for (const card of cards) {
 		const primaryDeck = card.tags[0] ?? 'default';
 		deckSet.add(primaryDeck);
+		masteryWork += estimateMasteryWork(card);
 
 		if (!card.schedule) {
 			stats.dueNow++;
@@ -37,6 +46,14 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 
 		if (card.schedule.reps > 1) {
 			stats.matureCards++;
+		}
+
+		if (getMistakeProfile(card).reason) {
+			stats.mistakeCards++;
+		}
+
+		if (isMastered(card)) {
+			stats.masteredCards++;
 		}
 
 		if (card.schedule.due <= now) {
@@ -61,6 +78,7 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 	}
 
 	stats.totalDecks = deckSet.size;
+	stats.estimatedMasteryDays = Math.ceil(masteryWork / DAILY_REVIEW_CAPACITY);
 
 	return stats;
 }
