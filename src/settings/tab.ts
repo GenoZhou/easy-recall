@@ -130,6 +130,14 @@ export class SettingsTab extends PluginSettingTab {
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
+			this.renderTimelineBars(containerEl, [
+				[lang.settings.stats.dueNow, stats.dueNow],
+				[lang.settings.stats.upcoming1d, stats.upcoming1d],
+				[lang.settings.stats.upcoming3d, stats.upcoming3d],
+				[lang.settings.stats.upcoming7d, stats.upcoming7d],
+				[lang.settings.stats.upcoming30d, stats.upcoming30d],
+				[lang.settings.stats.later, stats.later],
+			]);
 			this.renderCompactStatList(containerEl, stats.total, [
 				[lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
 				[lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
@@ -153,6 +161,23 @@ export class SettingsTab extends PluginSettingTab {
 			if (meta) {
 				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
 			}
+		});
+	}
+
+	private renderTimelineBars(containerEl: HTMLElement, rows: Array<[string, number]>): void {
+		const maxValue = Math.max(...rows.map(([, value]) => value), 1);
+		const timelineEl = containerEl.createDiv({ cls: 'obr-settings-timeline' });
+
+		rows.forEach(([label, value]) => {
+			const itemEl = timelineEl.createDiv({ cls: 'obr-settings-timeline-item' });
+			itemEl.createDiv({ cls: 'obr-settings-timeline-label', text: label });
+
+			const trackEl = itemEl.createDiv({ cls: 'obr-settings-timeline-track' });
+			const barEl = trackEl.createDiv({ cls: 'obr-settings-timeline-bar' });
+			barEl.style.width = `${Math.max(4, Math.round((value / maxValue) * 100))}%`;
+			barEl.setAttribute('aria-label', `${label}: ${value}`);
+
+			itemEl.createDiv({ cls: 'obr-settings-timeline-value', text: String(value) });
 		});
 	}
 

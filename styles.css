@@ -740,6 +740,55 @@
 	color: var(--text-accent);
 }
 
+.obr-settings-timeline {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 8px 0 18px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.obr-settings-timeline-item {
+	display: grid;
+	grid-template-columns: minmax(92px, 120px) minmax(80px, 1fr) 36px;
+	align-items: center;
+	gap: 10px;
+	min-height: 24px;
+}
+
+.obr-settings-timeline-label {
+	font-size: 0.86em;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.obr-settings-timeline-track {
+	position: relative;
+	height: 10px;
+	background-color: var(--background-modifier-border);
+	border-radius: 5px;
+	overflow: hidden;
+}
+
+.obr-settings-timeline-bar {
+	height: 100%;
+	min-width: 4px;
+	background-color: var(--interactive-accent);
+	border-radius: 5px;
+}
+
+.obr-settings-timeline-value {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	font-size: 0.9em;
+	color: var(--text-normal);
+}
+
 .obr-settings-compact-list {
 	display: flex;
 	flex-direction: column;
@@ -791,6 +840,11 @@
 }
 
 @media (max-width: 640px) {
+	.obr-settings-timeline-item {
+		grid-template-columns: minmax(72px, 96px) minmax(72px, 1fr) 28px;
+		gap: 8px;
+	}
+
 	.obr-settings-compact-row {
 		flex-direction: column;
 		align-items: flex-start;
