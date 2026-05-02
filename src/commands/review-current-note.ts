@@ -1,17 +1,17 @@
 /**
- * 复习当前笔记命令
+ * 复习当前笔记内到期卡片命令
  */
 
 import { TFile, Notice, Platform } from 'obsidian';
 import { getDueCardsFromFile } from '../deck';
 import { t } from '../i18n';
 import { info } from '../utils/';
-import type { CommandContext, FileCheckCallback } from './types';
+import type { CommandContext } from './types';
 import { openReview } from '../ui/open-review';
 import { getActiveReviewSurface } from '../settings';
 
 /**
- * 执行当前笔记复习
+ * 执行当前笔记内到期卡片复习
  */
 export async function executeReviewCurrentNote(
 	context: CommandContext,
@@ -20,7 +20,7 @@ export async function executeReviewCurrentNote(
 	const { app, plugin } = context;
 	const lang = t();
 	
-	info('Starting file review:', file.path);
+	info('Starting due-card review for current note:', file.path);
 	
 	try {
 		const dueCards = await getDueCardsFromFile(app.vault, file);

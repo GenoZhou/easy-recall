@@ -14,7 +14,7 @@ export const zh: Translations = {
 	// 命令
 	commands: {
 		startReview: '开始复习',
-		reviewCurrentNote: '复习当前笔记',
+		reviewCurrentNote: '复习当前笔记内到期卡片',
 	},
 
 	// 通知
