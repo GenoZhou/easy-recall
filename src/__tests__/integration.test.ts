@@ -68,6 +68,7 @@ tags:
       // Review with Again (没记住)
       let newSchedule = calcSchedule(cards[0].schedule ?? null, 1);
       expect(newSchedule.interval).toBe(0); // 立即重新复习
+      expect(newSchedule.ease).toBe(250); // 新卡首次记住前不降低 ease
       expect(newSchedule.reps).toBe(0); // Not counted as successful
 
       noteContent = injectSchedule(
@@ -81,6 +82,7 @@ tags:
       
       // Card is set for immediate review
       expect(cards[0].schedule!.interval).toBe(0);
+      expect(cards[0].schedule!.ease).toBe(250);
       expect(cards[0].schedule!.reps).toBe(0);
     });
   });
@@ -164,6 +166,23 @@ tags:
   });
 
   describe('Flow 4: New card learning phase', () => {
+    it('should preserve ease across repeated Again ratings before first success', () => {
+      let schedule = calcSchedule(null, 1);
+      expect(schedule.interval).toBe(0);
+      expect(schedule.reps).toBe(0);
+      expect(schedule.ease).toBe(250);
+
+      schedule = calcSchedule(schedule, 1);
+      expect(schedule.interval).toBe(0);
+      expect(schedule.reps).toBe(0);
+      expect(schedule.ease).toBe(250);
+
+      schedule = calcSchedule(schedule, 1);
+      expect(schedule.interval).toBe(0);
+      expect(schedule.reps).toBe(0);
+      expect(schedule.ease).toBe(250);
+    });
+
     it('should progress through learning with different ratings', () => {
       // First review
       let schedule = calcSchedule(null, 3); // Good
