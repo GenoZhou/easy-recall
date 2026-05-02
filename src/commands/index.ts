@@ -27,7 +27,7 @@ export function registerCommands(plugin: OBReviewsPlugin): void {
 		icon: 'ob-reviews',
 	});
 	
-	// 注册：复习当前笔记
+	// 注册：复习当前笔记内到期卡片
 	const reviewCurrentCmd = getReviewCurrentNoteCommand(context);
 	plugin.addCommand({
 		id: reviewCurrentCmd.id,

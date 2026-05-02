@@ -12,7 +12,7 @@ export const en = {
 	// Commands
 	commands: {
 		startReview: 'Start Review',
-		reviewCurrentNote: 'Review Current Note',
+		reviewCurrentNote: 'Review Due Cards in Current Note',
 	},
 
 	// Notifications

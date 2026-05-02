@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
@@ -45,6 +45,11 @@ jobs:
           if [[ "$tag" =~ -(alpha|beta) ]] || [[ "$tag" =~ (alpha|beta)[0-9] ]]; then
             prerelease_flag="--prerelease"
             echo "Detected pre-release version: $tag"
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; skipping release creation."
+            exit 0
           fi
 
           # 创建发布

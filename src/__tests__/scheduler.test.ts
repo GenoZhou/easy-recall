@@ -36,14 +36,27 @@ describe('scheduler', () => {
       
       // 没记住: interval=0, due=now
       expect(newSchedule.interval).toBe(0);
+      expect(newSchedule.ease).toBe(250);
       expect(newSchedule.reps).toBe(0);
       expect(newSchedule.due).toEqual(mockNow);
+    });
+
+    it('should preserve ease across repeated Again ratings before first success', () => {
+      let schedule = calcSchedule(null, 1);
+      schedule = calcSchedule(schedule, 1);
+      schedule = calcSchedule(schedule, 1);
+
+      expect(schedule.interval).toBe(0);
+      expect(schedule.ease).toBe(250);
+      expect(schedule.reps).toBe(0);
+      expect(schedule.due).toEqual(mockNow);
     });
 
     it('should schedule for 6 hours with Hard on first review', () => {
       const newSchedule = calcSchedule(null, 2);
       
       expect(newSchedule.interval).toBe(0.25);
+      expect(newSchedule.ease).toBe(235);
       expect(newSchedule.reps).toBe(1);
       
       const diffMs = newSchedule.due.getTime() - mockNow.getTime();
@@ -55,6 +68,7 @@ describe('scheduler', () => {
       const newSchedule = calcSchedule(null, 3);
       
       expect(newSchedule.interval).toBe(1);
+      expect(newSchedule.ease).toBe(255);
       expect(newSchedule.reps).toBe(1);
       
       const expectedDue = new Date(mockNow);

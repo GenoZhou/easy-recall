@@ -53,11 +53,16 @@ export function createInitialSchedule(): Schedule {
 /**
  * 计算新卡片的调度
  */
-function calcNewCardSchedule(rating: Rating, ease: number = INITIAL_EASE): Schedule {
+function calcNewCardSchedule(
+	rating: Rating,
+	ease: number = INITIAL_EASE,
+	applyEaseDelta: boolean = true
+): Schedule {
 	const now = new Date();
 	// 新卡片使用对应评分的间隔
 	const intervalDays = NEW_CARD_INTERVALS[rating];
-	const newEase = clampEase(ease + EASE_DELTAS[rating]);
+	const easeDelta = applyEaseDelta ? EASE_DELTAS[rating] : 0;
+	const newEase = clampEase(ease + easeDelta);
 	const due = createDueDate(intervalDays, now);
 	
 	return {
@@ -108,7 +113,7 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
 export function calcSchedule(current: Schedule | null, rating: Rating): Schedule {
 	if (!current || current.reps === 0) {
 		// 新卡片或已被打回学习阶段的卡片
-		return calcNewCardSchedule(rating, current?.ease);
+		return calcNewCardSchedule(rating, current?.ease, rating !== 1);
 	}
 
 	if (rating === 1 && current.reps < MATURE_REPS) {

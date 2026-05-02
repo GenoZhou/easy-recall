@@ -36,13 +36,15 @@ Options:
   --version <version>   Use an explicit prerelease version, e.g. 1.2.3-beta.2
   --base <type>         Base bump when starting a new prerelease: major, minor, patch
   --preid <id>          Prerelease identifier, default: beta
-  --publish             Commit, tag, push, and create/update GitHub prerelease
+  --publish             Commit, tag, push, and create a GitHub prerelease
+  --remote <name>       Git remote to inspect and push, default: origin
   --help                Show this help
 
 Default behavior:
-  - If current version is 1.2.3-beta.1, next is 1.2.3-beta.2.
-  - If current version is 1.2.2, next is 1.2.3-beta.1.
+  - The next prerelease number is chosen from local and remote tags.
+  - If current version is 1.2.2 and origin has 1.2.3-beta.3, next is 1.2.3-beta.4.
   - Without --publish, only files are updated and npm run prepublish is executed.
+  - With --publish, the script re-checks that the tag and GitHub release do not exist before pushing.
 `);
 }
 
@@ -55,10 +57,7 @@ const explicitVersion = readArg("--version");
 const explicitBase = readArg("--base");
 const preid = readArg("--preid") || "beta";
 const shouldPublish = hasFlag("--publish");
-
-if (explicitBase && !["major", "minor", "patch"].includes(explicitBase)) {
-  fail(`Invalid --base "${explicitBase}". Expected major, minor, or patch.`);
-}
+const remoteName = readArg("--remote") || "origin";
 
 const files = {
   manifest: path.join(rootDir, "manifest.json"),
@@ -68,38 +67,72 @@ const files = {
   readmeZh: path.join(rootDir, "README.zh.md"),
 };
 
-const manifest = readJson(files.manifest);
-const packageJson = readJson(files.packageJson);
-
-if (manifest.version !== packageJson.version) {
-  fail(`Version mismatch: manifest.json (${manifest.version}) vs package.json (${packageJson.version})`);
+if (explicitBase && !["major", "minor", "patch"].includes(explicitBase)) {
+  fail(`Invalid --base "${explicitBase}". Expected major, minor, or patch.`);
 }
 
-const currentVersion = manifest.version;
-const nextVersion = explicitVersion || getNextPrereleaseVersion(currentVersion, preid, explicitBase);
-validatePrereleaseVersion(nextVersion);
+await main();
 
-updateVersions(nextVersion);
-run("npm", ["run", "prepublish"]);
+async function main() {
+  const manifest = readJson(files.manifest);
+  const packageJson = readJson(files.packageJson);
 
-console.log(`\nPrepared prerelease ${nextVersion}`);
+  if (manifest.version !== packageJson.version) {
+    fail(`Version mismatch: manifest.json (${manifest.version}) vs package.json (${packageJson.version})`);
+  }
 
-if (shouldPublish) {
-  publish(nextVersion);
+  const currentVersion = manifest.version;
+  const nextVersion = explicitVersion || getNextPrereleaseVersion(currentVersion, preid, explicitBase);
+  validatePrereleaseVersion(nextVersion);
+  ensureVersionAvailable(nextVersion);
+
+  updateVersions(manifest, packageJson, nextVersion);
+  run("npm", ["run", "prepublish"]);
+
+  console.log(`\nPrepared prerelease ${nextVersion}`);
+
+  if (shouldPublish) {
+    await publish(nextVersion);
+  }
 }
 
 function getNextPrereleaseVersion(version, id, baseType) {
   const parsed = parseVersion(version);
+  const base = getPrereleaseBase(parsed, baseType);
+  const localMax = getMaxPrereleaseTagNumber(
+    commandOutput("git", ["tag", "--list", `${base.major}.${base.minor}.${base.patch}-${id}.*`]),
+    base,
+    id
+  );
+  const remoteMax = getMaxPrereleaseTagNumber(
+    remoteTagOutput(`${base.major}.${base.minor}.${base.patch}-${id}.*`),
+    base,
+    id
+  );
+  const nextNumber = Math.max(localMax, remoteMax) + 1;
 
-  if (!baseType && parsed.prerelease) {
-    const prereleaseMatch = parsed.prerelease.match(new RegExp(`^${escapeRegExp(id)}\\.(\\d+)$`));
-    if (prereleaseMatch) {
-      return `${parsed.major}.${parsed.minor}.${parsed.patch}-${id}.${Number(prereleaseMatch[1]) + 1}`;
-    }
+  return `${base.major}.${base.minor}.${base.patch}-${id}.${nextNumber}`;
+}
+
+function getPrereleaseBase(version, baseType) {
+  if (!baseType && version.prerelease) {
+    return { major: version.major, minor: version.minor, patch: version.patch };
   }
+  return bumpBase(version, baseType || "patch");
+}
 
-  const next = bumpBase(parsed, baseType || "patch");
-  return `${next.major}.${next.minor}.${next.patch}-${id}.1`;
+function getMaxPrereleaseTagNumber(tagOutput, base, id) {
+  if (!tagOutput) return 0;
+
+  const tagPattern = new RegExp(
+    `(?:refs/tags/)?${base.major}\\.${base.minor}\\.${base.patch}-${escapeRegExp(id)}\\.(\\d+)$`
+  );
+  return tagOutput
+    .split(/\r?\n/)
+    .map((line) => line.trim().match(tagPattern)?.[1])
+    .filter(Boolean)
+    .map(Number)
+    .reduce((max, value) => Math.max(max, value), 0);
 }
 
 function parseVersion(version) {
@@ -135,7 +168,21 @@ function validatePrereleaseVersion(version) {
   }
 }
 
-function updateVersions(version) {
+function ensureVersionAvailable(version) {
+  if (commandOutput("git", ["tag", "--list", version])) {
+    fail(`Local tag ${version} already exists.`);
+  }
+
+  if (remoteTagOutput(version)) {
+    fail(`Remote tag ${version} already exists on ${remoteName}.`);
+  }
+
+  if (githubReleaseExists(version)) {
+    fail(`GitHub release ${version} already exists.`);
+  }
+}
+
+function updateVersions(manifest, packageJson, version) {
   manifest.version = version;
   packageJson.version = version;
   writeJson(files.manifest, manifest);
@@ -166,7 +213,7 @@ function updateReadmeBadge(filePath, version) {
   fs.writeFileSync(filePath, next);
 }
 
-function publish(version) {
+async function publish(version) {
   const branch = commandOutput("git", ["branch", "--show-current"]);
   if (!branch) {
     fail("Could not determine current git branch.");
@@ -180,28 +227,32 @@ function publish(version) {
     console.log("No staged changes to commit.");
   }
 
-  run("git", ["tag", version]);
-  run("git", ["push", "origin", branch, version]);
+  ensureVersionAvailable(version);
+  printPublishSummary(version, branch);
 
-  const releaseExists = commandStatus("gh", ["release", "view", version]) === 0;
-  if (releaseExists) {
-    run("gh", ["release", "edit", version, "--title", `Release ${version}`, "--prerelease", "--draft=false"]);
-    run("gh", ["release", "upload", version, "main.js", "manifest.json", "styles.css", "--clobber"]);
-  } else {
-    run("gh", [
-      "release",
-      "create",
-      version,
-      "main.js",
-      "manifest.json",
-      "styles.css",
-      "--title",
-      `Release ${version}`,
-      "--notes",
-      releaseNotes(version),
-      "--prerelease",
-    ]);
-  }
+  run("git", ["tag", version]);
+  run("git", ["push", remoteName, branch, version]);
+
+  run("gh", [
+    "release",
+    "create",
+    version,
+    "main.js",
+    "manifest.json",
+    "styles.css",
+    "--title",
+    `Release ${version}`,
+    "--notes",
+    releaseNotes(version),
+    "--prerelease",
+  ]);
+}
+
+function printPublishSummary(version, branch) {
+  console.log(`\nReady to publish prerelease ${version}`);
+  console.log(`Remote: ${remoteName}`);
+  console.log(`Branch: ${branch}`);
+  console.log("This will push the branch and tag, then create a GitHub prerelease.");
 }
 
 function releaseNotes(version) {
@@ -230,12 +281,38 @@ function commandOutput(command, commandArgs) {
   return result.stdout.trim();
 }
 
-function commandStatus(command, commandArgs) {
+function githubReleaseExists(version) {
+  const result = spawnSync("gh", ["release", "view", version], {
+    cwd: rootDir,
+    encoding: "utf-8",
+  });
+  if (result.status === 0) {
+    return true;
+  }
+
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.toLowerCase();
+  if (output.includes("release not found") || output.includes("not found")) {
+    return false;
+  }
+
+  const details = result.stderr?.trim() || result.stdout?.trim() || `gh exited with status ${result.status}`;
+  fail(`Could not check GitHub release ${version}.\n${details}`);
+}
+
+function remoteTagOutput(pattern) {
+  return commandOutputStrict("git", ["ls-remote", "--tags", remoteName, `refs/tags/${pattern}`]);
+}
+
+function commandOutputStrict(command, commandArgs) {
   const result = spawnSync(command, commandArgs, {
     cwd: rootDir,
-    stdio: "ignore",
+    encoding: "utf-8",
   });
-  return result.status ?? 1;
+  if (result.status !== 0) {
+    const details = result.stderr?.trim() || result.stdout?.trim() || `${command} exited with status ${result.status}`;
+    fail(`Command failed: ${[command, ...commandArgs].join(" ")}\n${details}`);
+  }
+  return result.stdout.trim();
 }
 
 function run(command, commandArgs) {

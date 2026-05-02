@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.3-blue)
+![Version](https://img.shields.io/badge/version-1.2.4--beta.6-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -112,6 +112,8 @@ Card content...
    - **1 - Again** (🔴): Put back to queue tail immediately, continue reviewing in current session
    - **2 - Hard** (🟠): Interval ×1.2, ease -15
    - **3 - Good** (🔵): Standard interval, ease unchanged
+
+You can also run "Review Due Cards in Current Note" from the command palette in any Markdown note to review only due cards from that note.
 
 By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 
