@@ -124,10 +124,20 @@
 - 当前 `npm run version` 脚本只会执行默认 bump；若需要 `minor` / `major`，优先直接调用：
   - `node scripts/version-bump.mjs minor`
   - `node scripts/version-bump.mjs major`
-- 预发布优先使用：
-  - `npm run prerelease`：推导下一个 `beta` 版本、同步版本文件/README 徽章并运行发布前检查
-  - `npm run release:prerelease`：在上述基础上提交、打 tag、推送并创建/更新 GitHub prerelease
-  - 显式版本可用：`npm run prerelease -- --version 1.2.3-beta.2`
+- 预发布版本号以本地和远端 tag 为准，不要只相信当前分支的 `package.json`：
+  - `scripts/prerelease.mjs` 会检查本地 tag、远端 tag 和 GitHub release，自动选择下一个可用 `beta` 版本。
+  - 显式版本可用：`npm run prerelease -- --version 1.2.3-beta.2`，但脚本仍应阻止重复 tag / release。
+- 用户说“提交 prerelease”时：
+  - 运行 `npm run prerelease`。
+  - 确认发布前检查通过后提交生成的版本文件和本次代码改动。
+  - 不推送 tag，也不创建 GitHub release，除非用户同时要求发布。
+- 用户说“发布 prerelease”或“发个 prerelease”时：
+  - 使用 `npm run release:prerelease` 或 `npm run prerelease -- --version <version> --publish`。
+  - 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
+  - 成功后确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
+- GitHub Actions 的 `Release` workflow 由 tag push 触发：
+  - 本地发布脚本会主动创建 GitHub release；workflow 中如发现 release 已存在，应跳过创建，避免同名 release 冲突。
+  - workflow 应保持使用当前 GitHub Actions 支持的 Node/action 版本。
 
 ## 不要做的事
 
