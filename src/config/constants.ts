@@ -23,6 +23,11 @@ export const KEYBOARD_SHORTCUTS = {
 };
 
 /**
+ * 显示答案后，Enter 评分的防误触冷却时长（毫秒）
+ */
+export const ENTER_RATING_COOLDOWN_MS = 500;
+
+/**
  * 动画时长（毫秒）
  */
 export const ANIMATION_DURATION = 200;

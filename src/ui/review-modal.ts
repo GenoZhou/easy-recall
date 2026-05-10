@@ -63,6 +63,8 @@ export class ReviewModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		this.session?.dispose();
+		this.session = null;
 		if (this.onComplete && this.shouldTriggerComplete) {
 			this.onComplete();
 		}

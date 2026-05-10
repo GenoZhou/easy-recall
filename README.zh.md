@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.4-blue)
+![Version](https://img.shields.io/badge/version-1.2.5--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -107,7 +107,7 @@ tags:
 
 1. 点击左侧栏的复习图标 📚，或使用命令面板执行"开始复习"
 2. 在 SuggestModal 中搜索并选择牌组，或按 Enter 复习全部到期卡片
-3. 查看卡片，按 Enter 显示答案
+3. 查看卡片，桌面端按 Enter 显示答案，或点击/轻触「显示答案」
 4. 选择评分：
    - **1 - 没记住** (🔴): 立即放回队尾，当前 session 重新复习
    - **2 - 有点难** (🟠): 间隔 ×1.2，ease -15
@@ -117,11 +117,13 @@ tags:
 
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
 
-## 快捷键
+## 桌面端快捷键
+
+桌面端快捷键同时适用于模态窗口和 Obsidian 标签页复习。按 Enter 显示答案后，等待「记住了」按钮短暂冷却结束，再次按 Enter 即可标记为记住了。
 
 | 按键 | 功能 |
 |------|------|
-| Enter | 显示答案 / 记住了 |
+| Enter | 显示答案 / 冷却后记住了 |
 | 1 | 没记住 |
 | 2 | 有点难 |
 | 3 | 记住了 |
