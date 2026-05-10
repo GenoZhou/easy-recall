@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.5--beta.2-blue)
+![Version](https://img.shields.io/badge/version-1.2.5--beta.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -107,7 +107,7 @@ Card content...
 
 1. Click the review icon 📚 in the left sidebar, or use command palette to execute "Start Review"
 2. Search and select a deck in SuggestModal, or press Enter to review all due cards
-3. View the card, press Enter to show answer on desktop, or click/tap "Show Answer"
+3. View the card, press Space on desktop to reveal the hint or answer, or click/tap "Show Hint" / "Show Answer"
 4. Select rating:
    - **1 - Again** (🔴): Put back to queue tail immediately, continue reviewing in current session
    - **2 - Hard** (🟠): Interval ×1.2, ease -15
@@ -119,11 +119,11 @@ By default, reviews open in a modal window. In plugin settings, configure **Desk
 
 ## Desktop Shortcuts
 
-Desktop shortcuts work in both the modal window and the reusable Obsidian tab. After pressing Enter to show the answer, wait for the brief Good-button cooldown to finish before pressing Enter again to mark Good.
+Desktop shortcuts work in both the modal window and the reusable Obsidian tab. Space only reveals content; ratings are handled by number keys after the answer is visible.
 
 | Key | Function |
 |-----|----------|
-| Enter | Show answer / Good after cooldown |
+| Space | Show hint, then show answer |
 | 1 | Again |
 | 2 | Hard |
 | 3 | Good |

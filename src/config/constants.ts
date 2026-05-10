@@ -18,14 +18,9 @@ export function getRatingButtons(): { rating: Rating; label: string; shortcut: s
  * 快捷键配置
  */
 export const KEYBOARD_SHORTCUTS = {
-	SHOW_ANSWER: 'Enter',
+	REVEAL: 'Space',
 	RATINGS: ['1', '2', '3'] as const,
 };
-
-/**
- * 显示答案后，Enter 评分的防误触冷却时长（毫秒）
- */
-export const ENTER_RATING_COOLDOWN_MS = 500;
 
 /**
  * 动画时长（毫秒）

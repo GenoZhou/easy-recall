@@ -1,7 +1,7 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
 import { Card, Rating } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
-import { ENTER_RATING_COOLDOWN_MS, getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
+import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
 import { injectSchedule } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
 import { error } from '../utils/';
@@ -73,8 +73,6 @@ export class ReviewSession {
 	private showAnswer: boolean = false;
 	private showHint: boolean = false;
 	private isComplete: boolean = false;
-	private enterRatingCooldownUntil: number = 0;
-	private enterRatingCooldownTimer: ReturnType<typeof setTimeout> | null = null;
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
 
@@ -93,8 +91,8 @@ export class ReviewSession {
 		this.unregisterShortcuts();
 		this.shortcutScope = scope;
 
-		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.SHOW_ANSWER, (evt: KeyboardEvent) => {
-			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.SHOW_ANSWER);
+		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.REVEAL, (evt: KeyboardEvent) => {
+			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.REVEAL);
 		}));
 
 		KEYBOARD_SHORTCUTS.RATINGS.forEach(shortcut => {
@@ -115,10 +113,10 @@ export class ReviewSession {
 
 		const key = evt.key || fallbackKey;
 
-		if (key === KEYBOARD_SHORTCUTS.SHOW_ANSWER) {
+		if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {
 			evt.preventDefault();
 			if (!evt.repeat) {
-				this.handleEnterShortcut();
+				this.handleRevealShortcut();
 			}
 			return false;
 		}
@@ -157,11 +155,10 @@ export class ReviewSession {
 
 	dispose(): void {
 		this.unregisterShortcuts();
-		this.clearEnterRatingCooldown();
 	}
 
 	showAnswerAction(): void {
-		this.handleShowAnswer(false);
+		this.handleShowAnswer();
 	}
 
 	rateAction(rating: Rating): void {
@@ -170,17 +167,18 @@ export class ReviewSession {
 		}
 	}
 
-	private handleEnterShortcut(): void {
+	private handleRevealShortcut(): void {
+		const card = this.cards[this.currentIndex];
+		if (!card) return;
+
+		if (card.hint && !this.showHint) {
+			this.handleShowHint();
+			return;
+		}
+
 		if (!this.showAnswer) {
-			this.handleShowAnswer(true);
-			return;
+			this.handleShowAnswer();
 		}
-
-		if (this.isEnterRatingCoolingDown()) {
-			return;
-		}
-
-		void this.handleRate(3);
 	}
 
 	async render(): Promise<void> {
@@ -259,40 +257,11 @@ export class ReviewSession {
 		}
 	}
 
-	private handleShowAnswer(startEnterCooldown: boolean = false) {
+	private handleShowAnswer() {
 		if (!this.showAnswer) {
 			this.showAnswer = true;
 			this.showHint = true;
-			if (startEnterCooldown) {
-				this.startEnterRatingCooldown();
-			}
 			void this.render();
-		}
-	}
-
-	private startEnterRatingCooldown(): void {
-		this.clearEnterRatingCooldownTimer();
-		this.enterRatingCooldownUntil = Date.now() + ENTER_RATING_COOLDOWN_MS;
-		this.enterRatingCooldownTimer = setTimeout(() => {
-			this.enterRatingCooldownUntil = 0;
-			this.enterRatingCooldownTimer = null;
-			void this.render();
-		}, ENTER_RATING_COOLDOWN_MS);
-	}
-
-	private isEnterRatingCoolingDown(): boolean {
-		return this.enterRatingCooldownUntil > Date.now();
-	}
-
-	private clearEnterRatingCooldown(): void {
-		this.enterRatingCooldownUntil = 0;
-		this.clearEnterRatingCooldownTimer();
-	}
-
-	private clearEnterRatingCooldownTimer(): void {
-		if (this.enterRatingCooldownTimer) {
-			clearTimeout(this.enterRatingCooldownTimer);
-			this.enterRatingCooldownTimer = null;
 		}
 	}
 
@@ -320,9 +289,12 @@ export class ReviewSession {
 
 			if (card.hint && !this.showHint) {
 				const showHintBtn = btnContainer.createEl('button', {
-					text: lang.review.showHint,
 					cls: 'obr-btn-show-hint'
 				});
+				showHintBtn.createSpan({ text: lang.review.showHint, cls: 'obr-btn-label' });
+				if (!Platform.isMobile) {
+					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
+				}
 				showHintBtn.addEventListener('click', () => this.handleShowHint());
 			}
 
@@ -330,8 +302,8 @@ export class ReviewSession {
 				cls: 'obr-btn-show mod-cta'
 			});
 			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'obr-btn-label' });
-			if (!Platform.isMobile) {
-				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.SHOW_ANSWER, cls: 'obr-btn-shortcut' });
+			if (!Platform.isMobile && (!card.hint || this.showHint)) {
+				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
 			}
 			showBtn.addEventListener('click', () => {
 				this.showAnswer = true;
@@ -346,9 +318,8 @@ export class ReviewSession {
 		const isDesktop = !Platform.isMobile;
 
 		getRatingButtons().forEach(btn => {
-			const isGoodCooling = btn.rating === 3 && this.isEnterRatingCoolingDown();
 			const buttonEl = btnContainer.createEl('button', {
-				cls: `obr-btn-rating ${btn.cls}${isGoodCooling ? ' is-enter-cooling' : ''}`
+				cls: `obr-btn-rating ${btn.cls}`
 			});
 
 			buttonEl.createSpan({ text: btn.label, cls: 'obr-btn-label' });
@@ -428,12 +399,10 @@ export class ReviewSession {
 	private resetRevealState(): void {
 		this.showAnswer = false;
 		this.showHint = false;
-		this.clearEnterRatingCooldown();
 	}
 
 	private completeReview() {
 		if (this.isComplete) return;
-		this.clearEnterRatingCooldown();
 		this.isComplete = true;
 		this.host.complete();
 	}

@@ -22,7 +22,6 @@ jest.mock('obsidian', () => {
 }, { virtual: true });
 
 import type { Card } from '../types';
-import { ENTER_RATING_COOLDOWN_MS } from '../config/constants';
 import { ReviewSession } from '../ui/review-session';
 
 class TestElement {
@@ -87,7 +86,7 @@ class TestElement {
 	}
 }
 
-function createCard(): Card {
+function createCard(overrides: Partial<Card> = {}): Card {
 	return {
 		id: 'card-1',
 		type: 'cloze',
@@ -96,6 +95,7 @@ function createCard(): Card {
 		filePath: 'cards.md',
 		lineStart: 0,
 		lineEnd: 0,
+		...overrides,
 	};
 }
 
@@ -162,7 +162,7 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 
 		expect(scope.register).toHaveBeenCalledTimes(4);
-		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Enter', '1', '2', '3']);
+		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3']);
 	});
 
 	it('does not register shortcuts on mobile', () => {
@@ -179,10 +179,10 @@ describe('ReviewSession shortcuts', () => {
 		expect(scope.register).not.toHaveBeenCalled();
 	});
 
-	it('uses Enter to reveal, then waits for cooldown before rating Good', async () => {
+	it('uses Space to show hint, then answer, without rating', async () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
-			cards: [createCard()],
+			cards: [createCard({ hint: 'Helpful hint' })],
 			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
 		}, host as any);
 		const { scope, handlers } = createScope();
@@ -190,25 +190,26 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get('Enter')!(keyEvent('Enter'));
+		expect(host.buttonsEl.querySelector('.obr-btn-show-hint')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
+		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')).toBeNull();
+
+		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.obr-btn-good')?.className).toContain('is-enter-cooling');
+		expect(host.buttonsEl.querySelector('.obr-btn-show-hint')).toBeNull();
+		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
 
-		handlers.get('Enter')!(keyEvent('Enter'));
+		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
 
-		jest.advanceTimersByTime(ENTER_RATING_COOLDOWN_MS);
+		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
-		expect(host.buttonsEl.querySelector('.obr-btn-good')?.className).not.toContain('is-enter-cooling');
-
-		handlers.get('Enter')!(keyEvent('Enter'));
-		await flushPromises();
-		expect(host.complete).toHaveBeenCalledTimes(1);
+		expect(host.complete).not.toHaveBeenCalled();
 	});
 
-	it('ignores Enter repeat events', async () => {
+	it('uses Space to show answer immediately when there is no hint', async () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
 			cards: [createCard()],
@@ -219,7 +220,27 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get('Enter')!(keyEvent('Enter', { repeat: true }));
+		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
+
+		handlers.get('Space')!(keyEvent(' '));
+		await flushPromises();
+
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+		expect(host.complete).not.toHaveBeenCalled();
+	});
+
+	it('ignores Space repeat events', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+		const { scope, handlers } = createScope();
+
+		session.registerShortcuts(scope as any);
+		await session.render();
+
+		handlers.get('Space')!(keyEvent(' ', { repeat: true }));
 		await flushPromises();
 
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
@@ -245,8 +266,8 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 		await session.render();
 
-		const inputEvent = keyEvent('Enter', { target: new FakeHTMLElement('input') as any });
-		const editableEvent = keyEvent('Enter', { target: new FakeHTMLElement('div', true) as any });
+		const inputEvent = keyEvent(' ', { target: new FakeHTMLElement('input') as any });
+		const editableEvent = keyEvent(' ', { target: new FakeHTMLElement('div', true) as any });
 
 		expect(session.handleShortcutEvent(inputEvent)).toBe(true);
 		expect(session.handleShortcutEvent(editableEvent)).toBe(true);
@@ -263,7 +284,7 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(host.buttonsEl.querySelector('.obr-btn-shortcut')?.textContent).toBe('Enter');
+		expect(host.buttonsEl.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
 
 		session.showAnswerAction();
 		await flushPromises();
@@ -289,7 +310,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 
-		handlers.get('Enter')!(keyEvent('Enter'));
+		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 
 		handlers.get(shortcut)!(keyEvent(shortcut));

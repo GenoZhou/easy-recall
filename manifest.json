@@ -1,7 +1,7 @@
 {
 	"id": "ob-reviews",
 	"name": "Reviews",
-	"version": "1.2.5-beta.2",
+	"version": "1.2.5-beta.3",
 	"minAppVersion": "0.15.0",
 	"description": "Simple spaced repetition for flashcards reviews: Cloze, Q&A, zero-config.",
 	"author": "Geno Zhou",
