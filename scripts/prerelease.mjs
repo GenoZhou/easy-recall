@@ -242,8 +242,7 @@ async function publish(version) {
     "styles.css",
     "--title",
     `Release ${version}`,
-    "--notes",
-    releaseNotes(version),
+    "--generate-notes",
     "--prerelease",
   ]);
 }
@@ -253,118 +252,6 @@ function printPublishSummary(version, branch) {
   console.log(`Remote: ${remoteName}`);
   console.log(`Branch: ${branch}`);
   console.log("This will push the branch and tag, then create a GitHub prerelease.");
-}
-
-function releaseNotes(version) {
-  return `${isPrereleaseVersion(version) ? "Prerelease" : "Release"} ${version}
-
-## Changelog
-${buildChangelog(version)}
-
-Validation:
-- npm run prepublish`;
-}
-
-function buildChangelog(version) {
-  const previousTag = getPreviousSemverTag(version);
-  const range = previousTag ? `${previousTag}..HEAD` : "HEAD";
-  const output = commandOutput("git", ["log", "--pretty=format:- %s (%h)", range]);
-
-  if (!output) {
-    return previousTag
-      ? `- No code changes since ${previousTag}.`
-      : "- Initial release.";
-  }
-
-  const commitLines = output
-    .split(/\r?\n/)
-    .filter((line) => !line.match(/^- Release \d+\.\d+\.\d+/))
-    .join("\n");
-
-  if (commitLines) {
-    return commitLines;
-  }
-
-  const changedFiles = commandOutput("git", ["diff", "--name-only", range])
-    .split(/\r?\n/)
-    .map((file) => file.trim())
-    .filter(Boolean);
-
-  if (changedFiles.length === 0) {
-    return "- Version metadata updates.";
-  }
-
-  return [
-    "- Updated release contents:",
-    ...changedFiles.map((file) => `  - ${file}`),
-  ].join("\n");
-}
-
-function getPreviousSemverTag(version) {
-  const current = parseVersion(version);
-  const tags = commandOutput("git", ["tag", "--list"])
-    .split(/\r?\n/)
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .filter((tag) => tag !== version)
-    .map((tag) => ({ tag, parsed: tryParseVersion(tag) }))
-    .filter((entry) => entry.parsed && compareVersions(entry.parsed, current) < 0)
-    .sort((a, b) => compareVersions(b.parsed, a.parsed));
-
-  return tags[0]?.tag ?? null;
-}
-
-function tryParseVersion(version) {
-  try {
-    return parseVersion(version);
-  } catch {
-    return null;
-  }
-}
-
-function compareVersions(a, b) {
-  for (const key of ["major", "minor", "patch"]) {
-    if (a[key] !== b[key]) {
-      return a[key] - b[key];
-    }
-  }
-
-  return comparePrerelease(a.prerelease, b.prerelease);
-}
-
-function comparePrerelease(a, b) {
-  if (!a && !b) return 0;
-  if (!a) return 1;
-  if (!b) return -1;
-
-  const aParts = a.split(".");
-  const bParts = b.split(".");
-  const length = Math.max(aParts.length, bParts.length);
-  for (let index = 0; index < length; index++) {
-    const aPart = aParts[index];
-    const bPart = bParts[index];
-    if (aPart === undefined) return -1;
-    if (bPart === undefined) return 1;
-    if (aPart === bPart) continue;
-
-    const aNumber = Number(aPart);
-    const bNumber = Number(bPart);
-    const aIsNumber = Number.isInteger(aNumber);
-    const bIsNumber = Number.isInteger(bNumber);
-
-    if (aIsNumber && bIsNumber) {
-      return aNumber - bNumber;
-    }
-    if (aIsNumber) return -1;
-    if (bIsNumber) return 1;
-    return aPart.localeCompare(bPart);
-  }
-
-  return 0;
-}
-
-function isPrereleaseVersion(version) {
-  return Boolean(parseVersion(version).prerelease);
 }
 
 function readJson(filePath) {
