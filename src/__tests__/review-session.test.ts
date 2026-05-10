@@ -22,7 +22,7 @@ jest.mock('obsidian', () => {
 }, { virtual: true });
 
 import type { Card } from '../types';
-import { ReviewSession } from '../ui/review-session';
+import { ReviewSession, getReviewStatusTags } from '../ui/review-session';
 
 class TestElement {
 	tag: string;
@@ -292,6 +292,39 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.obr-btn-again')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('1');
 		expect(host.buttonsEl.querySelector('.obr-btn-hard')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('2');
 		expect(host.buttonsEl.querySelector('.obr-btn-good')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('3');
+	});
+
+	it('renders a new-card status tag for cards never rated hard or good', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ tags: ['test'] })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+
+		expect(host.contentEl.querySelector('.obr-tag')?.textContent).toBe('#test');
+		expect(host.contentEl.querySelector('.obr-status-tag-new')?.textContent).toBe('新卡片');
+	});
+
+	it('builds new-card status only before the first hard or good rating', () => {
+		expect(getReviewStatusTags(createCard())).toHaveLength(1);
+		expect(getReviewStatusTags(createCard({
+			schedule: {
+				interval: 0,
+				ease: 230,
+				due: new Date('2026-05-10T00:00:00Z'),
+				reps: 0,
+			},
+		}))).toHaveLength(1);
+		expect(getReviewStatusTags(createCard({
+			schedule: {
+				interval: 1,
+				ease: 250,
+				due: new Date('2026-05-11T00:00:00Z'),
+				reps: 1,
+			},
+		}))).toHaveLength(0);
 	});
 
 	it('limits a review session to the configured batch size', async () => {

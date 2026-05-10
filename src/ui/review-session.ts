@@ -22,6 +22,11 @@ export interface ReviewSessionHost {
 	openSource(card: Card): Promise<boolean>;
 }
 
+interface ReviewStatusTag {
+	label: string;
+	cls: string;
+}
+
 export function buildHeadingPathLabel(card: Card): string | null {
 	if (!card.headingPath?.length) {
 		return null;
@@ -30,6 +35,20 @@ export function buildHeadingPathLabel(card: Card): string | null {
 	const fileName = card.filePath.split('/').pop()?.replace(/\.md$/i, '') || card.filePath;
 	const parts = [fileName, ...card.headingPath];
 	return parts.join(' / ');
+}
+
+export function getReviewStatusTags(card: Card): ReviewStatusTag[] {
+	const lang = t();
+	const statusTags: ReviewStatusTag[] = [];
+
+	if (!card.schedule || card.schedule.reps === 0) {
+		statusTags.push({
+			label: lang.review.statusTags.newCard,
+			cls: 'obr-status-tag-new',
+		});
+	}
+
+	return statusTags;
 }
 
 export async function openCardSource(
@@ -195,12 +214,19 @@ export class ReviewSession {
 		this.host.contentEl.empty();
 		this.host.buttonsEl.empty();
 
-		if (card.tags.length > 0) {
+		const statusTags = getReviewStatusTags(card);
+		if (card.tags.length > 0 || statusTags.length > 0) {
 			const tagEl = this.host.contentEl.createDiv({ cls: 'obr-tags' });
 			card.tags.forEach(tag => {
 				tagEl.createSpan({
 					text: `#${tag}`,
 					cls: 'obr-tag'
+				});
+			});
+			statusTags.forEach(tag => {
+				tagEl.createSpan({
+					text: tag.label,
+					cls: `obr-tag obr-status-tag ${tag.cls}`
 				});
 			});
 		}

@@ -98,6 +98,15 @@
 	font-size: 0.85em;
 }
 
+.obr-status-tag {
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.obr-status-tag-new {
+	background-color: var(--background-secondary-alt);
+}
+
 /* 标题路径 */
 .obr-heading-path {
 	font-size: 0.85em;
@@ -860,65 +869,4 @@
 	text-align: center;
 	border: 1px dashed var(--background-modifier-border);
 	border-radius: 6px;
-}
-
-.obr-settings-compact-list {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	margin-bottom: 18px;
-}
-
-.obr-settings-compact-row {
-	padding: 10px 12px;
-	background-color: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	border-left: 3px solid var(--background-modifier-border);
-}
-
-.obr-settings-compact-row {
-	display: flex;
-	justify-content: space-between;
-	gap: 12px;
-}
-
-.obr-settings-compact-text {
-	min-width: 0;
-}
-
-.obr-settings-compact-label {
-	font-weight: 600;
-	margin-bottom: 2px;
-}
-
-.obr-settings-compact-desc {
-	font-size: 0.9em;
-	color: var(--text-muted);
-	line-height: 1.35;
-}
-
-.obr-settings-compact-value {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
-	flex-shrink: 0;
-	font-size: 0.9em;
-	color: var(--text-muted);
-}
-
-.obr-settings-compact-value strong {
-	font-size: 1.05em;
-	color: var(--text-normal);
-}
-
-@media (max-width: 640px) {
-	.obr-settings-compact-row {
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.obr-settings-compact-value {
-		align-items: flex-start;
-	}
 }

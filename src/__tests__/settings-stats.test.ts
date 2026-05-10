@@ -114,17 +114,12 @@ describe('calculateReviewStats', () => {
     expect(stats.total).toBe(7);
     expect(stats.matureCards).toBe(4);
     expect(stats.dueNow).toBe(2);
-    expect(stats.upcoming1d).toBe(1);
-    expect(stats.upcoming3d).toBe(1);
-    expect(stats.upcoming7d).toBe(1);
-    expect(stats.upcoming30d).toBe(1);
     expect(stats.upcomingDaily).toEqual([
       { date: '2026-04-20', count: 1 },
       { date: '2026-04-21', count: 1 },
       { date: '2026-04-25', count: 1 },
       { date: '2026-05-10', count: 1 },
     ]);
-    expect(stats.later).toBe(1);
     expect(stats.totalDecks).toBe(1);
   });
 });

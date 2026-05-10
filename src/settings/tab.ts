@@ -205,20 +205,6 @@ export class SettingsTab extends PluginSettingTab {
 		return `${Number(month)}/${Number(day)}`;
 	}
 
-	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {
-		const listEl = containerEl.createDiv({ cls: 'obr-settings-compact-list' });
-		rows.forEach(([label, desc, value]) => {
-			const rowEl = listEl.createDiv({ cls: 'obr-settings-compact-row' });
-			const textEl = rowEl.createDiv({ cls: 'obr-settings-compact-text' });
-			textEl.createDiv({ cls: 'obr-settings-compact-label', text: label });
-			textEl.createDiv({ cls: 'obr-settings-compact-desc', text: desc });
-
-			const valueEl = rowEl.createDiv({ cls: 'obr-settings-compact-value' });
-			valueEl.createEl('strong', { text: String(value) });
-			valueEl.createSpan({ text: this.formatPercent(value, total) });
-		});
-	}
-
 	private getPercent(value: number, total: number): number {
 		if (total <= 0) return 0;
 		return Math.round((value / total) * 100);
