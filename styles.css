@@ -264,8 +264,12 @@
 
 /* 按钮文字和快捷键提示 */
 .obr-btn-rating .obr-btn-label {
-	display: block;
+	display: inline-block;
 	font-weight: 600;
+}
+
+.obr-btn-rating .obr-btn-shortcut {
+	margin-left: 8px;
 }
 
 .obr-btn-show .obr-btn-label,
