@@ -13,6 +13,8 @@ export interface OBReviewsSettings {
 	language: 'auto' | 'en' | 'zh';
 	/** 是否显示调试日志 */
 	debugMode: boolean;
+	/** 单次复习最多进入队列的卡片数量 */
+	reviewBatchSize: number;
 	/** 桌面端复习界面展示方式 */
 	desktopReviewSurface: ReviewSurface;
 	/** 手机端复习界面展示方式 */
@@ -21,15 +23,27 @@ export interface OBReviewsSettings {
 
 export type ReviewSurface = 'modal' | 'tab';
 
+export const DEFAULT_REVIEW_BATCH_SIZE = 30;
+
 /**
  * 默认设置
  */
 export const DEFAULT_SETTINGS: OBReviewsSettings = {
 	language: 'auto',
 	debugMode: false,
+	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	desktopReviewSurface: 'modal',
 	mobileReviewSurface: 'modal',
 };
+
+export function normalizeReviewBatchSize(value: unknown): number {
+	const numericValue = typeof value === 'number' ? value : Number(value);
+	if (!Number.isFinite(numericValue) || numericValue < 1) {
+		return DEFAULT_REVIEW_BATCH_SIZE;
+	}
+
+	return Math.floor(numericValue);
+}
 
 /**
  * 设置管理器
@@ -53,6 +67,7 @@ export class SettingsManager {
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
 				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
+				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
 				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
 			};
@@ -78,6 +93,9 @@ export class SettingsManager {
 	 */
 	async update(updates: Partial<OBReviewsSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...updates };
+		if (updates.reviewBatchSize !== undefined) {
+			this.settings.reviewBatchSize = normalizeReviewBatchSize(updates.reviewBatchSize);
+		}
 		await this.save();
 	}
 

@@ -7,6 +7,7 @@ import { REVIEW_VIEW_TYPE, ReviewView } from './review-view';
 export interface OpenReviewOptions {
 	cards: Card[];
 	vault: Vault;
+	maxCardsPerReview?: number;
 	onComplete?: () => void;
 }
 

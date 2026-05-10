@@ -294,6 +294,34 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.obr-btn-good')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('3');
 	});
 
+	it('limits a review session to the configured batch size', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1' }),
+				createCard({ id: 'card-2' }),
+				createCard({ id: 'card-3' }),
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			maxCardsPerReview: 2,
+		}, host as any);
+
+		await session.render();
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
+
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(host.complete).toHaveBeenCalledTimes(1);
+	});
+
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {

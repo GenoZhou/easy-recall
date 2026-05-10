@@ -10,6 +10,7 @@ import { t } from '../i18n';
 export interface ReviewOptions {
 	cards: Card[];
 	vault: Vault;
+	maxCardsPerReview?: number;
 	onComplete?: () => void;
 }
 
@@ -80,7 +81,7 @@ export class ReviewSession {
 		this.app = app;
 		this.vault = options.vault;
 		this.host = host;
-		this.cards = this.getDueSortedCards(options.cards);
+		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -234,15 +235,21 @@ export class ReviewSession {
 		this.renderButtons(card);
 	}
 
-	private getDueSortedCards(cards: Card[]): Card[] {
+	private getDueSortedCards(cards: Card[], maxCardsPerReview?: number): Card[] {
 		const now = new Date();
-		return cards
+		const dueCards = cards
 			.filter(card => !card.schedule || card.schedule.due <= now)
 			.sort((a, b) => {
 				const dueA = a.schedule?.due?.getTime() || 0;
 				const dueB = b.schedule?.due?.getTime() || 0;
 				return dueA - dueB;
 			});
+
+		if (!maxCardsPerReview || maxCardsPerReview < 1) {
+			return dueCards;
+		}
+
+		return dueCards.slice(0, Math.floor(maxCardsPerReview));
 	}
 
 	private async handleOpenCardSource(card: Card) {

@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.5-blue)
+![Version](https://img.shields.io/badge/version-1.2.6--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -114,6 +114,8 @@ tags:
    - **3 - 记住了** (🔵): 标准间隔，ease 不变
 
 也可以在任意 Markdown 笔记中使用命令面板执行「复习当前笔记内到期卡片」，只复习当前笔记里已经到期的卡片。
+
+默认每次复习最多放入 30 张到期卡片，让标记为「没记住」的卡片能在较小批次内更快回到队尾。可在插件设置中通过「单次复习上限」调整这个数量。
 
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
 

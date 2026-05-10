@@ -28,11 +28,13 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private onReviewComplete?: () => void;
 	private hasDueCards: boolean = false;
 	private reviewSurface: ReviewSurface;
+	private maxCardsPerReview: number;
 
-	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, onReviewComplete?: () => void) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, onReviewComplete?: () => void) {
 		super(app);
 		this.vault = vault;
 		this.reviewSurface = reviewSurface;
+		this.maxCardsPerReview = maxCardsPerReview;
 		this.onReviewComplete = onReviewComplete;
 		
 		const lang = t();
@@ -244,6 +246,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 			void openReview(this.app, {
 				cards: cardsToReview,
 				vault: this.vault,
+				maxCardsPerReview: this.maxCardsPerReview,
 				onComplete: () => {
 					if (this.onReviewComplete) {
 						this.onReviewComplete();
@@ -272,7 +275,8 @@ export async function openDeckModal(
 	app: App,
 	vault: Vault,
 	reviewSurface: ReviewSurface,
+	maxCardsPerReview: number,
 	onComplete?: () => void
 ): Promise<void> {
-	new DeckSuggestModal(app, vault, reviewSurface, onComplete).open();
+	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, onComplete).open();
 }

@@ -15,6 +15,7 @@ export { buildHeadingPathLabel, openCardSource };
 export class ReviewModal extends Modal {
 	private cards: Card[];
 	private vault: Vault;
+	private maxCardsPerReview?: number;
 	private onComplete?: () => void;
 	private cardContentEl: HTMLElement | null = null;
 	private buttonsContainerEl: HTMLElement | null = null;
@@ -25,6 +26,7 @@ export class ReviewModal extends Modal {
 		super(app);
 		this.cards = options.cards;
 		this.vault = options.vault;
+		this.maxCardsPerReview = options.maxCardsPerReview;
 		this.onComplete = options.onComplete;
 	}
 
@@ -41,6 +43,7 @@ export class ReviewModal extends Modal {
 		this.session = new ReviewSession(this.app, {
 			cards: this.cards,
 			vault: this.vault,
+			maxCardsPerReview: this.maxCardsPerReview,
 			onComplete: this.onComplete,
 		}, {
 			contentEl: this.cardContentEl,

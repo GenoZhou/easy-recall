@@ -34,6 +34,7 @@ export async function executeReviewCurrentNote(
 		await openReview(app, {
 			cards: dueCards,
 			vault: app.vault,
+			maxCardsPerReview: plugin.settings.reviewBatchSize,
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},

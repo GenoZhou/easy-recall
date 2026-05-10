@@ -85,6 +85,10 @@ export const zh: Translations = {
 			name: '调试模式',
 			desc: '在控制台显示调试日志（需重启生效）。',
 		},
+		reviewBatchSize: {
+			name: '单次复习上限',
+			desc: '每次复习会话最多放入队列的到期卡片数量。',
+		},
 		reviewSurface: {
 			desktopName: '桌面端复习界面',
 			desktopDesc: '选择桌面端复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',

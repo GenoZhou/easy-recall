@@ -32,6 +32,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
 			expect(settings.debugMode).toBe(false);
+			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
@@ -44,6 +45,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
 			expect(settings.debugMode).toBe(true);
+			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
@@ -86,6 +88,7 @@ describe('SettingsManager', () => {
 			expect(settings).toEqual({
 				language: 'zh',
 				debugMode: true,
+				reviewBatchSize: 30,
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
 			});
@@ -124,8 +127,27 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
 			expect(settings.debugMode).toBe(false); // unchanged
+			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
+		});
+
+		it('should update review batch size', async () => {
+			mockLoadData.mockResolvedValue(null);
+			await manager.load();
+
+			await manager.update({ reviewBatchSize: 12 });
+
+			const settings = manager.get();
+			expect(settings.reviewBatchSize).toBe(12);
+		});
+
+		it('should normalize invalid review batch size', async () => {
+			mockLoadData.mockResolvedValue({ reviewBatchSize: 0 });
+
+			await manager.load();
+
+			expect(manager.get().reviewBatchSize).toBe(30);
 		});
 
 		it('should update platform review surfaces', async () => {
@@ -188,6 +210,7 @@ describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
+		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(30);
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
 	});

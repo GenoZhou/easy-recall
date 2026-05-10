@@ -6,7 +6,7 @@
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import OBReviewsPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
-import { ReviewSurface } from './index';
+import { normalizeReviewBatchSize, ReviewSurface } from './index';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
 import { error } from '../utils/';
@@ -58,6 +58,24 @@ export class SettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.debugMode)
 					.onChange(async (value) => {
 						await this.plugin.settingsManager.update({ debugMode: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(lang.settings.reviewBatchSize.name)
+			.setDesc(lang.settings.reviewBatchSize.desc)
+			.addText(text =>
+				text
+					.setPlaceholder(String(normalizeReviewBatchSize(undefined)))
+					.setValue(String(this.plugin.settings.reviewBatchSize))
+					.onChange(async (value) => {
+						const parsedValue = Number.parseInt(value, 10);
+						if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+							return;
+						}
+
+						await this.plugin.settingsManager.update({ reviewBatchSize: parsedValue });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

@@ -83,6 +83,10 @@ export const en = {
 			name: 'Debug Mode',
 			desc: 'Show debug logs in console (requires restart).',
 		},
+		reviewBatchSize: {
+			name: 'Review Batch Size',
+			desc: 'Maximum number of due cards to include in one review session.',
+		},
 		reviewSurface: {
 			desktopName: 'Desktop Review Interface',
 			desktopDesc: 'Choose whether desktop reviews open in a modal window or a reusable Obsidian tab.',
