@@ -758,9 +758,6 @@
 }
 
 .obr-settings-chart {
-	display: grid;
-	grid-template-columns: 48px minmax(0, 1fr);
-	gap: 10px;
 	margin: 8px 0 4px;
 	padding: 12px;
 	background-color: var(--background-secondary);
@@ -768,36 +765,50 @@
 	border-radius: 8px;
 }
 
-.obr-settings-chart-y-axis {
+.obr-settings-chart-header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.obr-settings-chart-axis-title {
+	font-size: 0.86em;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.obr-settings-chart-range {
+	color: var(--text-muted);
+	font-size: 0.8em;
+}
+
+.obr-settings-chart-body {
 	display: grid;
-	grid-template-rows: auto 1fr auto;
+	grid-template-columns: 36px minmax(0, 1fr);
+	gap: 10px;
+}
+
+.obr-settings-chart-y-axis {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 	min-height: 190px;
 	color: var(--text-muted);
 	font-size: 0.78em;
 	text-align: right;
 }
 
-.obr-settings-chart-axis-title {
-	writing-mode: vertical-rl;
-	justify-self: start;
-	align-self: center;
-	transform: rotate(180deg);
-	white-space: nowrap;
-}
-
-.obr-settings-chart-y-max {
-	align-self: start;
-}
-
+.obr-settings-chart-y-max,
 .obr-settings-chart-y-zero {
-	align-self: end;
+	line-height: 1;
 }
 
 .obr-settings-chart-plot {
 	display: grid;
-	grid-template-columns: repeat(30, minmax(14px, 1fr));
 	align-items: end;
-	gap: 5px;
+	gap: 8px;
 	min-height: 190px;
 	padding: 0 0 22px;
 	border-left: 1px solid var(--background-modifier-border);
@@ -811,7 +822,7 @@
 	align-items: flex-end;
 	justify-content: center;
 	height: 100%;
-	min-width: 14px;
+	min-width: 38px;
 }
 
 .obr-settings-chart-bar {
@@ -832,15 +843,23 @@
 	left: 50%;
 	transform: translateX(-50%);
 	color: var(--text-muted);
-	font-size: 0.72em;
+	font-size: 0.74em;
 	white-space: nowrap;
 }
 
-.obr-settings-chart-x-axis-title,
-.obr-settings-chart-empty {
-	margin: 6px 0 14px 58px;
+.obr-settings-chart-x-axis-title {
+	margin: 8px 0 0 46px;
 	color: var(--text-muted);
 	font-size: 0.85em;
+}
+
+.obr-settings-chart-empty {
+	padding: 32px 12px;
+	color: var(--text-muted);
+	font-size: 0.9em;
+	text-align: center;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 6px;
 }
 
 .obr-settings-compact-list {

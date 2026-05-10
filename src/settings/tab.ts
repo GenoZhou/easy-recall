@@ -171,30 +171,38 @@ export class SettingsTab extends PluginSettingTab {
 		const maxCount = Math.max(0, ...rows.map(row => row.count));
 		const chartEl = containerEl.createDiv({ cls: 'obr-settings-chart' });
 
-		const yAxisEl = chartEl.createDiv({ cls: 'obr-settings-chart-y-axis' });
-		yAxisEl.createDiv({ cls: 'obr-settings-chart-axis-title', text: lang.settings.stats.countAxis });
+		const headerEl = chartEl.createDiv({ cls: 'obr-settings-chart-header' });
+		headerEl.createDiv({ cls: 'obr-settings-chart-axis-title', text: lang.settings.stats.countAxis });
+		headerEl.createDiv({ cls: 'obr-settings-chart-range', text: lang.settings.stats.onlyDueDates });
+
+		if (rows.length === 0) {
+			chartEl.createDiv({ cls: 'obr-settings-chart-empty', text: lang.settings.stats.noUpcoming });
+			return;
+		}
+
+		const bodyEl = chartEl.createDiv({ cls: 'obr-settings-chart-body' });
+		const yAxisEl = bodyEl.createDiv({ cls: 'obr-settings-chart-y-axis' });
 		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-max', text: String(maxCount) });
 		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-zero', text: '0' });
 
-		const plotEl = chartEl.createDiv({ cls: 'obr-settings-chart-plot' });
+		const plotEl = bodyEl.createDiv({ cls: 'obr-settings-chart-plot' });
+		plotEl.style.gridTemplateColumns = `repeat(${rows.length}, minmax(38px, 1fr))`;
 		rows.forEach(row => {
 			const barGroupEl = plotEl.createDiv({ cls: 'obr-settings-chart-bar-group' });
 			const barEl = barGroupEl.createDiv({ cls: 'obr-settings-chart-bar' });
 			const heightPercent = maxCount > 0 ? Math.max(4, Math.round((row.count / maxCount) * 100)) : 0;
 			barEl.style.height = `${heightPercent}%`;
-			barEl.setAttribute('aria-label', lang.settings.stats.dayCount(row.day, row.count));
-			barEl.setAttribute('title', lang.settings.stats.dayCount(row.day, row.count));
+			barEl.setAttribute('aria-label', lang.settings.stats.dateCount(this.formatChartDate(row.date), row.count));
 
-			const label = row.day === 1 || row.day % 5 === 0
-				? lang.settings.stats.dayShort(row.day)
-				: '';
-			barGroupEl.createDiv({ cls: 'obr-settings-chart-x-label', text: label });
+			barGroupEl.createDiv({ cls: 'obr-settings-chart-x-label', text: this.formatChartDate(row.date) });
 		});
 
-		containerEl.createDiv({ cls: 'obr-settings-chart-x-axis-title', text: lang.settings.stats.dayAxis });
-		if (maxCount === 0) {
-			containerEl.createDiv({ cls: 'obr-settings-chart-empty', text: lang.settings.stats.noUpcoming });
-		}
+		chartEl.createDiv({ cls: 'obr-settings-chart-x-axis-title', text: lang.settings.stats.dayAxis });
+	}
+
+	private formatChartDate(dateKey: string): string {
+		const [, month, day] = dateKey.split('-');
+		return `${Number(month)}/${Number(day)}`;
 	}
 
 	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {

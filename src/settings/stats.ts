@@ -3,7 +3,7 @@ import { Card } from '../types';
 export const UPCOMING_REVIEW_CHART_DAYS = 30;
 
 export interface DailyReviewCount {
-	day: number;
+	date: string;
 	count: number;
 }
 
@@ -30,13 +30,11 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		upcoming3d: 0,
 		upcoming7d: 0,
 		upcoming30d: 0,
-		upcomingDaily: Array.from({ length: UPCOMING_REVIEW_CHART_DAYS }, (_, index) => ({
-			day: index + 1,
-			count: 0,
-		})),
+		upcomingDaily: [],
 		later: 0,
 	};
 	const deckSet = new Set<string>();
+	const dailyCounts = new Map<string, number>();
 
 	for (const card of cards) {
 		const primaryDeck = card.tags[0] ?? 'default';
@@ -58,10 +56,11 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 
 		const diffMs = card.schedule.due.getTime() - now.getTime();
 		const diffDays = diffMs / (1000 * 60 * 60 * 24);
-		const chartDay = Math.ceil(diffDays);
+		const chartDay = getCalendarDayOffset(now, card.schedule.due);
 
-		if (chartDay >= 1 && chartDay <= UPCOMING_REVIEW_CHART_DAYS) {
-			stats.upcomingDaily[chartDay - 1].count++;
+		if (chartDay >= 0 && chartDay <= UPCOMING_REVIEW_CHART_DAYS) {
+			const dateKey = formatLocalDateKey(card.schedule.due);
+			dailyCounts.set(dateKey, (dailyCounts.get(dateKey) ?? 0) + 1);
 		}
 
 		if (diffDays <= 1) {
@@ -78,6 +77,22 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 	}
 
 	stats.totalDecks = deckSet.size;
+	stats.upcomingDaily = Array.from(dailyCounts.entries())
+		.sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+		.map(([date, count]) => ({ date, count }));
 
 	return stats;
+}
+
+function getCalendarDayOffset(from: Date, to: Date): number {
+	const fromDay = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
+	const toDay = new Date(to.getFullYear(), to.getMonth(), to.getDate()).getTime();
+	return Math.round((toDay - fromDay) / (1000 * 60 * 60 * 24));
+}
+
+function formatLocalDateKey(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
 }

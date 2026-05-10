@@ -114,10 +114,10 @@ export const zh: Translations = {
 			upcoming7d: '7 天内',
 			upcoming30d: '30 天内',
 			later: '更晚',
-			dayAxis: '距今天数',
+			dayAxis: '到期日期',
 			countAxis: '到期卡片数',
-			dayShort: (day: number) => `${day}天`,
-			dayCount: (day: number, count: number) => `第 ${day} 天：${count} 张到期卡片`,
+			dateCount: (date: string, count: number) => `${date}：${count} 张到期卡片`,
+			onlyDueDates: '仅显示有到期卡片的日期。',
 			noUpcoming: '未来 30 天没有已排期到期卡片。',
 			explanations: {
 				matureCards: '复习多次后相对稳定的卡片。',
