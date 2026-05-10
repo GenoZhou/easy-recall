@@ -9,6 +9,7 @@ import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { normalizeReviewBatchSize, ReviewSurface } from './index';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
+import type { DailyReviewCount } from './stats';
 import { error } from '../utils/';
 
 export class SettingsTab extends PluginSettingTab {
@@ -145,13 +146,7 @@ export class SettingsTab extends PluginSettingTab {
 			]);
 
 			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
-			this.renderCompactStatList(containerEl, stats.total, [
-				[lang.settings.stats.upcoming1d, lang.settings.stats.explanations.upcoming1d, stats.upcoming1d],
-				[lang.settings.stats.upcoming3d, lang.settings.stats.explanations.upcoming3d, stats.upcoming3d],
-				[lang.settings.stats.upcoming7d, lang.settings.stats.explanations.upcoming7d, stats.upcoming7d],
-				[lang.settings.stats.upcoming30d, lang.settings.stats.explanations.upcoming30d, stats.upcoming30d],
-				[lang.settings.stats.later, lang.settings.stats.explanations.later, stats.later],
-			]);
+			this.renderUpcomingChart(containerEl, stats.upcomingDaily);
 		} catch (err) {
 			containerEl.empty();
 			containerEl.createEl('p', { text: lang.settings.stats.loadFailed });
@@ -169,6 +164,37 @@ export class SettingsTab extends PluginSettingTab {
 				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
 			}
 		});
+	}
+
+	private renderUpcomingChart(containerEl: HTMLElement, rows: DailyReviewCount[]): void {
+		const lang = t();
+		const maxCount = Math.max(0, ...rows.map(row => row.count));
+		const chartEl = containerEl.createDiv({ cls: 'obr-settings-chart' });
+
+		const yAxisEl = chartEl.createDiv({ cls: 'obr-settings-chart-y-axis' });
+		yAxisEl.createDiv({ cls: 'obr-settings-chart-axis-title', text: lang.settings.stats.countAxis });
+		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-max', text: String(maxCount) });
+		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-zero', text: '0' });
+
+		const plotEl = chartEl.createDiv({ cls: 'obr-settings-chart-plot' });
+		rows.forEach(row => {
+			const barGroupEl = plotEl.createDiv({ cls: 'obr-settings-chart-bar-group' });
+			const barEl = barGroupEl.createDiv({ cls: 'obr-settings-chart-bar' });
+			const heightPercent = maxCount > 0 ? Math.max(4, Math.round((row.count / maxCount) * 100)) : 0;
+			barEl.style.height = `${heightPercent}%`;
+			barEl.setAttribute('aria-label', lang.settings.stats.dayCount(row.day, row.count));
+			barEl.setAttribute('title', lang.settings.stats.dayCount(row.day, row.count));
+
+			const label = row.day === 1 || row.day % 5 === 0
+				? lang.settings.stats.dayShort(row.day)
+				: '';
+			barGroupEl.createDiv({ cls: 'obr-settings-chart-x-label', text: label });
+		});
+
+		containerEl.createDiv({ cls: 'obr-settings-chart-x-axis-title', text: lang.settings.stats.dayAxis });
+		if (maxCount === 0) {
+			containerEl.createDiv({ cls: 'obr-settings-chart-empty', text: lang.settings.stats.noUpcoming });
+		}
 	}
 
 	private renderCompactStatList(containerEl: HTMLElement, total: number, rows: Array<[string, string, number]>): void {

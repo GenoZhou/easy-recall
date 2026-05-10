@@ -1,5 +1,12 @@
 import { Card } from '../types';
 
+export const UPCOMING_REVIEW_CHART_DAYS = 30;
+
+export interface DailyReviewCount {
+	day: number;
+	count: number;
+}
+
 export interface ReviewStats {
 	total: number;
 	totalDecks: number;
@@ -9,6 +16,7 @@ export interface ReviewStats {
 	upcoming3d: number;
 	upcoming7d: number;
 	upcoming30d: number;
+	upcomingDaily: DailyReviewCount[];
 	later: number;
 }
 
@@ -22,6 +30,10 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 		upcoming3d: 0,
 		upcoming7d: 0,
 		upcoming30d: 0,
+		upcomingDaily: Array.from({ length: UPCOMING_REVIEW_CHART_DAYS }, (_, index) => ({
+			day: index + 1,
+			count: 0,
+		})),
 		later: 0,
 	};
 	const deckSet = new Set<string>();
@@ -46,6 +58,11 @@ export function calculateReviewStats(cards: Card[], now: Date = new Date()): Rev
 
 		const diffMs = card.schedule.due.getTime() - now.getTime();
 		const diffDays = diffMs / (1000 * 60 * 60 * 24);
+		const chartDay = Math.ceil(diffDays);
+
+		if (chartDay >= 1 && chartDay <= UPCOMING_REVIEW_CHART_DAYS) {
+			stats.upcomingDaily[chartDay - 1].count++;
+		}
 
 		if (diffDays <= 1) {
 			stats.upcoming1d++;

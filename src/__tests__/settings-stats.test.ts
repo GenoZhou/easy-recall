@@ -118,6 +118,11 @@ describe('calculateReviewStats', () => {
     expect(stats.upcoming3d).toBe(1);
     expect(stats.upcoming7d).toBe(1);
     expect(stats.upcoming30d).toBe(1);
+    expect(stats.upcomingDaily).toHaveLength(30);
+    expect(stats.upcomingDaily[0]).toEqual({ day: 1, count: 1 });
+    expect(stats.upcomingDaily[1]).toEqual({ day: 2, count: 1 });
+    expect(stats.upcomingDaily[5]).toEqual({ day: 6, count: 1 });
+    expect(stats.upcomingDaily[20]).toEqual({ day: 21, count: 1 });
     expect(stats.later).toBe(1);
     expect(stats.totalDecks).toBe(1);
   });

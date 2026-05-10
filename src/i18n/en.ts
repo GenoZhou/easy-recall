@@ -112,6 +112,11 @@ export const en = {
 			upcoming7d: 'Within 7 days',
 			upcoming30d: 'Within 30 days',
 			later: 'Later',
+			dayAxis: 'Days from now',
+			countAxis: 'Due cards',
+			dayShort: (day: number) => `${day}d`,
+			dayCount: (day: number, count: number) => `Day ${day}: ${count} due cards`,
+			noUpcoming: 'No scheduled cards due in the next 30 days.',
 			explanations: {
 				matureCards: 'Reviewed multiple times and relatively stable.',
 				dueNow: 'Available to review immediately.',
