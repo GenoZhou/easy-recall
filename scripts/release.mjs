@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Prepare or publish a prerelease tag.
+ * Prepare or publish a stable release tag.
  *
  * Examples:
- *   node scripts/prerelease.mjs
- *   node scripts/prerelease.mjs --version 1.2.3-beta.2
- *   node scripts/prerelease.mjs --base minor --preid beta
- *   node scripts/prerelease.mjs --publish
+ *   node scripts/release.mjs
+ *   node scripts/release.mjs --version 1.2.7
+ *   node scripts/release.mjs --bump minor
+ *   node scripts/release.mjs --publish
  *
  * GitHub Releases are created by .github/workflows/release.yml after the tag is pushed.
  */
@@ -18,7 +18,6 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-
 const args = process.argv.slice(2);
 
 function readArg(name) {
@@ -32,21 +31,19 @@ function hasFlag(name) {
 }
 
 function usage() {
-  console.log(`Usage: node scripts/prerelease.mjs [options]
+  console.log(`Usage: node scripts/release.mjs [options]
 
 Options:
-  --version <version>   Use an explicit prerelease version, e.g. 1.2.3-beta.2
-  --base <type>         Base bump when starting a new prerelease: major, minor, patch
-  --preid <id>          Prerelease identifier, default: beta
-  --publish             Commit, tag, and push. GitHub Actions creates the prerelease.
+  --version <version>   Use an explicit stable version, e.g. 1.2.7
+  --bump <type>         Bump from current stable version: major, minor, patch
+  --publish             Commit, tag, and push. GitHub Actions creates the release.
   --remote <name>       Git remote to inspect and push, default: origin
   --help                Show this help
 
 Default behavior:
-  - The next prerelease number is chosen from local and remote tags.
-  - If current version is 1.2.2 and origin has 1.2.3-beta.3, next is 1.2.3-beta.4.
+  - If the current version is a prerelease, the stable base is used, e.g. 1.2.7-beta.3 -> 1.2.7.
+  - If the current version is stable, patch is bumped, e.g. 1.2.7 -> 1.2.8.
   - Without --publish, only files are updated and npm run prepublish is executed.
-  - With --publish, the script re-checks that the tag does not exist before pushing.
 `);
 }
 
@@ -56,8 +53,7 @@ if (hasFlag("--help")) {
 }
 
 const explicitVersion = readArg("--version");
-const explicitBase = readArg("--base");
-const preid = readArg("--preid") || "beta";
+const bumpType = readArg("--bump");
 const shouldPublish = hasFlag("--publish");
 const remoteName = readArg("--remote") || "origin";
 
@@ -69,13 +65,13 @@ const files = {
   readmeZh: path.join(rootDir, "README.zh.md"),
 };
 
-if (explicitBase && !["major", "minor", "patch"].includes(explicitBase)) {
-  fail(`Invalid --base "${explicitBase}". Expected major, minor, or patch.`);
+if (bumpType && !["major", "minor", "patch"].includes(bumpType)) {
+  fail(`Invalid --bump "${bumpType}". Expected major, minor, or patch.`);
 }
 
-await main();
+main();
 
-async function main() {
+function main() {
   const manifest = readJson(files.manifest);
   const packageJson = readJson(files.packageJson);
 
@@ -83,58 +79,28 @@ async function main() {
     fail(`Version mismatch: manifest.json (${manifest.version}) vs package.json (${packageJson.version})`);
   }
 
-  const currentVersion = manifest.version;
-  const nextVersion = explicitVersion || getNextPrereleaseVersion(currentVersion, preid, explicitBase);
-  validatePrereleaseVersion(nextVersion);
+  const nextVersion = explicitVersion || getNextStableVersion(manifest.version, bumpType);
+  validateStableVersion(nextVersion);
   ensureVersionAvailable(nextVersion);
 
   updateVersions(manifest, packageJson, nextVersion);
   run("npm", ["run", "prepublish"]);
 
-  console.log(`\nPrepared prerelease ${nextVersion}`);
+  console.log(`\nPrepared release ${nextVersion}`);
 
   if (shouldPublish) {
-    await publish(nextVersion);
+    publish(nextVersion);
   }
 }
 
-function getNextPrereleaseVersion(version, id, baseType) {
+function getNextStableVersion(version, type) {
   const parsed = parseVersion(version);
-  const base = getPrereleaseBase(parsed, baseType);
-  const localMax = getMaxPrereleaseTagNumber(
-    commandOutput("git", ["tag", "--list", `${base.major}.${base.minor}.${base.patch}-${id}.*`]),
-    base,
-    id
-  );
-  const remoteMax = getMaxPrereleaseTagNumber(
-    remoteTagOutput(`${base.major}.${base.minor}.${base.patch}-${id}.*`),
-    base,
-    id
-  );
-  const nextNumber = Math.max(localMax, remoteMax) + 1;
-
-  return `${base.major}.${base.minor}.${base.patch}-${id}.${nextNumber}`;
-}
-
-function getPrereleaseBase(version, baseType) {
-  if (!baseType && version.prerelease) {
-    return { major: version.major, minor: version.minor, patch: version.patch };
+  if (!type && parsed.prerelease) {
+    return `${parsed.major}.${parsed.minor}.${parsed.patch}`;
   }
-  return bumpBase(version, baseType || "patch");
-}
 
-function getMaxPrereleaseTagNumber(tagOutput, base, id) {
-  if (!tagOutput) return 0;
-
-  const tagPattern = new RegExp(
-    `(?:refs/tags/)?${base.major}\\.${base.minor}\\.${base.patch}-${escapeRegExp(id)}\\.(\\d+)$`
-  );
-  return tagOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim().match(tagPattern)?.[1])
-    .filter(Boolean)
-    .map(Number)
-    .reduce((max, value) => Math.max(max, value), 0);
+  const bumped = bumpBase(parsed, type || "patch");
+  return `${bumped.major}.${bumped.minor}.${bumped.patch}`;
 }
 
 function parseVersion(version) {
@@ -163,10 +129,10 @@ function bumpBase(version, type) {
   }
 }
 
-function validatePrereleaseVersion(version) {
+function validateStableVersion(version) {
   const parsed = parseVersion(version);
-  if (!parsed.prerelease) {
-    fail(`"${version}" is not a prerelease version. Include a suffix such as -beta.1.`);
+  if (parsed.prerelease) {
+    fail(`"${version}" is not a stable version. Use scripts/prerelease.mjs for prereleases.`);
   }
 }
 
@@ -178,7 +144,6 @@ function ensureVersionAvailable(version) {
   if (remoteTagOutput(version)) {
     fail(`Remote tag ${version} already exists on ${remoteName}.`);
   }
-
 }
 
 function updateVersions(manifest, packageJson, version) {
@@ -212,7 +177,7 @@ function updateReadmeBadge(filePath, version) {
   fs.writeFileSync(filePath, next);
 }
 
-async function publish(version) {
+function publish(version) {
   const branch = commandOutput("git", ["branch", "--show-current"]);
   if (!branch) {
     fail("Could not determine current git branch.");
@@ -227,17 +192,13 @@ async function publish(version) {
   }
 
   ensureVersionAvailable(version);
-  printPublishSummary(version, branch);
+  console.log(`\nReady to publish release ${version}`);
+  console.log(`Remote: ${remoteName}`);
+  console.log(`Branch: ${branch}`);
+  console.log("This will push the branch and tag. GitHub Actions will create the release.");
 
   run("git", ["tag", version]);
   run("git", ["push", remoteName, branch, version]);
-}
-
-function printPublishSummary(version, branch) {
-  console.log(`\nReady to publish prerelease ${version}`);
-  console.log(`Remote: ${remoteName}`);
-  console.log(`Branch: ${branch}`);
-  console.log("This will push the branch and tag. GitHub Actions will create the prerelease.");
 }
 
 function readJson(filePath) {
@@ -284,10 +245,6 @@ function run(command, commandArgs) {
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
-}
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function fail(message) {
