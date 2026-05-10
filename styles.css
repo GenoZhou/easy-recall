@@ -272,11 +272,28 @@
 	font-weight: 600;
 }
 
+.obr-btn-show .obr-btn-label {
+	margin-right: 8px;
+}
+
+.obr-btn-shortcut {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.6em;
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, 0.22);
+	font-size: 0.72em;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
 /* 按钮时间标注（桌面端） */
 .obr-btn-rating .obr-btn-time {
 	font-size: 0.75em;
 	opacity: 0.85;
-	margin-left: 4px;
+	margin-left: 6px;
 	font-weight: 400;
 }
 

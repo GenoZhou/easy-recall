@@ -10,6 +10,7 @@ export class ReviewView extends ItemView {
 	private titleEl: HTMLElement | null = null;
 	private session: ReviewSession | null = null;
 	private onComplete?: () => void;
+	private domShortcutsRegistered: boolean = false;
 
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
@@ -41,10 +42,8 @@ export class ReviewView extends ItemView {
 			complete: () => this.completeReview(),
 			openSource: (card) => openCardSource(this.app, options.vault, card, true),
 		});
-		if (this.scope) {
-			this.session.registerShortcuts(this.scope);
-		}
 		await this.session.render();
+		this.contentEl.focus();
 	}
 
 	async onClose(): Promise<void> {
@@ -58,6 +57,15 @@ export class ReviewView extends ItemView {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('obr-review-view');
+		contentEl.tabIndex = -1;
+		if (!this.domShortcutsRegistered) {
+			// ItemView Scope can miss keys when focus is not owned by the view.
+			// Keep tab shortcuts local to the focused review container instead of binding globally.
+			this.registerDomEvent(contentEl, 'keydown', (evt: KeyboardEvent) => {
+				this.session?.handleShortcutEvent(evt);
+			});
+			this.domShortcutsRegistered = true;
+		}
 
 		this.titleEl = contentEl.createEl('h2', {
 			text: lang.review.title,

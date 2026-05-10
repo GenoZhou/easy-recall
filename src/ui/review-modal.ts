@@ -56,6 +56,7 @@ export class ReviewModal extends Modal {
 				return opened;
 			},
 		});
+		// Modals own keyboard focus in Obsidian, so Scope is reliable here.
 		this.session.registerShortcuts(this.scope);
 		void this.session.render();
 	}

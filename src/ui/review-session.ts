@@ -94,21 +94,57 @@ export class ReviewSession {
 		this.shortcutScope = scope;
 
 		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.SHOW_ANSWER, (evt: KeyboardEvent) => {
+			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.SHOW_ANSWER);
+		}));
+
+		KEYBOARD_SHORTCUTS.RATINGS.forEach(shortcut => {
+			this.shortcutHandlers.push(scope.register([], shortcut, (evt: KeyboardEvent) => {
+				return this.handleShortcutEvent(evt, shortcut);
+			}));
+		});
+	}
+
+	handleShortcutEvent(evt: KeyboardEvent, fallbackKey?: string): boolean {
+		if (Platform.isMobile) {
+			return true;
+		}
+
+		if (this.shouldIgnoreShortcutEvent(evt)) {
+			return true;
+		}
+
+		const key = evt.key || fallbackKey;
+
+		if (key === KEYBOARD_SHORTCUTS.SHOW_ANSWER) {
 			evt.preventDefault();
 			if (!evt.repeat) {
 				this.handleEnterShortcut();
 			}
 			return false;
-		}));
+		}
 
-		KEYBOARD_SHORTCUTS.RATINGS.forEach(shortcut => {
-			const rating = Number(shortcut) as Rating;
-			this.shortcutHandlers.push(scope.register([], shortcut, (evt: KeyboardEvent) => {
-				evt.preventDefault();
-				this.rateAction(rating);
-				return false;
-			}));
-		});
+		const ratingShortcut = KEYBOARD_SHORTCUTS.RATINGS.find(shortcut => shortcut === key);
+		if (ratingShortcut) {
+			evt.preventDefault();
+			this.rateAction(Number(ratingShortcut) as Rating);
+			return false;
+		}
+
+		return true;
+	}
+
+	private shouldIgnoreShortcutEvent(evt: KeyboardEvent): boolean {
+		const target = evt.target;
+		if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
+			return false;
+		}
+
+		if (target.isContentEditable) {
+			return true;
+		}
+
+		const tagName = target.tagName.toLowerCase();
+		return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 	}
 
 	unregisterShortcuts(): void {
@@ -291,9 +327,12 @@ export class ReviewSession {
 			}
 
 			const showBtn = btnContainer.createEl('button', {
-				text: lang.review.showAnswer,
 				cls: 'obr-btn-show mod-cta'
 			});
+			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'obr-btn-label' });
+			if (!Platform.isMobile) {
+				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.SHOW_ANSWER, cls: 'obr-btn-shortcut' });
+			}
 			showBtn.addEventListener('click', () => {
 				this.showAnswer = true;
 				this.showHint = true;
@@ -313,6 +352,9 @@ export class ReviewSession {
 			});
 
 			buttonEl.createSpan({ text: btn.label, cls: 'obr-btn-label' });
+			if (isDesktop) {
+				buttonEl.createSpan({ text: btn.shortcut, cls: 'obr-btn-shortcut' });
+			}
 
 			if (isDesktop && currentCard && btn.rating !== 1) {
 				const timeText = getNextReviewShortText(currentCard.schedule, btn.rating);

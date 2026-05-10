@@ -122,8 +122,9 @@ function createScope() {
 	return { scope, handlers };
 }
 
-function keyEvent(options: Partial<KeyboardEvent> = {}): KeyboardEvent {
+function keyEvent(key: string, options: Partial<KeyboardEvent> = {}): KeyboardEvent {
 	return {
+		key,
 		preventDefault: jest.fn(),
 		repeat: false,
 		...options,
@@ -136,6 +137,8 @@ async function flushPromises(): Promise<void> {
 }
 
 describe('ReviewSession shortcuts', () => {
+	const originalHTMLElement = (globalThis as any).HTMLElement;
+
 	beforeEach(() => {
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date('2026-05-10T00:00:00Z'));
@@ -143,6 +146,7 @@ describe('ReviewSession shortcuts', () => {
 	});
 
 	afterEach(() => {
+		(globalThis as any).HTMLElement = originalHTMLElement;
 		jest.useRealTimers();
 		jest.clearAllMocks();
 	});
@@ -186,12 +190,12 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get('Enter')!(keyEvent());
+		handlers.get('Enter')!(keyEvent('Enter'));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 		expect(host.buttonsEl.querySelector('.obr-btn-good')?.className).toContain('is-enter-cooling');
 
-		handlers.get('Enter')!(keyEvent());
+		handlers.get('Enter')!(keyEvent('Enter'));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 
@@ -199,7 +203,7 @@ describe('ReviewSession shortcuts', () => {
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.obr-btn-good')?.className).not.toContain('is-enter-cooling');
 
-		handlers.get('Enter')!(keyEvent());
+		handlers.get('Enter')!(keyEvent('Enter'));
 		await flushPromises();
 		expect(host.complete).toHaveBeenCalledTimes(1);
 	});
@@ -215,11 +219,58 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get('Enter')!(keyEvent({ repeat: true }));
+		handlers.get('Enter')!(keyEvent('Enter', { repeat: true }));
 		await flushPromises();
 
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
+	});
+
+	it('does not capture shortcuts from editable fields', async () => {
+		class FakeHTMLElement {
+			tagName: string;
+			isContentEditable: boolean;
+
+			constructor(tagName: string, isContentEditable: boolean = false) {
+				this.tagName = tagName;
+				this.isContentEditable = isContentEditable;
+			}
+		}
+		(globalThis as any).HTMLElement = FakeHTMLElement;
+
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+		await session.render();
+
+		const inputEvent = keyEvent('Enter', { target: new FakeHTMLElement('input') as any });
+		const editableEvent = keyEvent('Enter', { target: new FakeHTMLElement('div', true) as any });
+
+		expect(session.handleShortcutEvent(inputEvent)).toBe(true);
+		expect(session.handleShortcutEvent(editableEvent)).toBe(true);
+		expect(inputEvent.preventDefault).not.toHaveBeenCalled();
+		expect(editableEvent.preventDefault).not.toHaveBeenCalled();
+		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+	});
+
+	it('renders desktop shortcut hints on review buttons', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+		expect(host.buttonsEl.querySelector('.obr-btn-shortcut')?.textContent).toBe('Enter');
+
+		session.showAnswerAction();
+		await flushPromises();
+
+		expect(host.buttonsEl.querySelector('.obr-btn-again')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('1');
+		expect(host.buttonsEl.querySelector('.obr-btn-hard')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('2');
+		expect(host.buttonsEl.querySelector('.obr-btn-good')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('3');
 	});
 
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {
@@ -233,15 +284,15 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get(shortcut)!(keyEvent());
+		handlers.get(shortcut)!(keyEvent(shortcut));
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 
-		handlers.get('Enter')!(keyEvent());
+		handlers.get('Enter')!(keyEvent('Enter'));
 		await flushPromises();
 
-		handlers.get(shortcut)!(keyEvent());
+		handlers.get(shortcut)!(keyEvent(shortcut));
 		await flushPromises();
 
 		if (shortcut === '1') {
