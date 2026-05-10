@@ -35,6 +35,7 @@ export async function executeReviewCurrentNote(
 			cards: dueCards,
 			vault: app.vault,
 			maxCardsPerReview: plugin.settings.reviewBatchSize,
+			hideReviewPathHiddenWords: plugin.settings.hideReviewPathHiddenWords,
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},

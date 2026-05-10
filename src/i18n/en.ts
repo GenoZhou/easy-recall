@@ -98,6 +98,10 @@ export const en = {
 			modal: 'Modal',
 			tab: 'Tab',
 		},
+		hideReviewPathHiddenWords: {
+			name: 'Hide Hidden Words in Review Path',
+			desc: 'Mask hidden Cloze terms and Q&A answers in the review path until the answer is revealed.',
+		},
 		stats: {
 			name: 'Review Stats',
 			desc: 'Summary of review counts and upcoming review windows.',

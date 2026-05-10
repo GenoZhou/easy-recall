@@ -19,6 +19,8 @@ export interface OBReviewsSettings {
 	desktopReviewSurface: ReviewSurface;
 	/** 手机端复习界面展示方式 */
 	mobileReviewSurface: ReviewSurface;
+	/** 复习路径是否隐藏未揭示的答案词 */
+	hideReviewPathHiddenWords: boolean;
 }
 
 export type ReviewSurface = 'modal' | 'tab';
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS: OBReviewsSettings = {
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	desktopReviewSurface: 'modal',
 	mobileReviewSurface: 'modal',
+	hideReviewPathHiddenWords: true,
 };
 
 export function normalizeReviewBatchSize(value: unknown): number {
@@ -70,6 +73,7 @@ export class SettingsManager {
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
 				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
+				hideReviewPathHiddenWords: loaded.hideReviewPathHiddenWords ?? DEFAULT_SETTINGS.hideReviewPathHiddenWords,
 			};
 		}
 	}

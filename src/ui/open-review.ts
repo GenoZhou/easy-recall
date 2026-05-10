@@ -9,6 +9,7 @@ export interface OpenReviewOptions {
 	vault: Vault;
 	maxCardsPerReview?: number;
 	onComplete?: () => void;
+	hideReviewPathHiddenWords?: boolean;
 }
 
 export async function openReview(

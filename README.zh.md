@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.7-blue)
+![Version](https://img.shields.io/badge/version-1.2.8--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -118,6 +118,8 @@ tags:
 默认每次复习最多放入 30 张到期卡片，让标记为「没记住」的卡片能在较小批次内更快回到队尾。可在插件设置中通过「单次复习上限」调整这个数量。
 
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
+
+默认情况下，复习路径会在答案显示前隐藏其中匹配挖空内容和问答答案的文本。如需始终显示原始路径，可在插件设置中关闭「隐藏复习路径中的答案词」。
 
 ## 桌面端快捷键
 

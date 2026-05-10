@@ -100,6 +100,10 @@ export const zh: Translations = {
 			modal: '模态窗口',
 			tab: '标签页',
 		},
+		hideReviewPathHiddenWords: {
+			name: '隐藏复习路径中的答案词',
+			desc: '答案显示前，隐藏复习路径中匹配挖空内容和问答答案的文本。',
+		},
 		stats: {
 			name: '复习统计',
 			desc: '查看复习摘要和接下来几个复习窗口。',

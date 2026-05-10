@@ -28,7 +28,7 @@ jest.mock('obsidian', () => {
 
 import { MarkdownView, TFile } from 'obsidian';
 import type { Card } from '../types';
-import { buildHeadingPathLabel, openCardSource } from '../ui/review-modal';
+import { buildHeadingPathLabel, buildVisibleHeadingPathLabel, openCardSource } from '../ui/review-modal';
 
 describe('review-modal helpers', () => {
   describe('buildHeadingPathLabel', () => {
@@ -61,6 +61,89 @@ describe('review-modal helpers', () => {
       };
 
       expect(buildHeadingPathLabel(card)).toBeNull();
+    });
+  });
+
+  describe('buildVisibleHeadingPathLabel', () => {
+    it('should mask cloze terms in filename and heading before reveal', () => {
+      const card: Card = {
+        id: '1',
+        type: 'cloze',
+        content: 'Use ==Insulin== for ==Insulin resistance==',
+        tags: [],
+        filePath: 'medicine/Insulin.md',
+        lineStart: 10,
+        lineEnd: 10,
+        headingPath: ['Insulin resistance'],
+      };
+
+      expect(buildVisibleHeadingPathLabel(card, false, true)).toBe('[...] / [...]');
+    });
+
+    it('should mask QA answer in path before reveal', () => {
+      const card: Card = {
+        id: '1',
+        type: 'qa',
+        content: 'Question\nAnswer',
+        question: 'What is the answer?',
+        answer: 'Paris',
+        tags: [],
+        filePath: 'geo/Paris.md',
+        lineStart: 0,
+        lineEnd: 1,
+        headingPath: ['Paris facts'],
+      };
+
+      expect(buildVisibleHeadingPathLabel(card, false, true)).toBe('[...] / [...] facts');
+    });
+
+    it('should leave path unchanged after reveal', () => {
+      const card: Card = {
+        id: '1',
+        type: 'cloze',
+        content: 'Use ==Insulin==',
+        tags: [],
+        filePath: 'medicine/Insulin.md',
+        lineStart: 10,
+        lineEnd: 10,
+        headingPath: ['Insulin'],
+      };
+
+      expect(buildVisibleHeadingPathLabel(card, true, true)).toBe('Insulin / Insulin');
+    });
+
+    it('should leave path unchanged when masking is disabled', () => {
+      const card: Card = {
+        id: '1',
+        type: 'qa',
+        content: 'Question\nAnswer',
+        question: 'What is the answer?',
+        answer: 'Paris',
+        tags: [],
+        filePath: 'geo/Paris.md',
+        lineStart: 0,
+        lineEnd: 1,
+        headingPath: ['Paris facts'],
+      };
+
+      expect(buildVisibleHeadingPathLabel(card, false, false)).toBe('Paris / Paris facts');
+    });
+
+    it('should treat regex-like answer text as literal text', () => {
+      const card: Card = {
+        id: '1',
+        type: 'qa',
+        content: 'Question\nAnswer',
+        question: 'Pattern?',
+        answer: 'a.b*',
+        tags: [],
+        filePath: 'regex/a.b*.md',
+        lineStart: 0,
+        lineEnd: 1,
+        headingPath: ['aXbbb'],
+      };
+
+      expect(buildVisibleHeadingPathLabel(card, false, true)).toBe('[...] / aXbbb');
     });
   });
 

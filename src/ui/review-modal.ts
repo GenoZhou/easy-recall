@@ -5,18 +5,20 @@ import {
 	ReviewOptions,
 	ReviewSession,
 	buildHeadingPathLabel,
+	buildVisibleHeadingPathLabel,
 	openCardSource,
 } from './review-session';
 
 export interface ReviewModalOptions extends ReviewOptions {}
 
-export { buildHeadingPathLabel, openCardSource };
+export { buildHeadingPathLabel, buildVisibleHeadingPathLabel, openCardSource };
 
 export class ReviewModal extends Modal {
 	private cards: Card[];
 	private vault: Vault;
 	private maxCardsPerReview?: number;
 	private onComplete?: () => void;
+	private hideReviewPathHiddenWords?: boolean;
 	private cardContentEl: HTMLElement | null = null;
 	private buttonsContainerEl: HTMLElement | null = null;
 	private session: ReviewSession | null = null;
@@ -28,6 +30,7 @@ export class ReviewModal extends Modal {
 		this.vault = options.vault;
 		this.maxCardsPerReview = options.maxCardsPerReview;
 		this.onComplete = options.onComplete;
+		this.hideReviewPathHiddenWords = options.hideReviewPathHiddenWords;
 	}
 
 	onOpen() {
@@ -45,6 +48,7 @@ export class ReviewModal extends Modal {
 			vault: this.vault,
 			maxCardsPerReview: this.maxCardsPerReview,
 			onComplete: this.onComplete,
+			hideReviewPathHiddenWords: this.hideReviewPathHiddenWords,
 		}, {
 			contentEl: this.cardContentEl,
 			buttonsEl: this.buttonsContainerEl,

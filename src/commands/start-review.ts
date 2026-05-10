@@ -20,7 +20,7 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 	
 	try {
 		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
-		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, () => {
+		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.hideReviewPathHiddenWords, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
 		});
 	} catch (err) {

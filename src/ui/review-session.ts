@@ -12,6 +12,7 @@ export interface ReviewOptions {
 	vault: Vault;
 	maxCardsPerReview?: number;
 	onComplete?: () => void;
+	hideReviewPathHiddenWords?: boolean;
 }
 
 export interface ReviewSessionHost {
@@ -35,6 +36,48 @@ export function buildHeadingPathLabel(card: Card): string | null {
 	const fileName = card.filePath.split('/').pop()?.replace(/\.md$/i, '') || card.filePath;
 	const parts = [fileName, ...card.headingPath];
 	return parts.join(' / ');
+}
+
+export function buildVisibleHeadingPathLabel(
+	card: Card,
+	showAnswer: boolean,
+	hideReviewPathHiddenWords: boolean
+): string | null {
+	const headingPath = buildHeadingPathLabel(card);
+	if (!headingPath || showAnswer || !hideReviewPathHiddenWords) {
+		return headingPath;
+	}
+
+	const hiddenTerms = getHiddenPathTerms(card);
+	if (hiddenTerms.length === 0) {
+		return headingPath;
+	}
+
+	return hiddenTerms.reduce((label, term) => label.split(term).join('[...]'), headingPath);
+}
+
+function getHiddenPathTerms(card: Card): string[] {
+	const terms = new Set<string>();
+
+	if (card.type === 'cloze') {
+		const clozeRegex = /==(.+?)==/g;
+		let match: RegExpExecArray | null;
+		while ((match = clozeRegex.exec(card.content)) !== null) {
+			const term = match[1].trim();
+			if (term) {
+				terms.add(term);
+			}
+		}
+	}
+
+	if (card.type === 'qa') {
+		const answer = card.answer?.trim();
+		if (answer) {
+			terms.add(answer);
+		}
+	}
+
+	return Array.from(terms).sort((a, b) => b.length - a.length);
 }
 
 export function getReviewStatusTags(card: Card): ReviewStatusTag[] {
@@ -95,12 +138,14 @@ export class ReviewSession {
 	private isComplete: boolean = false;
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
+	private hideReviewPathHiddenWords: boolean;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
 		this.vault = options.vault;
 		this.host = host;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
+		this.hideReviewPathHiddenWords = options.hideReviewPathHiddenWords ?? true;
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -231,7 +276,7 @@ export class ReviewSession {
 			});
 		}
 
-		const headingPath = buildHeadingPathLabel(card);
+		const headingPath = buildVisibleHeadingPathLabel(card, this.showAnswer, this.hideReviewPathHiddenWords);
 		if (headingPath) {
 			const headingLink = this.host.contentEl.createEl('a', {
 				text: headingPath,

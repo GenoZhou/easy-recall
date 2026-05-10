@@ -109,6 +109,18 @@ export class SettingsTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(containerEl)
+			.setName(lang.settings.hideReviewPathHiddenWords.name)
+			.setDesc(lang.settings.hideReviewPathHiddenWords.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.hideReviewPathHiddenWords)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ hideReviewPathHiddenWords: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
 		const statsContainer = containerEl.createDiv({ cls: 'obr-settings-stats' });
 		new Setting(containerEl)
 			.setName(lang.settings.stats.name)
