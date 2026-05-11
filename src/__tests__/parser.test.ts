@@ -486,6 +486,57 @@ tags:
       expect(cards[0].headingPath).toEqual(['一级标题', '二级标题', '三级标题']);
     });
 
+    it('should hide marked heading segments from heading path', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+# 隐藏章 <!--obr-hide-->
+
+## 显示节
+
+==答案==在这里。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].headingPath).toEqual(['显示节']);
+    });
+
+    it('should strip hide marker from visible heading path segments', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+# 显示章
+
+## 隐藏节 <!--obr-hide-->
+
+### 显示小节
+
+==答案==在这里。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].headingPath).toEqual(['显示章', '显示小节']);
+    });
+
+    it('should only hide heading markers at the end of the heading line', () => {
+      const content = `---
+tags:
+  - ob-reviews/test
+---
+
+# 标题 <!--obr-hide--> 后缀
+
+==答案==在这里。`;
+
+      const cards = parseNote(content, 'test.md');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].headingPath).toEqual(['标题 <!--obr-hide--> 后缀']);
+    });
+
     it('should not include heading path when no headings exist', () => {
       const content = `---
 tags:
