@@ -35,7 +35,6 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.hideReviewPathHiddenWords).toBe(true);
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -49,7 +48,6 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.hideReviewPathHiddenWords).toBe(true);
 		});
 
 		it('should load separate desktop and mobile review surfaces', async () => {
@@ -82,6 +80,7 @@ describe('SettingsManager', () => {
 				language: 'zh',
 				defaultEase: 300,
 				debugMode: true,
+				hideReviewPathHiddenWords: false,
 			});
 
 			await manager.load();
@@ -93,10 +92,10 @@ describe('SettingsManager', () => {
 				reviewBatchSize: 30,
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
-				hideReviewPathHiddenWords: true,
 			});
-			expect((settings as OBReviewsSettings & { defaultEase?: number; reviewSurface?: string }).defaultEase).toBeUndefined();
-			expect((settings as OBReviewsSettings & { reviewSurface?: string }).reviewSurface).toBeUndefined();
+			expect((settings as OBReviewsSettings & { defaultEase?: number; reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
+			expect((settings as OBReviewsSettings & { reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).reviewSurface).toBeUndefined();
+			expect((settings as OBReviewsSettings & { hideReviewPathHiddenWords?: boolean }).hideReviewPathHiddenWords).toBeUndefined();
 		});
 
 		it('should handle empty object', async () => {
@@ -133,7 +132,6 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(30);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.hideReviewPathHiddenWords).toBe(true);
 		});
 
 		it('should update review batch size', async () => {
@@ -163,15 +161,6 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.desktopReviewSurface).toBe('tab');
 			expect(settings.mobileReviewSurface).toBe('modal');
-		});
-
-		it('should update review path hidden word masking', async () => {
-			mockLoadData.mockResolvedValue(null);
-			await manager.load();
-
-			await manager.update({ hideReviewPathHiddenWords: false });
-
-			expect(manager.get().hideReviewPathHiddenWords).toBe(false);
 		});
 
 		it('should save after update', async () => {
@@ -226,7 +215,6 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(30);
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
-		expect(DEFAULT_SETTINGS.hideReviewPathHiddenWords).toBe(true);
 	});
 });
 

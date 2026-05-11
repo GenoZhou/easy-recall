@@ -324,7 +324,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.contentEl.querySelector('.obr-status-tag-new')?.textContent).toBe('新卡片');
 	});
 
-	it('masks hidden words in the heading path until the answer is visible', async () => {
+	it('shows heading path text without answer-word masking', async () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({
@@ -333,20 +333,12 @@ describe('ReviewSession shortcuts', () => {
 				headingPath: ['answer details'],
 			})],
 			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
-			hideReviewPathHiddenWords: true,
 		}, host as any);
 
 		await session.render();
-		const hiddenPath = host.contentEl.querySelector('.obr-heading-path');
-		expect(hiddenPath?.textContent).toBe('[...] / [...] details');
-		expect(hiddenPath?.attributes['aria-label']).toContain('[...] / [...] details');
-
-		session.showAnswerAction();
-		await flushPromises();
-
-		const revealedPath = host.contentEl.querySelector('.obr-heading-path');
-		expect(revealedPath?.textContent).toBe('answer / answer details');
-		expect(revealedPath?.attributes['aria-label']).toContain('answer / answer details');
+		const headingPath = host.contentEl.querySelector('.obr-heading-path');
+		expect(headingPath?.textContent).toBe('answer / answer details');
+		expect(headingPath?.attributes['aria-label']).toContain('answer / answer details');
 	});
 
 	it('builds new-card status only before the first hard or good rating', () => {

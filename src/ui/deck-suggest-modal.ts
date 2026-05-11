@@ -29,14 +29,12 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private hasDueCards: boolean = false;
 	private reviewSurface: ReviewSurface;
 	private maxCardsPerReview: number;
-	private hideReviewPathHiddenWords: boolean;
 
-	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, hideReviewPathHiddenWords: boolean, onReviewComplete?: () => void) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, onReviewComplete?: () => void) {
 		super(app);
 		this.vault = vault;
 		this.reviewSurface = reviewSurface;
 		this.maxCardsPerReview = maxCardsPerReview;
-		this.hideReviewPathHiddenWords = hideReviewPathHiddenWords;
 		this.onReviewComplete = onReviewComplete;
 		
 		const lang = t();
@@ -249,7 +247,6 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 				cards: cardsToReview,
 				vault: this.vault,
 				maxCardsPerReview: this.maxCardsPerReview,
-				hideReviewPathHiddenWords: this.hideReviewPathHiddenWords,
 				onComplete: () => {
 					if (this.onReviewComplete) {
 						this.onReviewComplete();
@@ -279,8 +276,7 @@ export async function openDeckModal(
 	vault: Vault,
 	reviewSurface: ReviewSurface,
 	maxCardsPerReview: number,
-	hideReviewPathHiddenWords: boolean,
 	onComplete?: () => void
 ): Promise<void> {
-	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, hideReviewPathHiddenWords, onComplete).open();
+	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, onComplete).open();
 }

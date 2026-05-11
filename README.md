@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.8--beta.6-blue)
+![Version](https://img.shields.io/badge/version-1.2.8--beta.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -119,8 +119,6 @@ By default, each review session includes up to 30 due cards, so cards marked **A
 
 By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 
-By default, the review path masks hidden Cloze terms and Q&A answers until the answer is revealed. Turn off **Hide Hidden Words in Review Path** in plugin settings if you want paths to always show their original text.
-
 To hide a specific heading from the review path, add `<!--obr-hide-->` at the end of that heading line:
 
 ```markdown
@@ -130,7 +128,7 @@ To hide a specific heading from the review path, add `<!--obr-hide-->` at the en
 ==Answer== content
 ```
 
-The review path will show `File name / Section`. This only hides the marked heading segment; the file name and unmarked child headings still appear. This marker is independent from the hidden-answer-word setting above.
+The review path will show `File name / Section`. This only hides the marked heading segment; the file name and unmarked child headings still appear.
 
 ## Desktop Shortcuts
 
