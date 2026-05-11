@@ -418,6 +418,42 @@ describe('ReviewSession shortcuts', () => {
 		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Older due');
 	});
 
+	it('reviews learned due cards before learning cards with zero reps', async () => {
+		jest.setSystemTime(new Date('2026-05-10T00:00:00Z'));
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({
+					id: 'learning-card',
+					content: 'Learning ==card==',
+					schedule: {
+						interval: 0,
+						ease: 250,
+						due: new Date('2026-05-08T00:00:00Z'),
+						reps: 0,
+					},
+				}),
+				createCard({
+					id: 'learned-due-card',
+					content: 'Learned due ==card==',
+					schedule: {
+						interval: 1,
+						ease: 250,
+						due: new Date('2026-05-09T00:00:00Z'),
+						reps: 1,
+					},
+				}),
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Learned due');
+	});
+
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {

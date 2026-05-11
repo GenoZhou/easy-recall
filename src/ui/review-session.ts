@@ -28,6 +28,10 @@ interface ReviewStatusTag {
 	cls: string;
 }
 
+function isNewReviewCard(card: Card): boolean {
+	return !card.schedule || card.schedule.reps === 0;
+}
+
 export function buildHeadingPathLabel(card: Card): string | null {
 	if (!card.headingPath?.length) {
 		return null;
@@ -84,7 +88,7 @@ export function getReviewStatusTags(card: Card): ReviewStatusTag[] {
 	const lang = t();
 	const statusTags: ReviewStatusTag[] = [];
 
-	if (!card.schedule || card.schedule.reps === 0) {
+	if (isNewReviewCard(card)) {
 		statusTags.push({
 			label: lang.review.statusTags.newCard,
 			cls: 'obr-status-tag-new',
@@ -311,12 +315,14 @@ export class ReviewSession {
 		const dueCards = cards
 			.filter(card => !card.schedule || card.schedule.due <= now)
 			.sort((a, b) => {
-				if (!a.schedule && !b.schedule) return 0;
-				if (!a.schedule) return 1;
-				if (!b.schedule) return -1;
+				const isNewA = isNewReviewCard(a);
+				const isNewB = isNewReviewCard(b);
+				if (isNewA && isNewB) return 0;
+				if (isNewA) return 1;
+				if (isNewB) return -1;
 
-				const dueA = a.schedule.due.getTime();
-				const dueB = b.schedule.due.getTime();
+				const dueA = a.schedule!.due.getTime();
+				const dueB = b.schedule!.due.getTime();
 				return dueA - dueB;
 			});
 
