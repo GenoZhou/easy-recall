@@ -64,6 +64,7 @@ export const en = {
 		showHint: 'Show Hint',
 		openSource: 'Open source',
 		hint: 'Hint',
+		shortcutsInactive: 'Click the review tab to enable shortcuts',
 		statusTags: {
 			newCard: 'New card',
 		},

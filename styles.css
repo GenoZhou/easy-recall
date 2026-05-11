@@ -299,6 +299,18 @@
 	line-height: 1.4;
 }
 
+.obr-btn-shortcut-inactive {
+	opacity: 0.45;
+}
+
+.obr-shortcuts-inactive {
+	width: 100%;
+	margin-bottom: 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+}
+
 /* 按钮时间标注（桌面端） */
 .obr-btn-rating .obr-btn-time {
 	font-size: 0.75em;

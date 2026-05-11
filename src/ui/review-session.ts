@@ -21,6 +21,7 @@ export interface ReviewSessionHost {
 	setTitle(title: string): void;
 	complete(): void;
 	openSource(card: Card): Promise<boolean>;
+	areShortcutsActive?(): boolean;
 }
 
 interface ReviewStatusTag {
@@ -371,6 +372,14 @@ export class ReviewSession {
 	private renderButtons(card: Card) {
 		const lang = t();
 		this.host.buttonsEl.empty();
+		const shortcutsActive = this.host.areShortcutsActive?.() ?? true;
+
+		if (!Platform.isMobile && !shortcutsActive) {
+			this.host.buttonsEl.createDiv({
+				text: lang.review.shortcutsInactive,
+				cls: 'obr-shortcuts-inactive'
+			});
+		}
 
 		if (!this.showAnswer) {
 			const btnContainer = this.host.buttonsEl.createDiv({ cls: 'obr-buttons-row' });
@@ -381,7 +390,7 @@ export class ReviewSession {
 				});
 				showHintBtn.createSpan({ text: lang.review.showHint, cls: 'obr-btn-label' });
 				if (!Platform.isMobile) {
-					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
+					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: this.getShortcutClass(shortcutsActive) });
 				}
 				showHintBtn.addEventListener('click', () => this.handleShowHint());
 			}
@@ -391,7 +400,7 @@ export class ReviewSession {
 			});
 			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'obr-btn-label' });
 			if (!Platform.isMobile && (!card.hint || this.showHint)) {
-				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
+				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: this.getShortcutClass(shortcutsActive) });
 			}
 			showBtn.addEventListener('click', () => {
 				this.showAnswer = true;
@@ -412,7 +421,7 @@ export class ReviewSession {
 
 			buttonEl.createSpan({ text: btn.label, cls: 'obr-btn-label' });
 			if (isDesktop) {
-				buttonEl.createSpan({ text: btn.shortcut, cls: 'obr-btn-shortcut' });
+				buttonEl.createSpan({ text: btn.shortcut, cls: this.getShortcutClass(shortcutsActive) });
 			}
 
 			if (isDesktop && currentCard && btn.rating !== 1) {
@@ -422,6 +431,10 @@ export class ReviewSession {
 
 			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));
 		});
+	}
+
+	private getShortcutClass(active: boolean): string {
+		return active ? 'obr-btn-shortcut' : 'obr-btn-shortcut obr-btn-shortcut-inactive';
 	}
 
 	private async handleRate(rating: Rating) {

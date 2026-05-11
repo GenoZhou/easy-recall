@@ -1,6 +1,6 @@
 {
 	"name": "ob-reviews",
-	"version": "1.2.8-beta.3",
+	"version": "1.2.8-beta.4",
 	"description": "极简 Obsidian 间隔重复插件",
 	"main": "main.js",
 	"scripts": {

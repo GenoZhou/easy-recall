@@ -66,6 +66,7 @@ export const zh: Translations = {
 		showHint: '显示提示',
 		openSource: '打开原文',
 		hint: '提示',
+		shortcutsInactive: '点击复习标签页以启用快捷键',
 		statusTags: {
 			newCard: '新卡片',
 		},

@@ -11,6 +11,7 @@ export class ReviewView extends ItemView {
 	private session: ReviewSession | null = null;
 	private onComplete?: () => void;
 	private domShortcutsRegistered: boolean = false;
+	private shortcutsActive: boolean = false;
 
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
@@ -41,6 +42,7 @@ export class ReviewView extends ItemView {
 			setTitle: (title) => this.setReviewTitle(title),
 			complete: () => this.completeReview(),
 			openSource: (card) => openCardSource(this.app, options.vault, card, true),
+			areShortcutsActive: () => this.shortcutsActive,
 		});
 		await this.session.render();
 		this.contentEl.focus();
@@ -64,6 +66,19 @@ export class ReviewView extends ItemView {
 			this.registerDomEvent(contentEl, 'keydown', (evt: KeyboardEvent) => {
 				this.session?.handleShortcutEvent(evt);
 			});
+			this.registerDomEvent(contentEl, 'click', () => {
+				contentEl.focus();
+			});
+			this.registerDomEvent(contentEl, 'focusin', () => {
+				this.setShortcutsActive(true);
+			});
+			this.registerDomEvent(contentEl, 'focusout', (evt: FocusEvent) => {
+				const nextTarget = evt.relatedTarget;
+				if (nextTarget instanceof Node && contentEl.contains(nextTarget)) {
+					return;
+				}
+				this.setShortcutsActive(false);
+			});
 			this.domShortcutsRegistered = true;
 		}
 
@@ -77,6 +92,15 @@ export class ReviewView extends ItemView {
 
 	private setReviewTitle(title: string): void {
 		this.titleEl?.setText(title);
+	}
+
+	private setShortcutsActive(active: boolean): void {
+		if (this.shortcutsActive === active) {
+			return;
+		}
+
+		this.shortcutsActive = active;
+		void this.session?.render();
 	}
 
 	private completeReview(): void {

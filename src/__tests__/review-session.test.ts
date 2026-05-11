@@ -295,6 +295,22 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.obr-btn-good')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('3');
 	});
 
+	it('marks shortcut hints inactive when the review tab is not focused', async () => {
+		const host = {
+			...createHost(),
+			areShortcutsActive: jest.fn().mockReturnValue(false),
+		};
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+
+		expect(host.buttonsEl.querySelector('.obr-shortcuts-inactive')?.textContent).toBe('点击复习标签页以启用快捷键');
+		expect(host.buttonsEl.querySelector('.obr-btn-shortcut-inactive')?.textContent).toBe('Space');
+	});
+
 	it('renders a new-card status tag for cards never rated hard or good', async () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
