@@ -22,6 +22,7 @@ jest.mock('obsidian', () => {
 }, { virtual: true });
 
 import type { Card } from '../types';
+import { MarkdownRenderer } from 'obsidian';
 import { ReviewSession, getReviewStatusTags } from '../ui/review-session';
 
 class TestElement {
@@ -378,6 +379,43 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 		expect(host.complete).toHaveBeenCalledTimes(1);
+	});
+
+	it('reviews due scheduled cards before new cards', async () => {
+		jest.setSystemTime(new Date('2026-05-10T00:00:00Z'));
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'new-card', content: 'New ==card==' }),
+				createCard({
+					id: 'newer-due-card',
+					content: 'Newer due ==card==',
+					schedule: {
+						interval: 1,
+						ease: 250,
+						due: new Date('2026-05-09T00:00:00Z'),
+						reps: 1,
+					},
+				}),
+				createCard({
+					id: 'older-due-card',
+					content: 'Older due ==card==',
+					schedule: {
+						interval: 1,
+						ease: 250,
+						due: new Date('2026-05-08T00:00:00Z'),
+						reps: 1,
+					},
+				}),
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Older due');
 	});
 
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {

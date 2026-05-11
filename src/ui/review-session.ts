@@ -311,8 +311,12 @@ export class ReviewSession {
 		const dueCards = cards
 			.filter(card => !card.schedule || card.schedule.due <= now)
 			.sort((a, b) => {
-				const dueA = a.schedule?.due?.getTime() || 0;
-				const dueB = b.schedule?.due?.getTime() || 0;
+				if (!a.schedule && !b.schedule) return 0;
+				if (!a.schedule) return 1;
+				if (!b.schedule) return -1;
+
+				const dueA = a.schedule.due.getTime();
+				const dueB = b.schedule.due.getTime();
 				return dueA - dueB;
 			});
 
