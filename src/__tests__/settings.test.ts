@@ -32,7 +32,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
 			expect(settings.debugMode).toBe(false);
-			expect(settings.reviewBatchSize).toBe(30);
+			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
@@ -45,7 +45,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
 			expect(settings.debugMode).toBe(true);
-			expect(settings.reviewBatchSize).toBe(30);
+			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
@@ -89,7 +89,7 @@ describe('SettingsManager', () => {
 			expect(settings).toEqual({
 				language: 'zh',
 				debugMode: true,
-				reviewBatchSize: 30,
+				reviewBatchSize: 20,
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
 			});
@@ -129,7 +129,7 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
 			expect(settings.debugMode).toBe(false); // unchanged
-			expect(settings.reviewBatchSize).toBe(30);
+			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
@@ -149,7 +149,7 @@ describe('SettingsManager', () => {
 
 			await manager.load();
 
-			expect(manager.get().reviewBatchSize).toBe(30);
+			expect(manager.get().reviewBatchSize).toBe(20);
 		});
 
 		it('should update platform review surfaces', async () => {
@@ -212,7 +212,7 @@ describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
-		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(30);
+		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
 	});

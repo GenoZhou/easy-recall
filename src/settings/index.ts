@@ -23,7 +23,7 @@ export interface OBReviewsSettings {
 
 export type ReviewSurface = 'modal' | 'tab';
 
-export const DEFAULT_REVIEW_BATCH_SIZE = 30;
+export const DEFAULT_REVIEW_BATCH_SIZE = 20;
 
 /**
  * 默认设置
