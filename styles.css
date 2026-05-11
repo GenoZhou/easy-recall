@@ -28,9 +28,12 @@
 }
 
 .obr-review-view .obr-buttons {
+	position: relative;
+	z-index: 1;
 	flex-shrink: 0;
 	padding-top: 15px;
 	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
 }
 
 /* 移动端全高显示 */
@@ -159,7 +162,9 @@
 /* 按钮容器 */
 .obr-buttons {
 	display: flex;
+	flex-direction: column;
 	gap: 10px;
+	align-items: center;
 	justify-content: center;
 	margin-top: 20px;
 }
@@ -299,16 +304,15 @@
 	line-height: 1.4;
 }
 
-.obr-btn-shortcut-inactive {
-	opacity: 0.45;
-}
-
 .obr-shortcuts-inactive {
+	position: relative;
+	z-index: 2;
 	width: 100%;
 	margin-bottom: 8px;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	text-align: center;
+	background: var(--background-primary);
 }
 
 /* 按钮时间标注（桌面端） */

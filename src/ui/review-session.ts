@@ -389,8 +389,8 @@ export class ReviewSession {
 					cls: 'obr-btn-show-hint'
 				});
 				showHintBtn.createSpan({ text: lang.review.showHint, cls: 'obr-btn-label' });
-				if (!Platform.isMobile) {
-					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: this.getShortcutClass(shortcutsActive) });
+				if (!Platform.isMobile && shortcutsActive) {
+					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
 				}
 				showHintBtn.addEventListener('click', () => this.handleShowHint());
 			}
@@ -399,8 +399,8 @@ export class ReviewSession {
 				cls: 'obr-btn-show mod-cta'
 			});
 			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'obr-btn-label' });
-			if (!Platform.isMobile && (!card.hint || this.showHint)) {
-				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: this.getShortcutClass(shortcutsActive) });
+			if (!Platform.isMobile && shortcutsActive && (!card.hint || this.showHint)) {
+				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
 			}
 			showBtn.addEventListener('click', () => {
 				this.showAnswer = true;
@@ -420,8 +420,8 @@ export class ReviewSession {
 			});
 
 			buttonEl.createSpan({ text: btn.label, cls: 'obr-btn-label' });
-			if (isDesktop) {
-				buttonEl.createSpan({ text: btn.shortcut, cls: this.getShortcutClass(shortcutsActive) });
+			if (isDesktop && shortcutsActive) {
+				buttonEl.createSpan({ text: btn.shortcut, cls: 'obr-btn-shortcut' });
 			}
 
 			if (isDesktop && currentCard && btn.rating !== 1) {
@@ -431,10 +431,6 @@ export class ReviewSession {
 
 			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));
 		});
-	}
-
-	private getShortcutClass(active: boolean): string {
-		return active ? 'obr-btn-shortcut' : 'obr-btn-shortcut obr-btn-shortcut-inactive';
 	}
 
 	private async handleRate(rating: Rating) {
