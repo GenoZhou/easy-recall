@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.8--beta.7-blue)
+![Version](https://img.shields.io/badge/version-1.2.8--beta.8-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -128,7 +128,7 @@ tags:
 ==答案==内容
 ```
 
-复习路径会显示为 `文件名 / 小节`。该标记只隐藏被标记的标题段；文件名和未标记的子标题仍会显示。
+复习路径会显示为 `文件名 / [...] / 小节`。该标记只遮蔽被标记的标题段；文件名和未标记的子标题仍会显示。
 
 ## 桌面端快捷键
 

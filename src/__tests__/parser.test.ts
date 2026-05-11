@@ -486,7 +486,7 @@ tags:
       expect(cards[0].headingPath).toEqual(['一级标题', '二级标题', '三级标题']);
     });
 
-    it('should hide marked heading segments from heading path', () => {
+    it('should render marked heading segments as hidden placeholders in heading path', () => {
       const content = `---
 tags:
   - ob-reviews/test
@@ -500,10 +500,10 @@ tags:
 
       const cards = parseNote(content, 'test.md');
       expect(cards).toHaveLength(1);
-      expect(cards[0].headingPath).toEqual(['显示节']);
+      expect(cards[0].headingPath).toEqual(['[...]', '显示节']);
     });
 
-    it('should strip hide marker from visible heading path segments', () => {
+    it('should strip hide marker from hidden heading path segments', () => {
       const content = `---
 tags:
   - ob-reviews/test
@@ -519,7 +519,7 @@ tags:
 
       const cards = parseNote(content, 'test.md');
       expect(cards).toHaveLength(1);
-      expect(cards[0].headingPath).toEqual(['显示章', '显示小节']);
+      expect(cards[0].headingPath).toEqual(['显示章', '[...]', '显示小节']);
     });
 
     it('should only hide heading markers at the end of the heading line', () => {

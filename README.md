@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.8--beta.7-blue)
+![Version](https://img.shields.io/badge/version-1.2.8--beta.8-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -128,7 +128,7 @@ To hide a specific heading from the review path, add `<!--obr-hide-->` at the en
 ==Answer== content
 ```
 
-The review path will show `File name / Section`. This only hides the marked heading segment; the file name and unmarked child headings still appear.
+The review path will show `File name / [...] / Section`. This only masks the marked heading segment; the file name and unmarked child headings still appear.
 
 ## Desktop Shortcuts
 

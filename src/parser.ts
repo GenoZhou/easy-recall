@@ -301,10 +301,6 @@ function parseBlock(
 	return null;
 }
 
-function getVisibleHeadingPath(headingPath: string[]): string[] {
-	return headingPath.filter((title): title is string => typeof title === 'string' && title.length > 0);
-}
-
 /**
  * 解析单条笔记内容，提取所有卡片
  * 所有卡片共享文件级别的标签（#ob-reviews/xxxx 中的 xxxx）
@@ -358,9 +354,7 @@ export function parseNote(content: string, filePath: string): Card[] {
 			const hideFromPath = HIDE_HEADING_IN_PATH_REGEX.test(rawTitle);
 			const title = rawTitle.replace(HIDE_HEADING_IN_PATH_REGEX, '').trim();
 			currentHeadingPath.length = level - 1;
-			if (!hideFromPath) {
-				currentHeadingPath[level - 1] = title;
-			}
+			currentHeadingPath[level - 1] = hideFromPath ? '[...]' : title;
 			lineIndex++;
 			pendingSchedule = null;
 			continue;
@@ -390,7 +384,7 @@ export function parseNote(content: string, filePath: string): Card[] {
 		}
 
 		// 解析 block
-		const card = parseBlock(blockLines, lineIndex, filePath, cardIndex, fileTags, getVisibleHeadingPath(currentHeadingPath));
+		const card = parseBlock(blockLines, lineIndex, filePath, cardIndex, fileTags, currentHeadingPath);
 		if (card) {
 			if (pendingSchedule !== null) {
 				card.schedule = pendingSchedule;
