@@ -24,28 +24,42 @@
 | 准备预发布 | `npm run prerelease` |
 | 发布预发布 | `npm run release:prerelease` |
 
+## 工作方式与 token 预算
+
+- 先确认实现模型，再动手改代码。涉及复习队列、行号、发布流程这类状态边界时，先用几句话明确数据来源和状态归属，避免先实现一版再推翻。
+- 搜索要窄：
+  - 优先限定目录，例如 `src/ui src/commands src/settings`。
+  - 只在需要用户文档或测试证据时再扩大到 `README*` / `src/__tests__`。
+  - 避免一次 `rg` 把源码、测试、文档和构建产物全部刷出来。
+- 读文件要分段：
+  - 优先读相关函数附近的片段，不要整文件展开。
+  - 大文件先用 `rg -n` 定位，再用 `sed -n` 读局部。
+- diff 要分层：
+  - 默认先看 `git diff --stat` 或限定文件的关键片段。
+  - 只有在检查行为细节、提交前审阅或怀疑误改时再输出完整 diff。
+- 测试输出要克制：
+  - 开发中可以只保留失败信息或摘要。
+  - 发布命令自带 `prepublish` 时，不要在同一轮里重复跑同样的完整检查，除非刚修过失败。
+- GitHub 发布核验要直达当前版本：
+  - 优先查当前 tag / release / workflow run。
+  - 不要拉大量历史 workflow，除非当前 run 查不到。
+- 使用记忆时只读命中的少量行；不要展开整段历史记录，除非发布中断、状态不明或需要复盘旧失败。
+
 ## 架构约束
 
 ### 模块职责
 
-- `src/main.ts`
-  - 保持精简，只处理插件生命周期、模块装配和事件注册。
-- `src/parser.ts`
-  - 负责卡片解析与渲染辅助；`lineStart` / `lineEnd` / `scheduleLine` 的语义必须稳定。
-- `src/store.ts`
-  - 只负责 SR 注释读写，不承载解析规则。
-- `src/scheduler.ts`
-  - 只负责调度算法，不混入 UI 或存储逻辑。
-- `src/deck.ts`
-  - 负责卡组发现、扫描与过滤，优先依赖 `MetadataCache`。
-- `src/commands/`
-  - 负责命令注册与调用路径，不堆业务细节到 `main.ts`。
-- `src/settings/`
-  - 负责设置加载、更新和设置页接入。
-- `src/ui/`
-  - 负责 Modal / 交互层；文件写入要通过 `Vault.process()` 等安全路径完成。
-- `src/utils/`
-  - 放日志、错误处理和通用辅助函数，避免散落的重复实现。
+| 模块 | 职责 |
+|------|------|
+| `src/main.ts` | 保持精简，只处理插件生命周期、模块装配和事件注册。 |
+| `src/parser.ts` | 负责卡片解析与渲染辅助；`lineStart` / `lineEnd` / `scheduleLine` 的语义必须稳定。 |
+| `src/store.ts` | 只负责 SR 注释读写，不承载解析规则。 |
+| `src/scheduler.ts` | 只负责调度算法，不混入 UI 或存储逻辑。 |
+| `src/deck.ts` | 负责卡组发现、扫描与过滤，优先依赖 `MetadataCache`。 |
+| `src/commands/` | 负责命令注册与调用路径，不堆业务细节到 `main.ts`。 |
+| `src/settings/` | 负责设置加载、更新和设置页接入。 |
+| `src/ui/` | 负责 Modal / 交互层；文件写入要通过 `Vault.process()` 等安全路径完成。 |
+| `src/utils/` | 放日志、错误处理和通用辅助函数，避免散落的重复实现。 |
 
 ### 设计原则
 
@@ -74,8 +88,10 @@
 - 复习流程相关修改要特别注意：
   - 当前卡片索引推进
   - `Again` 回队尾的行为
-  - `lineStart` / `scheduleLine` 更新后的队列偏移
+  - `lineStart` / `scheduleLine` 更新后的当前队列偏移
+  - 单次复习上限下的下一批加载方式
   - 关闭 Modal 时是否会误触发回调
+- 如果进入下一批复习，优先重新扫描 / 重新解析剩余到期卡片，而不是在 UI/session 层维护跨批次行号状态。
 - 链接、按钮和快捷键要保持基本可访问性，不要只改视觉不改语义。
 
 ### 日志与错误处理
@@ -94,7 +110,8 @@
   - 多行 Cloze 合并
   - Hint callout
   - SR 注释替换 / 插入
-  - 同文件多卡片的行号偏移
+  - 同文件多卡片的当前队列行号偏移
+  - 单次复习上限后的继续复习 / 剩余到期卡片加载
 - 修改完成后至少运行：
   - `npm test`
   - `npm run build`
@@ -136,7 +153,8 @@
   - 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
   - 成功后确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
 - GitHub Actions 的 `Release` workflow 由 tag push 触发：
-  - 本地发布脚本会主动创建 GitHub release；workflow 中如发现 release 已存在，应跳过创建，避免同名 release 冲突。
+  - 本地发布脚本负责版本文件、提交、tag 和 push。
+  - GitHub release 由 workflow 创建；不要在本地脚本里重复创建 release。
   - workflow 应保持使用当前 GitHub Actions 支持的 Node/action 版本。
 
 ## 不要做的事
