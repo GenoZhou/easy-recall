@@ -8,6 +8,7 @@ export interface OpenReviewOptions {
 	cards: Card[];
 	vault: Vault;
 	maxCardsPerReview?: number;
+	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 }
 

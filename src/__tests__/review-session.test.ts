@@ -387,6 +387,31 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 		expect(host.complete).toHaveBeenCalledTimes(1);
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
+	});
+
+	it('does not adjust cards outside the current review batch', async () => {
+		const host = createHost();
+		const nextCard = createCard({ id: 'card-2', lineStart: 20, lineEnd: 20 });
+
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', lineStart: 10, lineEnd: 10 }),
+				nextCard,
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			maxCardsPerReview: 1,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
+		expect(nextCard.lineStart).toBe(20);
+		expect(nextCard.lineEnd).toBe(20);
 	});
 
 	it('reviews due scheduled cards before new cards', async () => {

@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { t } from '../i18n';
-import { ReviewOptions, ReviewSession, openCardSource } from './review-session';
+import { ReviewCompletionState, ReviewOptions, ReviewSession, openCardSource } from './review-session';
 
 export const REVIEW_VIEW_TYPE = 'ob-reviews-review';
 
@@ -9,6 +9,7 @@ export class ReviewView extends ItemView {
 	private buttonsContainerEl: HTMLElement | null = null;
 	private titleEl: HTMLElement | null = null;
 	private session: ReviewSession | null = null;
+	private reviewOptions: ReviewOptions | null = null;
 	private onComplete?: () => void;
 	private domShortcutsRegistered: boolean = false;
 	private shortcutsActive: boolean = false;
@@ -35,12 +36,13 @@ export class ReviewView extends ItemView {
 		}
 
 		this.onComplete = options.onComplete;
+		this.reviewOptions = options;
 		this.session?.dispose();
 		this.session = new ReviewSession(this.app, options, {
 			contentEl: this.cardContentEl!,
 			buttonsEl: this.buttonsContainerEl!,
 			setTitle: (title) => this.setReviewTitle(title),
-			complete: () => this.completeReview(),
+			complete: (state) => this.completeReview(state),
 			openSource: (card) => openCardSource(this.app, options.vault, card, true),
 			areShortcutsActive: () => this.shortcutsActive,
 		});
@@ -52,6 +54,7 @@ export class ReviewView extends ItemView {
 		this.contentEl.empty();
 		this.session?.dispose();
 		this.session = null;
+		this.reviewOptions = null;
 	}
 
 	private renderShell(): void {
@@ -103,16 +106,70 @@ export class ReviewView extends ItemView {
 		void this.session?.render();
 	}
 
-	private completeReview(): void {
+	private completeReview(state: ReviewCompletionState): void {
 		const lang = t();
 		this.cardContentEl?.empty();
 		this.buttonsContainerEl?.empty();
 		this.setReviewTitle(lang.review.complete.title);
 		this.cardContentEl?.createEl('p', { text: lang.notifications.reviewComplete });
+
+		if (state.remainingDueCount > 0) {
+			this.cardContentEl?.createEl('p', {
+				text: lang.review.complete.remaining(state.remainingDueCount),
+				cls: 'obr-review-complete-remaining',
+			});
+
+			const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
+			const continueButton = buttonRow?.createEl('button', {
+				text: lang.review.complete.continueButton,
+				cls: 'obr-btn-show mod-cta',
+			});
+			continueButton?.addEventListener('click', () => this.continueReview());
+
+			const doneButton = buttonRow?.createEl('button', {
+				text: lang.review.complete.button,
+				cls: 'obr-btn-secondary',
+			});
+			doneButton?.addEventListener('click', () => this.finishReview());
+			return;
+		}
+
+		this.finishReview();
+	}
+
+	private continueReview(): void {
+		if (!this.reviewOptions) {
+			return;
+		}
+
+		void this.reloadAndSetReview();
+	}
+
+	private async reloadAndSetReview(): Promise<void> {
+		if (!this.reviewOptions) {
+			return;
+		}
+
+		const cards = this.reviewOptions.reloadCards
+			? await this.reviewOptions.reloadCards()
+			: this.reviewOptions.cards;
+
+		if (cards.length === 0) {
+			this.finishReview();
+			return;
+		}
+
+		await this.setReview({
+			...this.reviewOptions,
+			cards,
+		});
+	}
+
+	private finishReview(): void {
 		if (this.onComplete) {
 			this.onComplete();
 		} else {
-			new Notice(lang.notifications.reviewComplete, 2000);
+			new Notice(t().notifications.reviewComplete, 2000);
 		}
 	}
 }

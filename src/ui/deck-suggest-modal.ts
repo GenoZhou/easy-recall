@@ -247,6 +247,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 				cards: cardsToReview,
 				vault: this.vault,
 				maxCardsPerReview: this.maxCardsPerReview,
+				reloadCards: () => this.getDueCardsForDeck(deck.tag),
 				onComplete: () => {
 					if (this.onReviewComplete) {
 						this.onReviewComplete();
@@ -261,6 +262,21 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	 */
 	private getAllDueCards(): Card[] {
 		return this.allCards.filter(c => !c.schedule || isDue(c.schedule));
+	}
+
+	private async getDueCardsForDeck(deckTag: string): Promise<Card[]> {
+		const lang = t();
+		const allCards = await scanVault(this.vault, this.app);
+		const dueCards = getDueCards(allCards);
+
+		if (deckTag === lang.deckSelector.allDeck.name) {
+			return dueCards;
+		}
+
+		return dueCards.filter(card => {
+			const primaryTag = card.tags.length > 0 ? card.tags[0] : 'default';
+			return primaryTag === deckTag;
+		});
 	}
 
 	onClose() {

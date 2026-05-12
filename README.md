@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.8-blue)
+![Version](https://img.shields.io/badge/version-1.2.9--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -115,7 +115,7 @@ Card content...
 
 You can also run "Review Due Cards in Current Note" from the command palette in any Markdown note to review only due cards from that note.
 
-By default, each review session includes up to 20 due cards, so cards marked **Again** can return quickly within the same smaller batch. Change **Review Batch Size** in plugin settings to adjust this limit.
+By default, each review session includes up to 20 due cards, so cards marked **Again** can return quickly within the same smaller batch. Change **Review Batch Size** in plugin settings to adjust this limit. If more due cards remain after the batch is finished, the completion screen offers **Continue Review** to start the next batch.
 
 By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 

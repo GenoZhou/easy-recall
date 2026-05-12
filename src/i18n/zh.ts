@@ -73,6 +73,8 @@ export const zh: Translations = {
 		complete: {
 			title: '复习完成',
 			button: '完成',
+			continueButton: '继续复习',
+			remaining: (count: number) => `当前卡组还有 ${count} 张到期卡片。`,
 		},
 	},
 

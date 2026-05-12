@@ -203,6 +203,24 @@
 	background-color: var(--background-modifier-border-hover) !important;
 }
 
+.obr-btn-secondary {
+	padding: 14px 30px;
+	font-size: 1.05em;
+	background-color: var(--background-secondary-alt) !important;
+	color: var(--text-normal) !important;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.obr-btn-secondary:hover {
+	background-color: var(--background-modifier-border-hover) !important;
+}
+
+.obr-review-complete-remaining {
+	color: var(--text-muted);
+}
+
 /* 提示区域 - 直接渲染 callout */
 .obr-hint-raw {
 	margin-top: 20px;

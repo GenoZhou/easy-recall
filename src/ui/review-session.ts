@@ -11,14 +11,19 @@ export interface ReviewOptions {
 	cards: Card[];
 	vault: Vault;
 	maxCardsPerReview?: number;
+	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
+}
+
+export interface ReviewCompletionState {
+	remainingDueCount: number;
 }
 
 export interface ReviewSessionHost {
 	contentEl: HTMLElement;
 	buttonsEl: HTMLElement;
 	setTitle(title: string): void;
-	complete(): void;
+	complete(state: ReviewCompletionState): void;
 	openSource(card: Card): Promise<boolean>;
 	areShortcutsActive?(): boolean;
 }
@@ -93,7 +98,9 @@ export class ReviewSession {
 	private app: App;
 	private vault: Vault;
 	private host: ReviewSessionHost;
+	private sourceCards: Card[];
 	private cards: Card[];
+	private completedCardIds: Set<string> = new Set();
 	private currentIndex: number = 0;
 	private showAnswer: boolean = false;
 	private showHint: boolean = false;
@@ -105,6 +112,7 @@ export class ReviewSession {
 		this.app = app;
 		this.vault = options.vault;
 		this.host = host;
+		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
 	}
 
@@ -440,6 +448,7 @@ export class ReviewSession {
 			}
 
 			this.currentIndex++;
+			this.completedCardIds.add(card.id);
 			this.resetRevealState();
 			void this.render();
 		} catch (err) {
@@ -456,6 +465,9 @@ export class ReviewSession {
 	private completeReview() {
 		if (this.isComplete) return;
 		this.isComplete = true;
-		this.host.complete();
+		const remainingDueCount = this.getDueSortedCards(this.sourceCards)
+			.filter(card => !this.completedCardIds.has(card.id))
+			.length;
+		this.host.complete({ remainingDueCount });
 	}
 }

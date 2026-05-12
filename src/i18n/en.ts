@@ -71,6 +71,8 @@ export const en = {
 		complete: {
 			title: 'Review Complete',
 			button: 'Done',
+			continueButton: 'Continue Review',
+			remaining: (count: number) => `${count} due cards remain in this deck.`,
 		},
 	},
 
