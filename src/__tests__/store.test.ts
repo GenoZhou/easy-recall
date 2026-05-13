@@ -1,7 +1,9 @@
 import {
   formatSchedule,
   injectSchedule,
+  injectScheduleWithResult,
   removeSchedule,
+  revertScheduleMutation,
 } from '../store';
 import { Schedule } from '../types';
 
@@ -199,6 +201,43 @@ describe('store', () => {
       
       expect(result).not.toContain('<!--SR:');
       expect(result.trim()).toBe('答案');
+    });
+  });
+
+  describe('revertScheduleMutation', () => {
+    const schedule: Schedule = {
+      interval: 1,
+      ease: 250,
+      due: new Date('2026-02-19T14:19:56.066Z'),
+      reps: 1,
+    };
+
+    it('should remove an inserted SR comment when the current line still matches', () => {
+      const injected = injectScheduleWithResult('问题\n答案', schedule, 0);
+      const reverted = revertScheduleMutation(injected.text, injected.mutation);
+
+      expect(reverted.reverted).toBe(true);
+      expect(reverted.text).toBe('问题\n答案');
+    });
+
+    it('should restore a replaced SR comment when the current line still matches', () => {
+      const text = `<!--SR:1,250,2026-02-18T14:19:56.066Z,1-->
+问题
+答案`;
+      const injected = injectScheduleWithResult(text, schedule, 1, 0);
+      const reverted = revertScheduleMutation(injected.text, injected.mutation);
+
+      expect(reverted.reverted).toBe(true);
+      expect(reverted.text).toBe(text);
+    });
+
+    it('should refuse to modify text when the changed line no longer matches', () => {
+      const injected = injectScheduleWithResult('问题\n答案', schedule, 0);
+      const changedText = injected.text.replace('<!--SR:1,250', '<!--SR:2,250');
+      const reverted = revertScheduleMutation(changedText, injected.mutation);
+
+      expect(reverted.reverted).toBe(false);
+      expect(reverted.text).toBe(changedText);
     });
   });
 });

@@ -304,6 +304,14 @@
 	margin-left: 8px;
 }
 
+.obr-btn-undo-rating {
+	margin-top: 10px;
+}
+
+.obr-btn-undo-rating .obr-btn-shortcut {
+	margin-left: 8px;
+}
+
 .obr-btn-show .obr-btn-label,
 .obr-btn-show-hint .obr-btn-label {
 	margin-right: 8px;

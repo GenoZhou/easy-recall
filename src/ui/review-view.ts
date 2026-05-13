@@ -113,13 +113,21 @@ export class ReviewView extends ItemView {
 		this.setReviewTitle(lang.review.complete.title);
 		this.cardContentEl?.createEl('p', { text: lang.notifications.reviewComplete });
 
+		const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
+		if (state.canUndoLastRating) {
+			const undoButton = buttonRow?.createEl('button', {
+				text: lang.review.complete.undoButton,
+				cls: 'obr-btn-secondary obr-btn-undo-rating',
+			});
+			undoButton?.addEventListener('click', () => state.undoLastRating());
+		}
+
 		if (state.remainingDueCount > 0) {
 			this.cardContentEl?.createEl('p', {
 				text: lang.review.complete.remaining(state.remainingDueCount),
 				cls: 'obr-review-complete-remaining',
 			});
 
-			const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
 			const continueButton = buttonRow?.createEl('button', {
 				text: lang.review.complete.continueButton,
 				cls: 'obr-btn-show mod-cta',

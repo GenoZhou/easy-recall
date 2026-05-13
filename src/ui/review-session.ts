@@ -1,8 +1,8 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
-import { Card, Rating } from '../types';
+import { Card, Rating, Schedule } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
-import { injectSchedule } from '../store';
+import { injectScheduleWithResult, revertScheduleMutation, ScheduleMutation } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
 import { error } from '../utils/';
 import { t } from '../i18n';
@@ -17,6 +17,8 @@ export interface ReviewOptions {
 
 export interface ReviewCompletionState {
 	remainingDueCount: number;
+	canUndoLastRating: boolean;
+	undoLastRating(): void;
 }
 
 export interface ReviewSessionHost {
@@ -31,6 +33,43 @@ export interface ReviewSessionHost {
 interface ReviewStatusTag {
 	label: string;
 	cls: string;
+}
+
+interface ReviewSessionSnapshot {
+	sourceCards: Card[];
+	cards: Card[];
+	completedCardIds: string[];
+	currentIndex: number;
+	showAnswer: boolean;
+	showHint: boolean;
+}
+
+interface RatingUndoState {
+	session: ReviewSessionSnapshot;
+	fileMutation?: {
+		filePath: string;
+		mutation: ScheduleMutation;
+	};
+}
+
+function cloneSchedule(schedule: Schedule | undefined): Schedule | undefined {
+	if (!schedule) {
+		return undefined;
+	}
+
+	return {
+		...schedule,
+		due: new Date(schedule.due),
+	};
+}
+
+function cloneCard(card: Card): Card {
+	return {
+		...card,
+		tags: [...card.tags],
+		schedule: cloneSchedule(card.schedule),
+		headingPath: card.headingPath ? [...card.headingPath] : undefined,
+	};
 }
 
 function isNewReviewCard(card: Card): boolean {
@@ -107,6 +146,7 @@ export class ReviewSession {
 	private isComplete: boolean = false;
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
+	private lastRatingUndo: RatingUndoState | null = null;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -133,6 +173,10 @@ export class ReviewSession {
 				return this.handleShortcutEvent(evt, shortcut);
 			}));
 		});
+
+		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.UNDO, (evt: KeyboardEvent) => {
+			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.UNDO);
+		}));
 	}
 
 	handleShortcutEvent(evt: KeyboardEvent, fallbackKey?: string): boolean {
@@ -158,6 +202,12 @@ export class ReviewSession {
 		if (ratingShortcut) {
 			evt.preventDefault();
 			this.rateAction(Number(ratingShortcut) as Rating);
+			return false;
+		}
+
+		if (key && key.toLowerCase() === KEYBOARD_SHORTCUTS.UNDO.toLowerCase()) {
+			evt.preventDefault();
+			this.undoLastRatingAction();
 			return false;
 		}
 
@@ -197,6 +247,12 @@ export class ReviewSession {
 	rateAction(rating: Rating): void {
 		if (this.showAnswer) {
 			void this.handleRate(rating);
+		}
+	}
+
+	undoLastRatingAction(): void {
+		if (this.lastRatingUndo) {
+			void this.handleUndoLastRating();
 		}
 	}
 
@@ -394,6 +450,17 @@ export class ReviewSession {
 
 			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));
 		});
+
+		if (this.lastRatingUndo) {
+			const undoButton = this.host.buttonsEl.createEl('button', {
+				cls: 'obr-btn-secondary obr-btn-undo-rating',
+			});
+			undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
+			if (isDesktop && shortcutsActive) {
+				undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
+			}
+			undoButton.addEventListener('click', () => this.undoLastRatingAction());
+		}
 	}
 
 	private async handleRate(rating: Rating) {
@@ -401,15 +468,22 @@ export class ReviewSession {
 		if (!card) return;
 
 		const newSchedule = calcSchedule(card.schedule ?? null, rating);
+		const undoSession = this.createSessionSnapshot();
+		let fileMutation: RatingUndoState['fileMutation'];
 
 		try {
 			const file = this.vault.getAbstractFileByPath(card.filePath);
 			if (file && file instanceof TFile) {
 				await this.vault.process(file, (content) => {
-					return injectSchedule(content, newSchedule, card.lineStart, card.scheduleLine);
+					const result = injectScheduleWithResult(content, newSchedule, card.lineStart, card.scheduleLine);
+					fileMutation = {
+						filePath: card.filePath,
+						mutation: result.mutation,
+					};
+					return result.text;
 				});
 
-				const isNewScheduleLine = !card.scheduleLine;
+				const isNewScheduleLine = card.scheduleLine === undefined;
 				const lineShift = isNewScheduleLine ? 1 : 0;
 				const originalLineStart = card.lineStart;
 
@@ -432,6 +506,11 @@ export class ReviewSession {
 					}
 				}
 			}
+
+			this.lastRatingUndo = {
+				session: undoSession,
+				fileMutation,
+			};
 
 			if (rating === 1) {
 				const currentCard = this.cards[this.currentIndex];
@@ -462,12 +541,71 @@ export class ReviewSession {
 		this.showHint = false;
 	}
 
+	private createSessionSnapshot(): ReviewSessionSnapshot {
+		return {
+			sourceCards: this.sourceCards.map(cloneCard),
+			cards: this.cards.map(cloneCard),
+			completedCardIds: [...this.completedCardIds],
+			currentIndex: this.currentIndex,
+			showAnswer: this.showAnswer,
+			showHint: this.showHint,
+		};
+	}
+
+	private restoreSessionSnapshot(snapshot: ReviewSessionSnapshot): void {
+		this.sourceCards = snapshot.sourceCards.map(cloneCard);
+		this.cards = snapshot.cards.map(cloneCard);
+		this.completedCardIds = new Set(snapshot.completedCardIds);
+		this.currentIndex = snapshot.currentIndex;
+		this.showAnswer = true;
+		this.showHint = snapshot.showHint;
+		this.isComplete = false;
+	}
+
+	private async handleUndoLastRating(): Promise<void> {
+		const undo = this.lastRatingUndo;
+		if (!undo) return;
+
+		try {
+			if (undo.fileMutation) {
+				const file = this.vault.getAbstractFileByPath(undo.fileMutation.filePath);
+				if (!(file instanceof TFile)) {
+					new Notice(t().notifications.failedToUndo, 4000);
+					return;
+				}
+
+				let reverted = false;
+				await this.vault.process(file, (content) => {
+					const result = revertScheduleMutation(content, undo.fileMutation!.mutation);
+					reverted = result.reverted;
+					return result.text;
+				});
+
+				if (!reverted) {
+					new Notice(t().notifications.failedToUndo, 4000);
+					return;
+				}
+			}
+
+			this.restoreSessionSnapshot(undo.session);
+			this.lastRatingUndo = null;
+			void this.render();
+		} catch (err) {
+			error('Failed to undo rating:', err);
+			new Notice(t().notifications.failedToUndo, 4000);
+		}
+	}
+
 	private completeReview() {
 		if (this.isComplete) return;
 		this.isComplete = true;
 		const remainingDueCount = this.getDueSortedCards(this.sourceCards)
 			.filter(card => !this.completedCardIds.has(card.id))
 			.length;
-		this.host.complete({ remainingDueCount });
+		this.host.complete({
+			remainingDueCount,
+			canUndoLastRating: Boolean(this.lastRatingUndo),
+			undoLastRating: () => this.undoLastRatingAction(),
+		});
 	}
 }

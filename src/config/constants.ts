@@ -20,6 +20,7 @@ export function getRatingButtons(): { rating: Rating; label: string; shortcut: s
 export const KEYBOARD_SHORTCUTS = {
 	REVEAL: 'Space',
 	RATINGS: ['1', '2', '3'] as const,
+	UNDO: 'U',
 };
 
 /**

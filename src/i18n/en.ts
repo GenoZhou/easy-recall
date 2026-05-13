@@ -23,6 +23,7 @@ export const en = {
 		failedToStart: 'Failed to start review, please check console',
 		failedToSave: '❌ Failed to save, please retry',
 		failedToOpenFile: '❌ Failed to open source note, please retry',
+		failedToUndo: '❌ Could not undo because the review file changed. Restart review to sync the latest note.',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
 	},
 
@@ -62,6 +63,7 @@ export const en = {
 		progress: (current: number, total: number) => `Review (${current}/${total})`,
 		showAnswer: 'Show Answer',
 		showHint: 'Show Hint',
+		undoRating: 'Undo',
 		openSource: 'Open source',
 		hint: 'Hint',
 		shortcutsInactive: 'Click here to enable shortcuts',
@@ -72,6 +74,7 @@ export const en = {
 			title: 'Review Complete',
 			button: 'Done',
 			continueButton: 'Continue Review',
+			undoButton: 'Undo Last Rating',
 			remaining: (count: number) => `${count} due cards remain in this deck.`,
 		},
 	},

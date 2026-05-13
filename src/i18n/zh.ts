@@ -25,6 +25,7 @@ export const zh: Translations = {
 		failedToStart: '启动复习失败，请检查控制台',
 		failedToSave: '❌ 保存失败，请重试',
 		failedToOpenFile: '❌ 打开原文失败，请重试',
+		failedToUndo: '❌ 笔记内容已变化，无法安全撤回。请重新开始复习以同步最新内容。',
 		fileChanged: (path: string) => `复习文件已变更: ${path}`,
 	},
 
@@ -64,6 +65,7 @@ export const zh: Translations = {
 		progress: (current: number, total: number) => `复习卡片 (${current}/${total})`,
 		showAnswer: '显示答案',
 		showHint: '显示提示',
+		undoRating: '撤回',
 		openSource: '打开原文',
 		hint: '提示',
 		shortcutsInactive: '点击这里以启用快捷键',
@@ -74,6 +76,7 @@ export const zh: Translations = {
 			title: '复习完成',
 			button: '完成',
 			continueButton: '继续复习',
+			undoButton: '撤回上次评分',
 			remaining: (count: number) => `当前卡组还有 ${count} 张到期卡片。`,
 		},
 	},

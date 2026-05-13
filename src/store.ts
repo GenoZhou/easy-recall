@@ -1,5 +1,19 @@
 import { Schedule } from './types';
 
+export type ScheduleMutationType = 'insert' | 'replace';
+
+export interface ScheduleMutation {
+	type: ScheduleMutationType;
+	line: number;
+	previousLine?: string;
+	nextLine: string;
+}
+
+export interface InjectScheduleResult {
+	text: string;
+	mutation: ScheduleMutation;
+}
+
 /**
  * 格式化调度信息为 SR 注释
  * <!--SR:interval,ease,due,reps-->
@@ -15,7 +29,7 @@ export function formatSchedule(schedule: Schedule): string {
  * @param lineStart 卡片起始行号
  * @param scheduleLine SR 注释所在的行号（如果有），用于精确定位
  */
-export function injectSchedule(text: string, schedule: Schedule, lineStart: number, scheduleLine?: number): string {
+export function injectScheduleWithResult(text: string, schedule: Schedule, lineStart: number, scheduleLine?: number): InjectScheduleResult {
 	const lines = text.split('\n');
 	const scheduleComment = formatSchedule(schedule);
 	
@@ -24,7 +38,15 @@ export function injectSchedule(text: string, schedule: Schedule, lineStart: numb
 		const line = lines[scheduleLine];
 		if (line && line.trim().startsWith('<!--SR:')) {
 			lines[scheduleLine] = scheduleComment;
-			return lines.join('\n');
+			return {
+				text: lines.join('\n'),
+				mutation: {
+					type: 'replace',
+					line: scheduleLine,
+					previousLine: line,
+					nextLine: scheduleComment,
+				},
+			};
 		}
 	}
 	
@@ -35,13 +57,51 @@ export function injectSchedule(text: string, schedule: Schedule, lineStart: numb
 		if (line && line.trim().startsWith('<!--SR:')) {
 			// 替换现有注释
 			lines[checkLine] = scheduleComment;
-			return lines.join('\n');
+			return {
+				text: lines.join('\n'),
+				mutation: {
+					type: 'replace',
+					line: checkLine,
+					previousLine: line,
+					nextLine: scheduleComment,
+				},
+			};
 		}
 	}
 
 	// 在 lineStart 前插入新注释
 	lines.splice(lineStart, 0, scheduleComment);
-	return lines.join('\n');
+	return {
+		text: lines.join('\n'),
+		mutation: {
+			type: 'insert',
+			line: lineStart,
+			nextLine: scheduleComment,
+		},
+	};
+}
+
+export function injectSchedule(text: string, schedule: Schedule, lineStart: number, scheduleLine?: number): string {
+	return injectScheduleWithResult(text, schedule, lineStart, scheduleLine).text;
+}
+
+export function revertScheduleMutation(text: string, mutation: ScheduleMutation): { text: string; reverted: boolean } {
+	const lines = text.split('\n');
+	if (lines[mutation.line] !== mutation.nextLine) {
+		return { text, reverted: false };
+	}
+
+	if (mutation.type === 'insert') {
+		lines.splice(mutation.line, 1);
+		return { text: lines.join('\n'), reverted: true };
+	}
+
+	if (mutation.previousLine === undefined) {
+		return { text, reverted: false };
+	}
+
+	lines[mutation.line] = mutation.previousLine;
+	return { text: lines.join('\n'), reverted: true };
 }
 
 /**

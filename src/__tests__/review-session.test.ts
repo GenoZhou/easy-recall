@@ -7,13 +7,12 @@ jest.mock('obsidian', () => {
 
 	class MarkdownView {}
 	class Component {}
-	class Notice {}
 
 	return {
 		TFile,
 		MarkdownView,
 		Component,
-		Notice,
+		Notice: jest.fn(),
 		Platform: obsidianPlatform,
 		MarkdownRenderer: {
 			renderMarkdown: jest.fn().mockResolvedValue(undefined),
@@ -22,7 +21,7 @@ jest.mock('obsidian', () => {
 }, { virtual: true });
 
 import type { Card } from '../types';
-import { MarkdownRenderer } from 'obsidian';
+import { MarkdownRenderer, Notice, TFile } from 'obsidian';
 import { ReviewSession, getReviewStatusTags } from '../ui/review-session';
 
 class TestElement {
@@ -123,6 +122,26 @@ function createScope() {
 	return { scope, handlers };
 }
 
+function createProcessingVault(initialContent: string) {
+	let content = initialContent;
+	const file = new TFile() as any;
+	file.path = 'cards.md';
+	const vault = {
+		getAbstractFileByPath: jest.fn().mockReturnValue(file),
+		process: jest.fn(async (_file: unknown, callback: (content: string) => string) => {
+			content = callback(content);
+		}),
+	};
+
+	return {
+		vault,
+		getContent: () => content,
+		setContent: (nextContent: string) => {
+			content = nextContent;
+		},
+	};
+}
+
 function keyEvent(key: string, options: Partial<KeyboardEvent> = {}): KeyboardEvent {
 	return {
 		key,
@@ -162,8 +181,8 @@ describe('ReviewSession shortcuts', () => {
 
 		session.registerShortcuts(scope as any);
 
-		expect(scope.register).toHaveBeenCalledTimes(4);
-		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3']);
+		expect(scope.register).toHaveBeenCalledTimes(5);
+		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3', 'U']);
 	});
 
 	it('does not register shortcuts on mobile', () => {
@@ -387,7 +406,7 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 		expect(host.complete).toHaveBeenCalledTimes(1);
-		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
+		expect(host.complete).toHaveBeenCalledWith(expect.objectContaining({ remainingDueCount: 1 }));
 	});
 
 	it('does not adjust cards outside the current review batch', async () => {
@@ -409,7 +428,7 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 
-		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
+		expect(host.complete).toHaveBeenCalledWith(expect.objectContaining({ remainingDueCount: 1 }));
 		expect(nextCard.lineStart).toBe(20);
 		expect(nextCard.lineEnd).toBe(20);
 	});
@@ -485,6 +504,142 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Learned due');
+	});
+
+	it('undoes a Good rating and returns to the rated card with the answer visible', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
+				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
+			],
+			vault: processing.vault as any,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
+		expect(processing.getContent()).toContain('<!--SR:');
+
+		session.undoLastRatingAction();
+		await flushPromises();
+
+		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.obr-btn-show')).toBeNull();
+		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('<span class="obr-cloze-show">answer</span>');
+	});
+
+	it('undoes an Again rating and restores the previous queue order', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
+				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
+			],
+			vault: processing.vault as any,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(1);
+		await flushPromises();
+		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Second');
+
+		session.undoLastRatingAction();
+		await flushPromises();
+
+		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('First');
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+	});
+
+	it('undoes a first rating on a new card by deleting the inserted SR line', async () => {
+		const host = createHost();
+		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
+				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
+			],
+			vault: processing.vault as any,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(processing.getContent().split('\n')[0]).toMatch(/^<!--SR:/);
+
+		session.undoLastRatingAction();
+		await flushPromises();
+
+		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
+	});
+
+	it('allows undo from the completion screen after rating the final card', async () => {
+		const host = createHost();
+		const processing = createProcessingVault('Question ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: processing.vault as any,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+
+		const completionState = host.complete.mock.calls.at(-1)?.[0];
+		expect(completionState.canUndoLastRating).toBe(true);
+		completionState.undoLastRating();
+		await flushPromises();
+
+		expect(processing.getContent()).toBe('Question ==answer==');
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/1)');
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+	});
+
+	it('does not roll back the UI when the review file changed before undo', async () => {
+		(Notice as unknown as jest.Mock).mockClear();
+		const host = createHost();
+		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
+				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
+			],
+			vault: processing.vault as any,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		const changedContent = processing.getContent().replace('<!--SR:', '<!--SR:changed,');
+		processing.setContent(changedContent);
+
+		session.undoLastRatingAction();
+		await flushPromises();
+
+		expect(processing.getContent()).toBe(changedContent);
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
+		expect(Notice).toHaveBeenCalled();
 	});
 
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {
