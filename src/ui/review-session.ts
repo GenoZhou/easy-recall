@@ -426,6 +426,17 @@ export class ReviewSession {
 				this.showHint = true;
 				void this.render();
 			});
+
+			if (this.lastRatingUndo) {
+				const undoButton = btnContainer.createEl('button', {
+					cls: 'obr-btn-secondary obr-btn-undo-rating',
+				});
+				undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
+				if (!Platform.isMobile && shortcutsActive) {
+					undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
+				}
+				undoButton.addEventListener('click', () => this.undoLastRatingAction());
+			}
 			return;
 		}
 
@@ -450,17 +461,6 @@ export class ReviewSession {
 
 			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));
 		});
-
-		if (this.lastRatingUndo) {
-			const undoButton = this.host.buttonsEl.createEl('button', {
-				cls: 'obr-btn-secondary obr-btn-undo-rating',
-			});
-			undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
-			if (isDesktop && shortcutsActive) {
-				undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
-			}
-			undoButton.addEventListener('click', () => this.undoLastRatingAction());
-		}
 	}
 
 	private async handleRate(rating: Rating) {

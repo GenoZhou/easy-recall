@@ -526,6 +526,13 @@ describe('ReviewSession shortcuts', () => {
 		await flushPromises();
 		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
 		expect(processing.getContent()).toContain('<!--SR:');
+		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).not.toBeNull();
+
+		session.showAnswerAction();
+		await flushPromises();
+		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
 
 		session.undoLastRatingAction();
 		await flushPromises();
