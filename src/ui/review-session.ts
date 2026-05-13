@@ -1,4 +1,4 @@
-import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
+import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler, setIcon } from 'obsidian';
 import { Card, Rating, Schedule } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
@@ -403,6 +403,16 @@ export class ReviewSession {
 		if (!this.showAnswer) {
 			const btnContainer = this.host.buttonsEl.createDiv({ cls: 'obr-buttons-row' });
 
+			if (this.lastRatingUndo) {
+				const undoButton = btnContainer.createEl('button', {
+					cls: 'obr-btn-secondary obr-btn-undo-rating',
+				});
+				undoButton.setAttribute('aria-label', t().review.undoRating);
+				undoButton.setAttribute('title', t().review.undoRating);
+				setIcon(undoButton, 'undo-2');
+				undoButton.addEventListener('click', () => this.undoLastRatingAction());
+			}
+
 			if (card.hint && !this.showHint) {
 				const showHintBtn = btnContainer.createEl('button', {
 					cls: 'obr-btn-show-hint'
@@ -427,16 +437,6 @@ export class ReviewSession {
 				void this.render();
 			});
 
-			if (this.lastRatingUndo) {
-				const undoButton = btnContainer.createEl('button', {
-					cls: 'obr-btn-secondary obr-btn-undo-rating',
-				});
-				undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
-				if (!Platform.isMobile && shortcutsActive) {
-					undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
-				}
-				undoButton.addEventListener('click', () => this.undoLastRatingAction());
-			}
 			return;
 		}
 

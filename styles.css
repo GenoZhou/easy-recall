@@ -305,11 +305,13 @@
 }
 
 .obr-btn-undo-rating {
-	margin-top: 10px;
-}
-
-.obr-btn-undo-rating .obr-btn-shortcut {
-	margin-left: 8px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 56px;
+	min-width: 56px;
+	min-height: 56px;
+	padding: 0;
 }
 
 .obr-btn-show .obr-btn-label,
