@@ -305,13 +305,15 @@
 }
 
 .obr-btn-undo-rating {
-	display: inline-flex;
+	box-sizing: border-box;
+	display: inline-flex !important;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
-	height: 56px;
-	min-height: 0;
-	padding: 0 14px;
+	height: 56px !important;
+	min-height: 56px !important;
+	max-height: 56px;
+	padding: 0 14px !important;
 	line-height: 1;
 }
 
