@@ -410,6 +410,9 @@ export class ReviewSession {
 				undoButton.setAttribute('aria-label', t().review.undoRating);
 				undoButton.setAttribute('title', t().review.undoRating);
 				setIcon(undoButton, 'undo-2');
+				if (!Platform.isMobile && shortcutsActive) {
+					undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
+				}
 				undoButton.addEventListener('click', () => this.undoLastRatingAction());
 			}
 

@@ -308,10 +308,17 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 56px;
-	min-width: 56px;
-	min-height: 56px;
-	padding: 0;
+	gap: 8px;
+	height: 56px;
+	min-height: 0;
+	padding: 0 14px;
+	line-height: 1;
+}
+
+.obr-btn-undo-rating svg {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
 }
 
 .obr-btn-show .obr-btn-label,
