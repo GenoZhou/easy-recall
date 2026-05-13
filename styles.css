@@ -304,27 +304,9 @@
 	margin-left: 8px;
 }
 
-.obr-btn-undo-rating {
-	box-sizing: border-box;
-	display: inline-flex !important;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	height: 56px !important;
-	min-height: 56px !important;
-	max-height: 56px;
-	padding: 0 14px !important;
-	line-height: 1;
-}
-
-.obr-btn-undo-rating svg {
-	width: 22px;
-	height: 22px;
-	flex-shrink: 0;
-}
-
 .obr-btn-show .obr-btn-label,
-.obr-btn-show-hint .obr-btn-label {
+.obr-btn-show-hint .obr-btn-label,
+.obr-btn-undo-rating .obr-btn-label {
 	margin-right: 8px;
 }
 

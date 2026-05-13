@@ -17,7 +17,6 @@ jest.mock('obsidian', () => {
 		MarkdownRenderer: {
 			renderMarkdown: jest.fn().mockResolvedValue(undefined),
 		},
-		setIcon: jest.fn(),
 	};
 }, { virtual: true });
 
@@ -529,7 +528,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(processing.getContent()).toContain('<!--SR:');
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
 		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')?.querySelector('.obr-btn-label')).toBeNull();
+		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')?.querySelector('.obr-btn-label')?.textContent).toBe('撤回');
 		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('U');
 
 		session.showAnswerAction();

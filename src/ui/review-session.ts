@@ -1,4 +1,4 @@
-import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler, setIcon } from 'obsidian';
+import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
 import { Card, Rating, Schedule } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
@@ -409,7 +409,7 @@ export class ReviewSession {
 				});
 				undoButton.setAttribute('aria-label', t().review.undoRating);
 				undoButton.setAttribute('title', t().review.undoRating);
-				setIcon(undoButton, 'undo-2');
+				undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
 				if (!Platform.isMobile && shortcutsActive) {
 					undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
 				}
