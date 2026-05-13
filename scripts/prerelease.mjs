@@ -60,6 +60,10 @@ const explicitBase = readArg("--base");
 const preid = readArg("--preid") || "beta";
 const shouldPublish = hasFlag("--publish");
 const remoteName = readArg("--remote") || "origin";
+const expectedGitAuthor = {
+  name: "Geno",
+  email: "6045730+GenoZhou@users.noreply.github.com",
+};
 
 const files = {
   manifest: path.join(rootDir, "manifest.json"),
@@ -87,6 +91,9 @@ async function main() {
   const nextVersion = explicitVersion || getNextPrereleaseVersion(currentVersion, preid, explicitBase);
   validatePrereleaseVersion(nextVersion);
   ensureVersionAvailable(nextVersion);
+  if (shouldPublish) {
+    ensureReleaseGitIdentity();
+  }
 
   updateVersions(manifest, packageJson, nextVersion);
   run("npm", ["run", "prepublish"]);
@@ -179,6 +186,26 @@ function ensureVersionAvailable(version) {
     fail(`Remote tag ${version} already exists on ${remoteName}.`);
   }
 
+}
+
+function ensureReleaseGitIdentity() {
+  const currentName = commandOutput("git", ["config", "user.name"]);
+  const currentEmail = commandOutput("git", ["config", "user.email"]);
+
+  if (currentName === expectedGitAuthor.name && currentEmail === expectedGitAuthor.email) {
+    return;
+  }
+
+  run("git", ["config", "user.name", expectedGitAuthor.name]);
+  run("git", ["config", "user.email", expectedGitAuthor.email]);
+
+  const nextName = commandOutput("git", ["config", "user.name"]);
+  const nextEmail = commandOutput("git", ["config", "user.email"]);
+  if (nextName !== expectedGitAuthor.name || nextEmail !== expectedGitAuthor.email) {
+    fail(`Git author is ${nextName} <${nextEmail}>. Expected ${expectedGitAuthor.name} <${expectedGitAuthor.email}>.`);
+  }
+
+  console.log(`Configured release git author: ${nextName} <${nextEmail}>`);
 }
 
 function updateVersions(manifest, packageJson, version) {

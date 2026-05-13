@@ -20,9 +20,11 @@
 | 开发 | `npm run dev` |
 | 构建 | `npm run build` |
 | 测试 | `npm test` |
+| 本地验证 | `npm run verify` |
 | 发布前检查 | `npm run prepublish` |
 | 准备预发布 | `npm run prerelease` |
 | 发布预发布 | `npm run release:prerelease` |
+| 发布核验 | `npm run verify:release -- <version>` |
 
 ## 工作方式与 token 预算
 
@@ -35,14 +37,20 @@
   - 优先读相关函数附近的片段，不要整文件展开。
   - 大文件先用 `rg -n` 定位，再用 `sed -n` 读局部。
 - diff 要分层：
-  - 默认先看 `git diff --stat` 或限定文件的关键片段。
-  - 只有在检查行为细节、提交前审阅或怀疑误改时再输出完整 diff。
+	- 默认先看 `git diff --stat` 或限定文件的关键片段。
+	- 只有在检查行为细节、提交前审阅或怀疑误改时再输出完整 diff。
+	- 大功能完成后优先看关键文件限定 diff；不要一次展开核心大文件和测试大文件的完整 diff，除非准备提交前审阅风险点。
 - 测试输出要克制：
-  - 开发中可以只保留失败信息或摘要。
-  - 发布命令自带 `prepublish` 时，不要在同一轮里重复跑同样的完整检查，除非刚修过失败。
+	- 开发中可以只保留失败信息或摘要。
+	- 常规实现验证优先用 `npm run verify`。
+	- 如果接下来马上运行 `npm run release:prerelease` / `npm run release:stable`，优先依赖发布命令自带的 `prepublish`，不要在同一轮里重复跑同样的完整检查，除非刚修过失败。
 - GitHub 发布核验要直达当前版本：
-  - 优先查当前 tag / release / workflow run。
-  - 不要拉大量历史 workflow，除非当前 run 查不到。
+	- 优先运行 `npm run verify:release -- <version>`。
+	- 手动核验时只查当前 tag / release / workflow run。
+	- 不要拉大量历史 workflow，除非当前 run 查不到。
+- 命令输出要避开环境噪音：
+	- 如果 shell 初始化持续输出与任务无关的错误，优先使用不会触发登录初始化的命令方式。
+	- 汇报时只保留和任务相关的失败信息或摘要。
 - 使用记忆时只读命中的少量行；不要展开整段历史记录，除非发布中断、状态不明或需要复盘旧失败。
 
 ## 架构约束
@@ -86,11 +94,12 @@
 ### UI 与交互
 
 - 复习流程相关修改要特别注意：
-  - 当前卡片索引推进
-  - `Again` 回队尾的行为
-  - `lineStart` / `scheduleLine` 更新后的当前队列偏移
-  - 单次复习上限下的下一批加载方式
-  - 关闭 Modal 时是否会误触发回调
+	- 当前卡片索引推进
+	- `Again` 回队尾的行为
+	- `lineStart` / `scheduleLine` 更新后的当前队列偏移
+	- `scheduleLine` 的 `0` 是合法行号，判断“没有 SR 行”必须用 `scheduleLine === undefined`
+	- 单次复习上限下的下一批加载方式
+	- 关闭 Modal 时是否会误触发回调
 - 如果进入下一批复习，优先重新扫描 / 重新解析剩余到期卡片，而不是在 UI/session 层维护跨批次行号状态。
 - 链接、按钮和快捷键要保持基本可访问性，不要只改视觉不改语义。
 
@@ -149,9 +158,14 @@
   - 确认发布前检查通过后提交生成的版本文件和本次代码改动。
   - 不推送 tag，也不创建 GitHub release，除非用户同时要求发布。
 - 用户说“发布 prerelease”或“发个 prerelease”时：
-  - 使用 `npm run release:prerelease` 或 `npm run prerelease -- --version <version> --publish`。
-  - 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
-  - 成功后确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
+	- 使用 `npm run release:prerelease` 或 `npm run prerelease -- --version <version> --publish`。
+	- 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
+	- 发布脚本会在提交前确认 repo-local git author 是 `Geno <6045730+GenoZhou@users.noreply.github.com>`；如果脚本失败，不要绕过身份检查手动提交。
+	- 成功后运行 `npm run verify:release -- <version>`，确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
+- 用户说“发布正式版本”时：
+	- 使用 `npm run release:stable` 或 `node scripts/release.mjs --publish`。
+	- 同样依赖脚本内置的 git author 检查和发布前检查。
+	- 成功后运行 `npm run verify:release -- <version>`。
 - GitHub Actions 的 `Release` workflow 由 tag push 触发：
   - 本地发布脚本负责版本文件、提交、tag 和 push。
   - GitHub release 由 workflow 创建；不要在本地脚本里重复创建 release。

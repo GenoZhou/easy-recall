@@ -1,6 +1,6 @@
 {
 	"name": "ob-reviews",
-	"version": "1.2.10-beta.1",
+	"version": "1.2.10-beta.2",
 	"description": "极简 Obsidian 间隔重复插件",
 	"main": "main.js",
 	"scripts": {
@@ -13,6 +13,8 @@
 		"prerelease": "node scripts/prerelease.mjs",
 		"release:prerelease": "node scripts/prerelease.mjs --publish",
 		"release:stable": "node scripts/release.mjs --publish",
+		"verify": "npm test -- --runInBand && npm run build",
+		"verify:release": "node scripts/verify-release.mjs",
 		"prepublish": "npm run build && npm test && npm run check-dist",
 		"check-dist": "node scripts/check-dist.mjs"
 	},
