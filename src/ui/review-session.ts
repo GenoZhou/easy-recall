@@ -52,6 +52,7 @@ interface RatingUndoState {
 
 const SHAKE_UNDO_THRESHOLD = 18;
 const SHAKE_UNDO_COOLDOWN_MS = 1200;
+const SHAKE_NOTICE_COOLDOWN_MS = 2000;
 
 function cloneSchedule(schedule: Schedule | undefined): Schedule | undefined {
 	if (!schedule) {
@@ -149,8 +150,10 @@ export class ReviewSession {
 	private shortcutHandlers: KeymapEventHandler[] = [];
 	private lastRatingUndo: RatingUndoState | null = null;
 	private deviceMotionRegistered: boolean = false;
+	private deviceMotionPermissionRequested: boolean = false;
 	private lastMotionMagnitude: number | null = null;
 	private lastShakeUndoAt: number = 0;
+	private lastShakeNoticeAt: number = 0;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -256,19 +259,67 @@ export class ReviewSession {
 		}
 	}
 
-	undoLastRatingAction(): void {
+	undoLastRatingAction(showSuccessNotice: boolean = false): void {
 		if (this.lastRatingUndo) {
-			void this.handleUndoLastRating();
+			void this.handleUndoLastRating(showSuccessNotice);
 		}
 	}
 
-	private registerShakeUndo(): void {
+	private registerShakeUndo(skipPermissionCheck: boolean = false): void {
 		if (!Platform.isMobile || typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+			return;
+		}
+
+		if (this.deviceMotionRegistered) {
+			return;
+		}
+
+		if (!skipPermissionCheck && this.requiresDeviceMotionPermission()) {
 			return;
 		}
 
 		window.addEventListener('devicemotion', this.handleDeviceMotion);
 		this.deviceMotionRegistered = true;
+	}
+
+	private ensureShakeUndoPermission(): void {
+		if (!Platform.isMobile || this.deviceMotionRegistered || this.deviceMotionPermissionRequested) {
+			return;
+		}
+
+		const deviceMotionEvent = (globalThis as unknown as {
+			DeviceMotionEvent?: {
+				requestPermission?: () => Promise<'granted' | 'denied'>;
+			};
+		}).DeviceMotionEvent;
+
+		if (typeof deviceMotionEvent?.requestPermission !== 'function') {
+			this.registerShakeUndo();
+			return;
+		}
+
+		this.deviceMotionPermissionRequested = true;
+		void deviceMotionEvent.requestPermission()
+			.then((permission) => {
+				if (permission === 'granted') {
+					this.registerShakeUndo(true);
+					return;
+				}
+
+				new Notice(t().notifications.shakePermissionDenied, 3000);
+			})
+			.catch(() => {
+				new Notice(t().notifications.shakePermissionDenied, 3000);
+			});
+	}
+
+	private requiresDeviceMotionPermission(): boolean {
+		const deviceMotionEvent = (globalThis as unknown as {
+			DeviceMotionEvent?: {
+				requestPermission?: () => Promise<'granted' | 'denied'>;
+			};
+		}).DeviceMotionEvent;
+		return typeof deviceMotionEvent?.requestPermission === 'function';
 	}
 
 	private unregisterShakeUndo(): void {
@@ -282,11 +333,6 @@ export class ReviewSession {
 	}
 
 	private handleDeviceMotion = (evt: DeviceMotionEvent): void => {
-		if (!this.lastRatingUndo) {
-			this.lastMotionMagnitude = null;
-			return;
-		}
-
 		const acceleration = evt.accelerationIncludingGravity ?? evt.acceleration;
 		if (!acceleration) {
 			return;
@@ -306,7 +352,15 @@ export class ReviewSession {
 		const delta = Math.abs(magnitude - previousMagnitude);
 		if (delta >= SHAKE_UNDO_THRESHOLD && now - this.lastShakeUndoAt >= SHAKE_UNDO_COOLDOWN_MS) {
 			this.lastShakeUndoAt = now;
-			this.undoLastRatingAction();
+			if (this.lastRatingUndo) {
+				this.undoLastRatingAction(true);
+				return;
+			}
+
+			if (now - this.lastShakeNoticeAt >= SHAKE_NOTICE_COOLDOWN_MS) {
+				this.lastShakeNoticeAt = now;
+				new Notice(t().notifications.shakeUndoUnavailable, 1500);
+			}
 		}
 	};
 
@@ -420,6 +474,7 @@ export class ReviewSession {
 	}
 
 	private handleShowAnswer() {
+		this.ensureShakeUndoPermission();
 		if (!this.showAnswer) {
 			this.showAnswer = true;
 			this.showHint = true;
@@ -428,6 +483,7 @@ export class ReviewSession {
 	}
 
 	private handleShowHint() {
+		this.ensureShakeUndoPermission();
 		if (!this.showHint) {
 			this.showHint = true;
 			void this.render();
@@ -508,6 +564,7 @@ export class ReviewSession {
 	}
 
 	private async handleRate(rating: Rating) {
+		this.ensureShakeUndoPermission();
 		const card = this.cards[this.currentIndex];
 		if (!card) return;
 
@@ -606,7 +663,7 @@ export class ReviewSession {
 		this.isComplete = false;
 	}
 
-	private async handleUndoLastRating(): Promise<void> {
+	private async handleUndoLastRating(showSuccessNotice: boolean = false): Promise<void> {
 		const undo = this.lastRatingUndo;
 		if (!undo) return;
 
@@ -633,7 +690,10 @@ export class ReviewSession {
 
 			this.restoreSessionSnapshot(undo.session);
 			this.lastRatingUndo = null;
-			void this.render();
+			await this.render();
+			if (showSuccessNotice) {
+				new Notice(t().notifications.shakeUndoComplete, 1200);
+			}
 		} catch (err) {
 			error('Failed to undo rating:', err);
 			new Notice(t().notifications.failedToUndo, 4000);

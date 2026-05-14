@@ -159,6 +159,7 @@ async function flushPromises(): Promise<void> {
 describe('ReviewSession shortcuts', () => {
 	const originalHTMLElement = (globalThis as any).HTMLElement;
 	const originalWindow = (globalThis as any).window;
+	const originalDeviceMotionEvent = (globalThis as any).DeviceMotionEvent;
 
 	beforeEach(() => {
 		jest.useFakeTimers();
@@ -170,6 +171,11 @@ describe('ReviewSession shortcuts', () => {
 		(globalThis as any).HTMLElement = originalHTMLElement;
 		Object.defineProperty(globalThis, 'window', {
 			value: originalWindow,
+			configurable: true,
+			writable: true,
+		});
+		Object.defineProperty(globalThis, 'DeviceMotionEvent', {
+			value: originalDeviceMotionEvent,
 			configurable: true,
 			writable: true,
 		});
@@ -581,6 +587,7 @@ describe('ReviewSession shortcuts', () => {
 
 	it('undoes the previous rating on mobile shake without rendering an undo button', async () => {
 		obsidianPlatform.isMobile = true;
+		(Notice as unknown as jest.Mock).mockClear();
 		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
 		const fakeWindow = {
 			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
@@ -620,8 +627,78 @@ describe('ReviewSession shortcuts', () => {
 
 		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
 		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+		expect(Notice).toHaveBeenCalledWith('已撤回上次评分。', 1200);
 		session.dispose();
 		expect(fakeWindow.removeEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
+	});
+
+	it('shows a mobile shake notice when there is no rating to undo', async () => {
+		obsidianPlatform.isMobile = true;
+		(Notice as unknown as jest.Mock).mockClear();
+		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
+		const fakeWindow = {
+			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
+				if (eventName === 'devicemotion') {
+					motionHandler = handler as (evt: DeviceMotionEvent) => void;
+				}
+			}),
+			removeEventListener: jest.fn(),
+		};
+		Object.defineProperty(globalThis, 'window', {
+			value: fakeWindow,
+			configurable: true,
+			writable: true,
+		});
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
+		motionHandler!({ accelerationIncludingGravity: { x: 0, y: 0, z: 0 } } as DeviceMotionEvent);
+		motionHandler!({ accelerationIncludingGravity: { x: 24, y: 0, z: 0 } } as DeviceMotionEvent);
+
+		expect(Notice).toHaveBeenCalledWith('检测到摇动，但当前没有可撤回的评分。', 1500);
+		session.dispose();
+	});
+
+	it('requests motion permission from a mobile user action before registering shake undo', async () => {
+		obsidianPlatform.isMobile = true;
+		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
+		const fakeWindow = {
+			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
+				if (eventName === 'devicemotion') {
+					motionHandler = handler as (evt: DeviceMotionEvent) => void;
+				}
+			}),
+			removeEventListener: jest.fn(),
+		};
+		const requestPermission = jest.fn().mockResolvedValue('granted');
+		Object.defineProperty(globalThis, 'window', {
+			value: fakeWindow,
+			configurable: true,
+			writable: true,
+		});
+		Object.defineProperty(globalThis, 'DeviceMotionEvent', {
+			value: { requestPermission },
+			configurable: true,
+			writable: true,
+		});
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		expect(fakeWindow.addEventListener).not.toHaveBeenCalled();
+		session.showAnswerAction();
+		await flushPromises();
+
+		expect(requestPermission).toHaveBeenCalled();
+		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
+		expect(motionHandler).not.toBeNull();
+		session.dispose();
 	});
 
 	it('undoes a first rating on a new card by deleting the inserted SR line', async () => {

@@ -26,6 +26,9 @@ export const zh: Translations = {
 		failedToSave: '❌ 保存失败，请重试',
 		failedToOpenFile: '❌ 打开原文失败，请重试',
 		failedToUndo: '❌ 笔记内容已变化，无法安全撤回。请重新开始复习以同步最新内容。',
+		shakeUndoUnavailable: '检测到摇动，但当前没有可撤回的评分。',
+		shakeUndoComplete: '已撤回上次评分。',
+		shakePermissionDenied: '未获得动作传感器权限，摇一摇撤回不可用。',
 		fileChanged: (path: string) => `复习文件已变更: ${path}`,
 	},
 
