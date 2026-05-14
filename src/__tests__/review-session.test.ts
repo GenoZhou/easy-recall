@@ -7,12 +7,13 @@ jest.mock('obsidian', () => {
 
 	class MarkdownView {}
 	class Component {}
+	class Notice {}
 
 	return {
 		TFile,
 		MarkdownView,
 		Component,
-		Notice: jest.fn(),
+		Notice,
 		Platform: obsidianPlatform,
 		MarkdownRenderer: {
 			renderMarkdown: jest.fn().mockResolvedValue(undefined),
@@ -21,7 +22,7 @@ jest.mock('obsidian', () => {
 }, { virtual: true });
 
 import type { Card } from '../types';
-import { MarkdownRenderer, Notice, TFile } from 'obsidian';
+import { MarkdownRenderer } from 'obsidian';
 import { ReviewSession, getReviewStatusTags } from '../ui/review-session';
 
 class TestElement {
@@ -122,26 +123,6 @@ function createScope() {
 	return { scope, handlers };
 }
 
-function createProcessingVault(initialContent: string) {
-	let content = initialContent;
-	const file = new TFile() as any;
-	file.path = 'cards.md';
-	const vault = {
-		getAbstractFileByPath: jest.fn().mockReturnValue(file),
-		process: jest.fn(async (_file: unknown, callback: (content: string) => string) => {
-			content = callback(content);
-		}),
-	};
-
-	return {
-		vault,
-		getContent: () => content,
-		setContent: (nextContent: string) => {
-			content = nextContent;
-		},
-	};
-}
-
 function keyEvent(key: string, options: Partial<KeyboardEvent> = {}): KeyboardEvent {
 	return {
 		key,
@@ -158,8 +139,6 @@ async function flushPromises(): Promise<void> {
 
 describe('ReviewSession shortcuts', () => {
 	const originalHTMLElement = (globalThis as any).HTMLElement;
-	const originalWindow = (globalThis as any).window;
-	const originalDeviceMotionEvent = (globalThis as any).DeviceMotionEvent;
 
 	beforeEach(() => {
 		jest.useFakeTimers();
@@ -169,16 +148,6 @@ describe('ReviewSession shortcuts', () => {
 
 	afterEach(() => {
 		(globalThis as any).HTMLElement = originalHTMLElement;
-		Object.defineProperty(globalThis, 'window', {
-			value: originalWindow,
-			configurable: true,
-			writable: true,
-		});
-		Object.defineProperty(globalThis, 'DeviceMotionEvent', {
-			value: originalDeviceMotionEvent,
-			configurable: true,
-			writable: true,
-		});
 		jest.useRealTimers();
 		jest.clearAllMocks();
 	});
@@ -193,8 +162,8 @@ describe('ReviewSession shortcuts', () => {
 
 		session.registerShortcuts(scope as any);
 
-		expect(scope.register).toHaveBeenCalledTimes(5);
-		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3', 'U']);
+		expect(scope.register).toHaveBeenCalledTimes(4);
+		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3']);
 	});
 
 	it('does not register shortcuts on mobile', () => {
@@ -418,7 +387,7 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 		expect(host.complete).toHaveBeenCalledTimes(1);
-		expect(host.complete).toHaveBeenCalledWith(expect.objectContaining({ remainingDueCount: 1 }));
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
 	});
 
 	it('does not adjust cards outside the current review batch', async () => {
@@ -440,7 +409,7 @@ describe('ReviewSession shortcuts', () => {
 		session.rateAction(3);
 		await flushPromises();
 
-		expect(host.complete).toHaveBeenCalledWith(expect.objectContaining({ remainingDueCount: 1 }));
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
 		expect(nextCard.lineStart).toBe(20);
 		expect(nextCard.lineEnd).toBe(20);
 	});
@@ -516,266 +485,6 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Learned due');
-	});
-
-	it('undoes a Good rating and returns to the rated card with the answer visible', async () => {
-		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
-		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [
-				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
-				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
-			],
-			vault: processing.vault as any,
-		}, host as any);
-
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(3);
-		await flushPromises();
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
-		expect(processing.getContent()).toContain('<!--SR:');
-		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
-
-		session.showAnswerAction();
-		await flushPromises();
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
-
-		session.undoLastRatingAction();
-		await flushPromises();
-
-		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-show')).toBeNull();
-		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('<span class="obr-cloze-show">answer</span>');
-	});
-
-	it('undoes an Again rating and restores the previous queue order', async () => {
-		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
-		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [
-				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
-				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
-			],
-			vault: processing.vault as any,
-		}, host as any);
-
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(1);
-		await flushPromises();
-		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Second');
-
-		session.undoLastRatingAction();
-		await flushPromises();
-
-		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
-		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('First');
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
-	});
-
-	it('undoes the previous rating on mobile shake without rendering an undo button', async () => {
-		obsidianPlatform.isMobile = true;
-		(Notice as unknown as jest.Mock).mockClear();
-		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
-		const fakeWindow = {
-			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
-				if (eventName === 'devicemotion') {
-					motionHandler = handler as (evt: DeviceMotionEvent) => void;
-				}
-			}),
-			removeEventListener: jest.fn(),
-		};
-		Object.defineProperty(globalThis, 'window', {
-			value: fakeWindow,
-			configurable: true,
-			writable: true,
-		});
-		const host = createHost();
-		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [
-				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
-				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
-			],
-			vault: processing.vault as any,
-		}, host as any);
-
-		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(3);
-		await flushPromises();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
-		expect(processing.getContent()).toContain('<!--SR:');
-
-		motionHandler!({ accelerationIncludingGravity: { x: 0, y: 0, z: 0 } } as DeviceMotionEvent);
-		motionHandler!({ accelerationIncludingGravity: { x: 24, y: 0, z: 0 } } as DeviceMotionEvent);
-		await flushPromises();
-
-		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
-		expect(Notice).toHaveBeenCalledWith('已撤回上次评分。', 1200);
-		session.dispose();
-		expect(fakeWindow.removeEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
-	});
-
-	it('shows a mobile shake notice when there is no rating to undo', async () => {
-		obsidianPlatform.isMobile = true;
-		(Notice as unknown as jest.Mock).mockClear();
-		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
-		const fakeWindow = {
-			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
-				if (eventName === 'devicemotion') {
-					motionHandler = handler as (evt: DeviceMotionEvent) => void;
-				}
-			}),
-			removeEventListener: jest.fn(),
-		};
-		Object.defineProperty(globalThis, 'window', {
-			value: fakeWindow,
-			configurable: true,
-			writable: true,
-		});
-		const host = createHost();
-		const session = new ReviewSession({} as any, {
-			cards: [createCard()],
-			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
-		}, host as any);
-
-		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
-		motionHandler!({ accelerationIncludingGravity: { x: 0, y: 0, z: 0 } } as DeviceMotionEvent);
-		motionHandler!({ accelerationIncludingGravity: { x: 24, y: 0, z: 0 } } as DeviceMotionEvent);
-
-		expect(Notice).toHaveBeenCalledWith('检测到摇动，但当前没有可撤回的评分。', 1500);
-		session.dispose();
-	});
-
-	it('requests motion permission from a mobile user action before registering shake undo', async () => {
-		obsidianPlatform.isMobile = true;
-		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
-		const fakeWindow = {
-			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
-				if (eventName === 'devicemotion') {
-					motionHandler = handler as (evt: DeviceMotionEvent) => void;
-				}
-			}),
-			removeEventListener: jest.fn(),
-		};
-		const requestPermission = jest.fn().mockResolvedValue('granted');
-		Object.defineProperty(globalThis, 'window', {
-			value: fakeWindow,
-			configurable: true,
-			writable: true,
-		});
-		Object.defineProperty(globalThis, 'DeviceMotionEvent', {
-			value: { requestPermission },
-			configurable: true,
-			writable: true,
-		});
-		const host = createHost();
-		const session = new ReviewSession({} as any, {
-			cards: [createCard()],
-			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
-		}, host as any);
-
-		expect(fakeWindow.addEventListener).not.toHaveBeenCalled();
-		session.showAnswerAction();
-		await flushPromises();
-
-		expect(requestPermission).toHaveBeenCalled();
-		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
-		expect(motionHandler).not.toBeNull();
-		session.dispose();
-	});
-
-	it('undoes a first rating on a new card by deleting the inserted SR line', async () => {
-		const host = createHost();
-		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [
-				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
-				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
-			],
-			vault: processing.vault as any,
-		}, host as any);
-
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(3);
-		await flushPromises();
-		expect(processing.getContent().split('\n')[0]).toMatch(/^<!--SR:/);
-
-		session.undoLastRatingAction();
-		await flushPromises();
-
-		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
-	});
-
-	it('allows desktop shortcut undo from the completion screen after rating the final card', async () => {
-		const host = createHost();
-		const processing = createProcessingVault('Question ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [createCard()],
-			vault: processing.vault as any,
-		}, host as any);
-		const { scope, handlers } = createScope();
-
-		session.registerShortcuts(scope as any);
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(3);
-		await flushPromises();
-
-		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 0 });
-		handlers.get('U')!(keyEvent('u'));
-		await flushPromises();
-
-		expect(processing.getContent()).toBe('Question ==answer==');
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/1)');
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
-	});
-
-	it('does not roll back the UI when the review file changed before undo', async () => {
-		(Notice as unknown as jest.Mock).mockClear();
-		const host = createHost();
-		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
-		const session = new ReviewSession({} as any, {
-			cards: [
-				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
-				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
-			],
-			vault: processing.vault as any,
-		}, host as any);
-
-		await session.render();
-		session.showAnswerAction();
-		await flushPromises();
-		session.rateAction(3);
-		await flushPromises();
-		const changedContent = processing.getContent().replace('<!--SR:', '<!--SR:changed,');
-		processing.setContent(changedContent);
-
-		session.undoLastRatingAction();
-		await flushPromises();
-
-		expect(processing.getContent()).toBe(changedContent);
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
-		expect(Notice).toHaveBeenCalled();
 	});
 
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {

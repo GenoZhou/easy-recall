@@ -23,10 +23,6 @@ export const en = {
 		failedToStart: 'Failed to start review, please check console',
 		failedToSave: '❌ Failed to save, please retry',
 		failedToOpenFile: '❌ Failed to open source note, please retry',
-		failedToUndo: '❌ Could not undo because the review file changed. Restart review to sync the latest note.',
-		shakeUndoUnavailable: 'Shake detected. No rating to undo.',
-		shakeUndoComplete: 'Undid last rating.',
-		shakePermissionDenied: 'Motion permission was not granted. Shake to undo is unavailable.',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
 	},
 

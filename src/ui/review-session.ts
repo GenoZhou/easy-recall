@@ -1,8 +1,8 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
-import { Card, Rating, Schedule } from '../types';
+import { Card, Rating } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
-import { injectScheduleWithResult, revertScheduleMutation, ScheduleMutation } from '../store';
+import { injectSchedule } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
 import { error } from '../utils/';
 import { t } from '../i18n';
@@ -31,47 +31,6 @@ export interface ReviewSessionHost {
 interface ReviewStatusTag {
 	label: string;
 	cls: string;
-}
-
-interface ReviewSessionSnapshot {
-	sourceCards: Card[];
-	cards: Card[];
-	completedCardIds: string[];
-	currentIndex: number;
-	showAnswer: boolean;
-	showHint: boolean;
-}
-
-interface RatingUndoState {
-	session: ReviewSessionSnapshot;
-	fileMutation?: {
-		filePath: string;
-		mutation: ScheduleMutation;
-	};
-}
-
-const SHAKE_UNDO_THRESHOLD = 18;
-const SHAKE_UNDO_COOLDOWN_MS = 1200;
-const SHAKE_NOTICE_COOLDOWN_MS = 2000;
-
-function cloneSchedule(schedule: Schedule | undefined): Schedule | undefined {
-	if (!schedule) {
-		return undefined;
-	}
-
-	return {
-		...schedule,
-		due: new Date(schedule.due),
-	};
-}
-
-function cloneCard(card: Card): Card {
-	return {
-		...card,
-		tags: [...card.tags],
-		schedule: cloneSchedule(card.schedule),
-		headingPath: card.headingPath ? [...card.headingPath] : undefined,
-	};
 }
 
 function isNewReviewCard(card: Card): boolean {
@@ -148,12 +107,6 @@ export class ReviewSession {
 	private isComplete: boolean = false;
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
-	private lastRatingUndo: RatingUndoState | null = null;
-	private deviceMotionRegistered: boolean = false;
-	private deviceMotionPermissionRequested: boolean = false;
-	private lastMotionMagnitude: number | null = null;
-	private lastShakeUndoAt: number = 0;
-	private lastShakeNoticeAt: number = 0;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -161,7 +114,6 @@ export class ReviewSession {
 		this.host = host;
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
-		this.registerShakeUndo();
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -181,10 +133,6 @@ export class ReviewSession {
 				return this.handleShortcutEvent(evt, shortcut);
 			}));
 		});
-
-		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.UNDO, (evt: KeyboardEvent) => {
-			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.UNDO);
-		}));
 	}
 
 	handleShortcutEvent(evt: KeyboardEvent, fallbackKey?: string): boolean {
@@ -210,12 +158,6 @@ export class ReviewSession {
 		if (ratingShortcut) {
 			evt.preventDefault();
 			this.rateAction(Number(ratingShortcut) as Rating);
-			return false;
-		}
-
-		if (key && key.toLowerCase() === KEYBOARD_SHORTCUTS.UNDO.toLowerCase()) {
-			evt.preventDefault();
-			this.undoLastRatingAction();
 			return false;
 		}
 
@@ -246,7 +188,6 @@ export class ReviewSession {
 
 	dispose(): void {
 		this.unregisterShortcuts();
-		this.unregisterShakeUndo();
 	}
 
 	showAnswerAction(): void {
@@ -258,111 +199,6 @@ export class ReviewSession {
 			void this.handleRate(rating);
 		}
 	}
-
-	undoLastRatingAction(showSuccessNotice: boolean = false): void {
-		if (this.lastRatingUndo) {
-			void this.handleUndoLastRating(showSuccessNotice);
-		}
-	}
-
-	private registerShakeUndo(skipPermissionCheck: boolean = false): void {
-		if (!Platform.isMobile || typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
-			return;
-		}
-
-		if (this.deviceMotionRegistered) {
-			return;
-		}
-
-		if (!skipPermissionCheck && this.requiresDeviceMotionPermission()) {
-			return;
-		}
-
-		window.addEventListener('devicemotion', this.handleDeviceMotion);
-		this.deviceMotionRegistered = true;
-	}
-
-	private ensureShakeUndoPermission(): void {
-		if (!Platform.isMobile || this.deviceMotionRegistered || this.deviceMotionPermissionRequested) {
-			return;
-		}
-
-		const deviceMotionEvent = (globalThis as unknown as {
-			DeviceMotionEvent?: {
-				requestPermission?: () => Promise<'granted' | 'denied'>;
-			};
-		}).DeviceMotionEvent;
-
-		if (typeof deviceMotionEvent?.requestPermission !== 'function') {
-			this.registerShakeUndo();
-			return;
-		}
-
-		this.deviceMotionPermissionRequested = true;
-		void deviceMotionEvent.requestPermission()
-			.then((permission) => {
-				if (permission === 'granted') {
-					this.registerShakeUndo(true);
-					return;
-				}
-
-				new Notice(t().notifications.shakePermissionDenied, 3000);
-			})
-			.catch(() => {
-				new Notice(t().notifications.shakePermissionDenied, 3000);
-			});
-	}
-
-	private requiresDeviceMotionPermission(): boolean {
-		const deviceMotionEvent = (globalThis as unknown as {
-			DeviceMotionEvent?: {
-				requestPermission?: () => Promise<'granted' | 'denied'>;
-			};
-		}).DeviceMotionEvent;
-		return typeof deviceMotionEvent?.requestPermission === 'function';
-	}
-
-	private unregisterShakeUndo(): void {
-		if (!this.deviceMotionRegistered || typeof window === 'undefined' || typeof window.removeEventListener !== 'function') {
-			return;
-		}
-
-		window.removeEventListener('devicemotion', this.handleDeviceMotion);
-		this.deviceMotionRegistered = false;
-		this.lastMotionMagnitude = null;
-	}
-
-	private handleDeviceMotion = (evt: DeviceMotionEvent): void => {
-		const acceleration = evt.accelerationIncludingGravity ?? evt.acceleration;
-		if (!acceleration) {
-			return;
-		}
-
-		const x = acceleration.x ?? 0;
-		const y = acceleration.y ?? 0;
-		const z = acceleration.z ?? 0;
-		const magnitude = Math.sqrt(x * x + y * y + z * z);
-		const previousMagnitude = this.lastMotionMagnitude;
-		this.lastMotionMagnitude = magnitude;
-		if (previousMagnitude === null) {
-			return;
-		}
-
-		const now = Date.now();
-		const delta = Math.abs(magnitude - previousMagnitude);
-		if (delta >= SHAKE_UNDO_THRESHOLD && now - this.lastShakeUndoAt >= SHAKE_UNDO_COOLDOWN_MS) {
-			this.lastShakeUndoAt = now;
-			if (this.lastRatingUndo) {
-				this.undoLastRatingAction(true);
-				return;
-			}
-
-			if (now - this.lastShakeNoticeAt >= SHAKE_NOTICE_COOLDOWN_MS) {
-				this.lastShakeNoticeAt = now;
-				new Notice(t().notifications.shakeUndoUnavailable, 1500);
-			}
-		}
-	};
 
 	private handleRevealShortcut(): void {
 		const card = this.cards[this.currentIndex];
@@ -474,7 +310,6 @@ export class ReviewSession {
 	}
 
 	private handleShowAnswer() {
-		this.ensureShakeUndoPermission();
 		if (!this.showAnswer) {
 			this.showAnswer = true;
 			this.showHint = true;
@@ -483,7 +318,6 @@ export class ReviewSession {
 	}
 
 	private handleShowHint() {
-		this.ensureShakeUndoPermission();
 		if (!this.showHint) {
 			this.showHint = true;
 			void this.render();
@@ -536,7 +370,6 @@ export class ReviewSession {
 				this.showHint = true;
 				void this.render();
 			});
-
 			return;
 		}
 
@@ -564,27 +397,19 @@ export class ReviewSession {
 	}
 
 	private async handleRate(rating: Rating) {
-		this.ensureShakeUndoPermission();
 		const card = this.cards[this.currentIndex];
 		if (!card) return;
 
 		const newSchedule = calcSchedule(card.schedule ?? null, rating);
-		const undoSession = this.createSessionSnapshot();
-		let fileMutation: RatingUndoState['fileMutation'];
 
 		try {
 			const file = this.vault.getAbstractFileByPath(card.filePath);
 			if (file && file instanceof TFile) {
 				await this.vault.process(file, (content) => {
-					const result = injectScheduleWithResult(content, newSchedule, card.lineStart, card.scheduleLine);
-					fileMutation = {
-						filePath: card.filePath,
-						mutation: result.mutation,
-					};
-					return result.text;
+					return injectSchedule(content, newSchedule, card.lineStart, card.scheduleLine);
 				});
 
-				const isNewScheduleLine = card.scheduleLine === undefined;
+				const isNewScheduleLine = !card.scheduleLine;
 				const lineShift = isNewScheduleLine ? 1 : 0;
 				const originalLineStart = card.lineStart;
 
@@ -607,11 +432,6 @@ export class ReviewSession {
 					}
 				}
 			}
-
-			this.lastRatingUndo = {
-				session: undoSession,
-				fileMutation,
-			};
 
 			if (rating === 1) {
 				const currentCard = this.cards[this.currentIndex];
@@ -640,64 +460,6 @@ export class ReviewSession {
 	private resetRevealState(): void {
 		this.showAnswer = false;
 		this.showHint = false;
-	}
-
-	private createSessionSnapshot(): ReviewSessionSnapshot {
-		return {
-			sourceCards: this.sourceCards.map(cloneCard),
-			cards: this.cards.map(cloneCard),
-			completedCardIds: [...this.completedCardIds],
-			currentIndex: this.currentIndex,
-			showAnswer: this.showAnswer,
-			showHint: this.showHint,
-		};
-	}
-
-	private restoreSessionSnapshot(snapshot: ReviewSessionSnapshot): void {
-		this.sourceCards = snapshot.sourceCards.map(cloneCard);
-		this.cards = snapshot.cards.map(cloneCard);
-		this.completedCardIds = new Set(snapshot.completedCardIds);
-		this.currentIndex = snapshot.currentIndex;
-		this.showAnswer = true;
-		this.showHint = snapshot.showHint;
-		this.isComplete = false;
-	}
-
-	private async handleUndoLastRating(showSuccessNotice: boolean = false): Promise<void> {
-		const undo = this.lastRatingUndo;
-		if (!undo) return;
-
-		try {
-			if (undo.fileMutation) {
-				const file = this.vault.getAbstractFileByPath(undo.fileMutation.filePath);
-				if (!(file instanceof TFile)) {
-					new Notice(t().notifications.failedToUndo, 4000);
-					return;
-				}
-
-				let reverted = false;
-				await this.vault.process(file, (content) => {
-					const result = revertScheduleMutation(content, undo.fileMutation!.mutation);
-					reverted = result.reverted;
-					return result.text;
-				});
-
-				if (!reverted) {
-					new Notice(t().notifications.failedToUndo, 4000);
-					return;
-				}
-			}
-
-			this.restoreSessionSnapshot(undo.session);
-			this.lastRatingUndo = null;
-			await this.render();
-			if (showSuccessNotice) {
-				new Notice(t().notifications.shakeUndoComplete, 1200);
-			}
-		} catch (err) {
-			error('Failed to undo rating:', err);
-			new Notice(t().notifications.failedToUndo, 4000);
-		}
 	}
 
 	private completeReview() {
