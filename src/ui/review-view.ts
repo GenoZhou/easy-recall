@@ -114,14 +114,6 @@ export class ReviewView extends ItemView {
 		this.cardContentEl?.createEl('p', { text: lang.notifications.reviewComplete });
 
 		const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
-		if (state.canUndoLastRating) {
-			const undoButton = buttonRow?.createEl('button', {
-				text: lang.review.complete.undoButton,
-				cls: 'obr-btn-secondary obr-btn-undo-rating',
-			});
-			undoButton?.addEventListener('click', () => state.undoLastRating());
-		}
-
 		if (state.remainingDueCount > 0) {
 			this.cardContentEl?.createEl('p', {
 				text: lang.review.complete.remaining(state.remainingDueCount),

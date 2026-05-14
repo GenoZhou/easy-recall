@@ -158,6 +158,7 @@ async function flushPromises(): Promise<void> {
 
 describe('ReviewSession shortcuts', () => {
 	const originalHTMLElement = (globalThis as any).HTMLElement;
+	const originalWindow = (globalThis as any).window;
 
 	beforeEach(() => {
 		jest.useFakeTimers();
@@ -167,6 +168,11 @@ describe('ReviewSession shortcuts', () => {
 
 	afterEach(() => {
 		(globalThis as any).HTMLElement = originalHTMLElement;
+		Object.defineProperty(globalThis, 'window', {
+			value: originalWindow,
+			configurable: true,
+			writable: true,
+		});
 		jest.useRealTimers();
 		jest.clearAllMocks();
 	});
@@ -527,9 +533,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
 		expect(processing.getContent()).toContain('<!--SR:');
 		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).not.toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')?.querySelector('.obr-btn-label')?.textContent).toBe('撤回');
-		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('U');
+		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
 
 		session.showAnswerAction();
 		await flushPromises();
@@ -575,6 +579,51 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
 	});
 
+	it('undoes the previous rating on mobile shake without rendering an undo button', async () => {
+		obsidianPlatform.isMobile = true;
+		let motionHandler: ((evt: DeviceMotionEvent) => void) | null = null;
+		const fakeWindow = {
+			addEventListener: jest.fn((eventName: string, handler: EventListener) => {
+				if (eventName === 'devicemotion') {
+					motionHandler = handler as (evt: DeviceMotionEvent) => void;
+				}
+			}),
+			removeEventListener: jest.fn(),
+		};
+		Object.defineProperty(globalThis, 'window', {
+			value: fakeWindow,
+			configurable: true,
+			writable: true,
+		});
+		const host = createHost();
+		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({ id: 'card-1', content: 'First ==answer==', lineStart: 0, lineEnd: 0 }),
+				createCard({ id: 'card-2', content: 'Second ==answer==', lineStart: 2, lineEnd: 2 }),
+			],
+			vault: processing.vault as any,
+		}, host as any);
+
+		expect(fakeWindow.addEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(host.buttonsEl.querySelector('.obr-btn-undo-rating')).toBeNull();
+		expect(processing.getContent()).toContain('<!--SR:');
+
+		motionHandler!({ accelerationIncludingGravity: { x: 0, y: 0, z: 0 } } as DeviceMotionEvent);
+		motionHandler!({ accelerationIncludingGravity: { x: 24, y: 0, z: 0 } } as DeviceMotionEvent);
+		await flushPromises();
+
+		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+		session.dispose();
+		expect(fakeWindow.removeEventListener).toHaveBeenCalledWith('devicemotion', expect.any(Function));
+	});
+
 	it('undoes a first rating on a new card by deleting the inserted SR line', async () => {
 		const host = createHost();
 		const processing = createProcessingVault('First ==answer==\n\nSecond ==answer==');
@@ -599,23 +648,24 @@ describe('ReviewSession shortcuts', () => {
 		expect(processing.getContent()).toBe('First ==answer==\n\nSecond ==answer==');
 	});
 
-	it('allows undo from the completion screen after rating the final card', async () => {
+	it('allows desktop shortcut undo from the completion screen after rating the final card', async () => {
 		const host = createHost();
 		const processing = createProcessingVault('Question ==answer==');
 		const session = new ReviewSession({} as any, {
 			cards: [createCard()],
 			vault: processing.vault as any,
 		}, host as any);
+		const { scope, handlers } = createScope();
 
+		session.registerShortcuts(scope as any);
 		await session.render();
 		session.showAnswerAction();
 		await flushPromises();
 		session.rateAction(3);
 		await flushPromises();
 
-		const completionState = host.complete.mock.calls.at(-1)?.[0];
-		expect(completionState.canUndoLastRating).toBe(true);
-		completionState.undoLastRating();
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 0 });
+		handlers.get('U')!(keyEvent('u'));
 		await flushPromises();
 
 		expect(processing.getContent()).toBe('Question ==answer==');

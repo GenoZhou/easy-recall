@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.10--beta.7-blue)
+![Version](https://img.shields.io/badge/version-1.2.10--beta.8-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -117,7 +117,7 @@ tags:
 
 默认每次复习最多放入 20 张到期卡片，让标记为「没记住」的卡片能在较小批次内更快回到队尾。可在插件设置中通过「单次复习上限」调整这个数量。如果这一批完成后还有剩余到期卡片，完成界面会提供「继续复习」来开始下一批。
 
-如果选错评分，可以使用「撤回」恢复当前复习 session 中最近一次评分，并回到那张卡片。撤回只作用于当前打开的复习 session；如果笔记已被外部修改，或另一台设备的 iCloud 同步尚未完成，插件会拒绝撤回，避免把笔记回滚到错误状态。
+如果选错评分，桌面端可按 **U**，移动端可摇一摇手机，恢复当前复习 session 中最近一次评分，并回到那张卡片。撤回只作用于当前打开的复习 session；如果笔记已被外部修改，或另一台设备的 iCloud 同步尚未完成，插件会拒绝撤回，避免把笔记回滚到错误状态。
 
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
 

@@ -17,8 +17,6 @@ export interface ReviewOptions {
 
 export interface ReviewCompletionState {
 	remainingDueCount: number;
-	canUndoLastRating: boolean;
-	undoLastRating(): void;
 }
 
 export interface ReviewSessionHost {
@@ -51,6 +49,9 @@ interface RatingUndoState {
 		mutation: ScheduleMutation;
 	};
 }
+
+const SHAKE_UNDO_THRESHOLD = 18;
+const SHAKE_UNDO_COOLDOWN_MS = 1200;
 
 function cloneSchedule(schedule: Schedule | undefined): Schedule | undefined {
 	if (!schedule) {
@@ -147,6 +148,9 @@ export class ReviewSession {
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
 	private lastRatingUndo: RatingUndoState | null = null;
+	private deviceMotionRegistered: boolean = false;
+	private lastMotionMagnitude: number | null = null;
+	private lastShakeUndoAt: number = 0;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -154,6 +158,7 @@ export class ReviewSession {
 		this.host = host;
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
+		this.registerShakeUndo();
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -238,6 +243,7 @@ export class ReviewSession {
 
 	dispose(): void {
 		this.unregisterShortcuts();
+		this.unregisterShakeUndo();
 	}
 
 	showAnswerAction(): void {
@@ -255,6 +261,54 @@ export class ReviewSession {
 			void this.handleUndoLastRating();
 		}
 	}
+
+	private registerShakeUndo(): void {
+		if (!Platform.isMobile || typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+			return;
+		}
+
+		window.addEventListener('devicemotion', this.handleDeviceMotion);
+		this.deviceMotionRegistered = true;
+	}
+
+	private unregisterShakeUndo(): void {
+		if (!this.deviceMotionRegistered || typeof window === 'undefined' || typeof window.removeEventListener !== 'function') {
+			return;
+		}
+
+		window.removeEventListener('devicemotion', this.handleDeviceMotion);
+		this.deviceMotionRegistered = false;
+		this.lastMotionMagnitude = null;
+	}
+
+	private handleDeviceMotion = (evt: DeviceMotionEvent): void => {
+		if (!this.lastRatingUndo) {
+			this.lastMotionMagnitude = null;
+			return;
+		}
+
+		const acceleration = evt.accelerationIncludingGravity ?? evt.acceleration;
+		if (!acceleration) {
+			return;
+		}
+
+		const x = acceleration.x ?? 0;
+		const y = acceleration.y ?? 0;
+		const z = acceleration.z ?? 0;
+		const magnitude = Math.sqrt(x * x + y * y + z * z);
+		const previousMagnitude = this.lastMotionMagnitude;
+		this.lastMotionMagnitude = magnitude;
+		if (previousMagnitude === null) {
+			return;
+		}
+
+		const now = Date.now();
+		const delta = Math.abs(magnitude - previousMagnitude);
+		if (delta >= SHAKE_UNDO_THRESHOLD && now - this.lastShakeUndoAt >= SHAKE_UNDO_COOLDOWN_MS) {
+			this.lastShakeUndoAt = now;
+			this.undoLastRatingAction();
+		}
+	};
 
 	private handleRevealShortcut(): void {
 		const card = this.cards[this.currentIndex];
@@ -402,19 +456,6 @@ export class ReviewSession {
 
 		if (!this.showAnswer) {
 			const btnContainer = this.host.buttonsEl.createDiv({ cls: 'obr-buttons-row' });
-
-			if (this.lastRatingUndo) {
-				const undoButton = btnContainer.createEl('button', {
-					cls: 'obr-btn-secondary obr-btn-undo-rating',
-				});
-				undoButton.setAttribute('aria-label', t().review.undoRating);
-				undoButton.setAttribute('title', t().review.undoRating);
-				undoButton.createSpan({ text: t().review.undoRating, cls: 'obr-btn-label' });
-				if (!Platform.isMobile && shortcutsActive) {
-					undoButton.createSpan({ text: KEYBOARD_SHORTCUTS.UNDO, cls: 'obr-btn-shortcut' });
-				}
-				undoButton.addEventListener('click', () => this.undoLastRatingAction());
-			}
 
 			if (card.hint && !this.showHint) {
 				const showHintBtn = btnContainer.createEl('button', {
@@ -605,10 +646,6 @@ export class ReviewSession {
 		const remainingDueCount = this.getDueSortedCards(this.sourceCards)
 			.filter(card => !this.completedCardIds.has(card.id))
 			.length;
-		this.host.complete({
-			remainingDueCount,
-			canUndoLastRating: Boolean(this.lastRatingUndo),
-			undoLastRating: () => this.undoLastRatingAction(),
-		});
+		this.host.complete({ remainingDueCount });
 	}
 }
