@@ -5,12 +5,13 @@ import {
 } from 'obsidian';
 import { debug } from './utils/';
 import { initLanguage, t } from './i18n';
-import { SettingsManager, createSettingsManager, OBReviewsSettings } from './settings';
+import { SettingsManager, createSettingsManager, EasyRecallSettings } from './settings';
 import { SettingsTab } from './settings/tab';
 import { registerCommands } from './commands';
 import { executeStartReview } from './commands/start-review';
 import { REVIEW_VIEW_TYPE, ReviewView } from './ui/review-view';
 import type { CommandContext } from './commands/types';
+import { hasDeckTagPrefix } from './tag-prefix';
 
 // 插件图标（使用简单的复习卡片图标 SVG）
 const REVIEW_ICON = `
@@ -23,7 +24,7 @@ const REVIEW_ICON = `
 `;
 
 /**
- * ob-reviews 插件主类
+ * easy-recall 插件主类
  * 
  * 性能优化说明（符合 Obsidian 最佳实践）：
  * 1. 使用 MetadataCache.on('changed') 监听文件变化，而非轮询
@@ -35,9 +36,9 @@ const REVIEW_ICON = `
  * - 命令逻辑移至 commands/ 目录
  * - 设置管理移至 settings/ 目录
  */
-export default class OBReviewsPlugin extends Plugin {
+export default class EasyRecallPlugin extends Plugin {
 	settingsManager!: SettingsManager;
-	settings!: OBReviewsSettings;
+	settings!: EasyRecallSettings;
 
 	async onload() {
 		// 初始化设置
@@ -51,7 +52,7 @@ export default class OBReviewsPlugin extends Plugin {
 		const lang = t();
 
 		// 注册图标
-		addIcon('ob-reviews', REVIEW_ICON);
+		addIcon('easy-recall', REVIEW_ICON);
 
 		this.registerView(REVIEW_VIEW_TYPE, (leaf) => new ReviewView(leaf));
 
@@ -63,7 +64,7 @@ export default class OBReviewsPlugin extends Plugin {
 
 		// 添加左侧栏图标
 		const context: CommandContext = { plugin: this, app: this.app };
-		this.addRibbonIcon('ob-reviews', lang.commands.startReview, () => {
+		this.addRibbonIcon('easy-recall', lang.commands.startReview, () => {
 			executeStartReview(context);
 		});
 		
@@ -92,9 +93,12 @@ export default class OBReviewsPlugin extends Plugin {
 				
 				// 检查是否是复习相关的文件
 				const frontmatterTags = cache.frontmatter?.tags || [];
+				const frontmatterTagList = Array.isArray(frontmatterTags)
+					? frontmatterTags
+					: [frontmatterTags];
 				const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
-				const hasReviewTag = [...frontmatterTags, ...inlineTags].some(
-					(tag: string) => typeof tag === 'string' && tag.includes('ob-reviews/')
+				const hasReviewTag = [...frontmatterTagList, ...inlineTags].some(
+					(tag: string) => typeof tag === 'string' && hasDeckTagPrefix(tag, this.settings.deckTagPrefix)
 				);
 				
 				if (hasReviewTag) {

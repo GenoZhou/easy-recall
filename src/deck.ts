@@ -3,12 +3,13 @@ import { Card, Deck } from './types';
 import { parseNote } from './parser';
 import { isDue } from './scheduler';
 import { error } from './utils/';
+import { DEFAULT_DECK_TAG_PREFIX, hasDeckTagPrefix } from './tag-prefix';
 
 /**
- * 使用 MetadataCache 快速筛选包含 ob-reviews 标签的文件
+ * 使用 MetadataCache 快速筛选包含 easy-recall 标签的文件
  * 符合 Obsidian 最佳实践：利用内置缓存而非全量扫描
  */
-export function getReviewFiles(app: App): TFile[] {
+export function getReviewFiles(app: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): TFile[] {
 	const allFiles = app.vault.getMarkdownFiles();
 	
 	return allFiles.filter(file => {
@@ -21,12 +22,12 @@ export function getReviewFiles(app: App): TFile[] {
 			? frontmatterTags 
 			: [frontmatterTags];
 		
-		// 检查内联标签 (metadataCache.tags 包含 #ob-reviews/xxx 格式)
+		// 检查内联标签 (metadataCache.tags 包含 #easy-recall/xxx 格式)
 		const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
 		
 		const allTags = [...frontmatterTagList, ...inlineTags];
 		return allTags.some((tag: string) => 
-			typeof tag === 'string' && tag.includes('ob-reviews/')
+			typeof tag === 'string' && hasDeckTagPrefix(tag, deckTagPrefix)
 		);
 	});
 }
@@ -37,11 +38,11 @@ export function getReviewFiles(app: App): TFile[] {
  * 
  * 注意：当传入 app 参数时，会使用 MetadataCache 预筛选文件，大幅提升性能
  */
-export async function scanVault(vault: Vault, app?: App): Promise<Card[]> {
+export async function scanVault(vault: Vault, app?: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Promise<Card[]> {
 	const cards: Card[] = [];
 	
 	// 如果有 App 实例，使用 MetadataCache 预筛选（Obsidian 最佳实践）
-	const filesToScan = app ? getReviewFiles(app) : vault.getMarkdownFiles();
+	const filesToScan = app ? getReviewFiles(app, deckTagPrefix) : vault.getMarkdownFiles();
 	
 	const BATCH_SIZE = 10; // 每批处理 10 个文件
 
@@ -49,7 +50,7 @@ export async function scanVault(vault: Vault, app?: App): Promise<Card[]> {
 		const file = filesToScan[i];
 		try {
 			const content = await vault.read(file);
-			const fileCards = parseNote(content, file.path);
+			const fileCards = parseNote(content, file.path, deckTagPrefix);
 			cards.push(...fileCards);
 		} catch (err) {
 			error(`Failed to parse ${file.path}:`, err);
@@ -107,8 +108,8 @@ export function getDueCards(cards: Card[]): Card[] {
  * 获取所有到期卡片的牌组
  * 当传入 app 参数时，使用 MetadataCache 优化性能
  */
-export async function getDueDecks(vault: Vault, app?: App): Promise<Deck[]> {
-	const allCards = await scanVault(vault, app);
+export async function getDueDecks(vault: Vault, app?: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Promise<Deck[]> {
+	const allCards = await scanVault(vault, app, deckTagPrefix);
 	const dueCards = getDueCards(allCards);
 	return groupByDecks(dueCards);
 }
@@ -116,15 +117,15 @@ export async function getDueDecks(vault: Vault, app?: App): Promise<Deck[]> {
 /**
  * 从特定文件获取卡片
  */
-export async function getCardsFromFile(vault: Vault, file: TFile): Promise<Card[]> {
+export async function getCardsFromFile(vault: Vault, file: TFile, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Promise<Card[]> {
 	const content = await vault.read(file);
-	return parseNote(content, file.path);
+	return parseNote(content, file.path, deckTagPrefix);
 }
 
 /**
  * 从特定文件获取到期卡片
  */
-export async function getDueCardsFromFile(vault: Vault, file: TFile): Promise<Card[]> {
-	const cards = await getCardsFromFile(vault, file);
+export async function getDueCardsFromFile(vault: Vault, file: TFile, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Promise<Card[]> {
+	const cards = await getCardsFromFile(vault, file, deckTagPrefix);
 	return getDueCards(cards);
 }

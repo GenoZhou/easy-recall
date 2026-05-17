@@ -25,7 +25,7 @@ describe('Integration - Complete Review Flow', () => {
     it('should complete full review cycle with Good (3)', () => {
       let noteContent = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 《黄帝内经》的成书时期
@@ -56,7 +56,7 @@ tags:
     it('should handle Again rating correctly', () => {
       let noteContent = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 《黄帝内经》的成书时期
@@ -91,7 +91,7 @@ tags:
     it('should roll back mature card without clearing reps', () => {
       let noteContent = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 <!--SR:5,250,2026-02-18T12:00:00Z,3-->
@@ -260,7 +260,7 @@ tags:
     it('should schedule card for ~30 minutes later with Again', () => {
       const noteContent = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 卡片内容

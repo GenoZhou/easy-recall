@@ -35,32 +35,32 @@ describe('utils', () => {
   describe('info', () => {
     it('should always output with prefix', () => {
       info('test message');
-      expect(console.log).toHaveBeenCalledWith('[ob-reviews]', 'test message');
+      expect(console.log).toHaveBeenCalledWith('[easy-recall]', 'test message');
     });
 
     it('should handle multiple arguments', () => {
       info('message', 123, { key: 'value' });
-      expect(console.log).toHaveBeenCalledWith('[ob-reviews]', 'message', 123, { key: 'value' });
+      expect(console.log).toHaveBeenCalledWith('[easy-recall]', 'message', 123, { key: 'value' });
     });
   });
 
   describe('warn', () => {
     it('should output to console.warn with prefix', () => {
       warn('warning message');
-      expect(console.warn).toHaveBeenCalledWith('[ob-reviews]', 'warning message');
+      expect(console.warn).toHaveBeenCalledWith('[easy-recall]', 'warning message');
     });
   });
 
   describe('error', () => {
     it('should output to console.error with prefix', () => {
       error('error message');
-      expect(console.error).toHaveBeenCalledWith('[ob-reviews]', 'error message');
+      expect(console.error).toHaveBeenCalledWith('[easy-recall]', 'error message');
     });
 
     it('should handle error objects', () => {
       const err = new Error('test error');
       error('operation failed:', err);
-      expect(console.error).toHaveBeenCalledWith('[ob-reviews]', 'operation failed:', err);
+      expect(console.error).toHaveBeenCalledWith('[easy-recall]', 'operation failed:', err);
     });
   });
 
@@ -81,7 +81,7 @@ describe('utils', () => {
       
       expect(result).toBeNull();
       expect(operation).toHaveBeenCalled();
-      expect(console.error).toHaveBeenCalledWith('[ob-reviews]', 'operation failed', testError);
+      expect(console.error).toHaveBeenCalledWith('[easy-recall]', 'operation failed', testError);
     });
 
     it('should handle synchronous errors', async () => {
@@ -93,7 +93,7 @@ describe('utils', () => {
       const result = await safeAsync(operation, 'sync operation failed');
       
       expect(result).toBeNull();
-      expect(console.error).toHaveBeenCalledWith('[ob-reviews]', 'sync operation failed', testError);
+      expect(console.error).toHaveBeenCalledWith('[easy-recall]', 'sync operation failed', testError);
     });
   });
 });

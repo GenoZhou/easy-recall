@@ -1,10 +1,8 @@
 import { Card, CardType, Schedule } from './types';
+import { DEFAULT_DECK_TAG_PREFIX, getDeckTagRegex, getYamlDeckTagRegex } from './tag-prefix';
 
 // 挖空检测：==内容==
 const CLOZE_REGEX = /==([^=]+)==/g;
-
-// 标签检测：#ob-reviews/xxxx 格式（支持中文和Unicode字符）
-const DECK_TAG_REGEX = /#ob-reviews\/([^\s#]+)/;
 
 // SR 注释格式：<!--SR:interval,ease,due,reps-->
 const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)-->/;
@@ -14,7 +12,7 @@ const HINT_CALLOUT_REGEX = /^> \[!hint\]/i;
 
 // 标题检测：# 标题 到 ###### 标题
 const HEADING_REGEX = /^(#{1,6})\s+(.+)$/;
-const HIDE_HEADING_IN_PATH_REGEX = /\s*<!--obr-hide-->\s*$/;
+const HIDE_HEADING_IN_PATH_REGEX = /\s*<!--easy-recall-hide-->\s*$/;
 
 /**
  * 从文本中提取调度信息
@@ -31,13 +29,13 @@ export function extractSchedule(text: string): Schedule | null {
 
 	// 验证日期有效性（符合最佳实践：防御性编程）
 	if (isNaN(due.getTime())) {
-		console.warn('[ob-reviews] Invalid date in SR comment:', match[3]);
+		console.warn('[easy-recall] Invalid date in SR comment:', match[3]);
 		return null;
 	}
 
 	// 验证数值范围
 	if (isNaN(interval) || isNaN(ease) || isNaN(reps)) {
-		console.warn('[ob-reviews] Invalid numeric values in SR comment');
+		console.warn('[easy-recall] Invalid numeric values in SR comment');
 		return null;
 	}
 
@@ -45,11 +43,11 @@ export function extractSchedule(text: string): Schedule | null {
 }
 
 /**
- * 从文本中提取卡组标签（#ob-reviews/xxxx 中的 xxxx）
+ * 从文本中提取卡组标签（#easy-recall/xxxx 中的 xxxx）
  * 返回 xxxx 部分，如果没有则返回 null
  */
-export function extractDeckTag(text: string): string | null {
-	const match = text.match(DECK_TAG_REGEX);
+export function extractDeckTag(text: string, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): string | null {
+	const match = text.match(getDeckTagRegex(deckTagPrefix));
 	return match ? match[1] : null; // 返回捕获组中的 xxxx
 }
 
@@ -83,24 +81,33 @@ export function extractClozeAnswers(text: string): string {
 
 /**
  * 从 YAML frontmatter 的 tags 中提取卡组标签
- * 格式: ---\ntags:\n  - ob-reviews/xxxx\n---
+ * 格式: ---\ntags:\n  - easy-recall/xxxx\n---
  */
-function extractYamlDeckTag(content: string): string | null {
+function extractYamlDeckTag(content: string, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): string | null {
 	// 匹配 YAML frontmatter
 	const yamlMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
 	if (!yamlMatch) return null;
 	
 	const yaml = yamlMatch[1];
-	// 匹配 tags: 下的 ob-reviews/xxxx 格式
+	// 匹配 tags: 下的 easy-recall/xxxx 格式
 	const tagMatch = yaml.match(/tags:\s*\n([\s\S]*?)(?:\n\w|$)/);
 	if (tagMatch) {
 		const tagsSection = tagMatch[1];
-		// 匹配每个标签项 - ob-reviews/xxxx（支持中文和Unicode字符）
-		const obReviewMatch = tagsSection.match(/-\s*ob-reviews\/([^\s#]+)/);
-		if (obReviewMatch) {
-			return obReviewMatch[1]; // 返回 xxxx 部分
+		// 匹配每个标签项 - easy-recall/xxxx（支持中文和Unicode字符）
+		const deckTagMatch = tagsSection.match(getYamlDeckTagRegex(deckTagPrefix));
+		if (deckTagMatch) {
+			return deckTagMatch[1]; // 返回 xxxx 部分
 		}
 	}
+
+	const inlineTagMatch = yaml.match(new RegExp(`tags:\\s*([^\\n]+)`));
+	if (inlineTagMatch) {
+		const deckTagMatch = inlineTagMatch[1].match(getYamlDeckTagRegex(deckTagPrefix));
+		if (deckTagMatch) {
+			return deckTagMatch[1];
+		}
+	}
+
 	return null;
 }
 
@@ -119,14 +126,14 @@ function getFrontmatterEndLine(lines: string[]): number | null {
 }
 
 /**
- * 从文件内容提取文件级别的卡组标签（#ob-reviews/xxxx 或 YAML frontmatter 中的 xxxx）
+ * 从文件内容提取文件级别的卡组标签（#easy-recall/xxxx 或 YAML frontmatter 中的 xxxx）
  */
-export function extractFileDeckTag(content: string): string | null {
+export function extractFileDeckTag(content: string, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): string | null {
 	// 先尝试从 YAML frontmatter 提取
-	const yamlTag = extractYamlDeckTag(content);
+	const yamlTag = extractYamlDeckTag(content, deckTagPrefix);
 	if (yamlTag) return yamlTag;
 	
-	// 再尝试从正文中的 #ob-reviews/xxxx 提取
+	// 再尝试从正文中的 #easy-recall/xxxx 提取
 	const lines = content.split('\n');
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i].trim();
@@ -140,13 +147,13 @@ export function extractFileDeckTag(content: string): string | null {
 				const bodyLine = lines[j].trim();
 				if (!bodyLine || bodyLine.startsWith('<!--')) continue;
 				
-				const tag = extractDeckTag(bodyLine);
+				const tag = extractDeckTag(bodyLine, deckTagPrefix);
 				if (tag) return tag;
 			}
 			break;
 		}
 		
-		const tag = extractDeckTag(line);
+		const tag = extractDeckTag(line, deckTagPrefix);
 		if (tag) return tag;
 	}
 	return null;
@@ -303,17 +310,17 @@ function parseBlock(
 
 /**
  * 解析单条笔记内容，提取所有卡片
- * 所有卡片共享文件级别的标签（#ob-reviews/xxxx 中的 xxxx）
- * 如果没有找到 ob-reviews/xxx 标签，返回空数组（不解析该文件）
+ * 所有卡片共享文件级别的标签（#easy-recall/xxxx 中的 xxxx）
+ * 如果没有找到 easy-recall/xxx 标签，返回空数组（不解析该文件）
  * 
  * 解析规则：卡片之间必须有空行分隔。一个卡片 = 一个非空文本块（block）。
  */
-export function parseNote(content: string, filePath: string): Card[] {
+export function parseNote(content: string, filePath: string, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Card[] {
 	const cards: Card[] = [];
 	const lines = content.split('\n');
 
 	// 提取文件级别的标签（所有卡片共享）
-	const deckTag = extractFileDeckTag(content);
+	const deckTag = extractFileDeckTag(content, deckTagPrefix);
 	if (!deckTag) {
 		return [];
 	}
@@ -407,9 +414,9 @@ export function parseNote(content: string, filePath: string): Card[] {
  */
 export function renderClozeContent(content: string, showAnswer: boolean): string {
 	if (showAnswer) {
-		return content.replace(CLOZE_REGEX, '<span class="obr-cloze-show">$1</span>');
+		return content.replace(CLOZE_REGEX, '<span class="er-cloze-show">$1</span>');
 	} else {
-		return content.replace(CLOZE_REGEX, '<span class="obr-cloze-hidden">$1</span>');
+		return content.replace(CLOZE_REGEX, '<span class="er-cloze-hidden">$1</span>');
 	}
 }
 

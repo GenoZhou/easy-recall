@@ -1,9 +1,9 @@
 {
-	"id": "ob-reviews",
-	"name": "Reviews",
-	"version": "1.2.10",
+	"id": "easy-recall",
+	"name": "Easy Recall",
+	"version": "1.2.11-beta.1",
 	"minAppVersion": "0.15.0",
-	"description": "Simple spaced repetition for flashcards reviews: Cloze, Q&A, zero-config.",
+	"description": "Simple spaced repetition for flashcards: Cloze, Q&A, zero-config.",
 	"author": "Geno Zhou",
 	"authorUrl": "",
 	"fundingUrl": "",

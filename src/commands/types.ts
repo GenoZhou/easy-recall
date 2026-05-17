@@ -3,14 +3,14 @@
  */
 
 import { App, TFile } from 'obsidian';
-import OBReviewsPlugin from '../main';
+import EasyRecallPlugin from '../main';
 
 /**
  * 命令上下文
  * 包含插件实例和 App 引用
  */
 export interface CommandContext {
-	plugin: OBReviewsPlugin;
+	plugin: EasyRecallPlugin;
 	app: App;
 }
 

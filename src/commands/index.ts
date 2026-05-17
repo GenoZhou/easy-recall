@@ -4,7 +4,7 @@
  */
 
 import { Plugin } from 'obsidian';
-import OBReviewsPlugin from '../main';
+import EasyRecallPlugin from '../main';
 import { getStartReviewCommand } from './start-review';
 import { getReviewCurrentNoteCommand } from './review-current-note';
 import type { CommandContext } from './types';
@@ -12,7 +12,7 @@ import type { CommandContext } from './types';
 /**
  * 注册所有命令
  */
-export function registerCommands(plugin: OBReviewsPlugin): void {
+export function registerCommands(plugin: EasyRecallPlugin): void {
 	const context: CommandContext = {
 		plugin,
 		app: plugin.app,
@@ -24,7 +24,7 @@ export function registerCommands(plugin: OBReviewsPlugin): void {
 		id: startReviewCmd.id,
 		name: startReviewCmd.name,
 		callback: startReviewCmd.callback,
-		icon: 'ob-reviews',
+		icon: 'easy-recall',
 	});
 	
 	// 注册：复习当前笔记内到期卡片

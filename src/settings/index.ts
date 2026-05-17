@@ -4,13 +4,16 @@
  */
 
 import { Plugin } from 'obsidian';
+import { DEFAULT_DECK_TAG_PREFIX, normalizeDeckTagPrefix } from '../tag-prefix';
 
 /**
  * 插件设置接口
  */
-export interface OBReviewsSettings {
+export interface EasyRecallSettings {
 	/** 界面语言 */
 	language: 'auto' | 'en' | 'zh';
+	/** 卡组标签前缀 */
+	deckTagPrefix: string;
 	/** 是否显示调试日志 */
 	debugMode: boolean;
 	/** 单次复习最多进入队列的卡片数量 */
@@ -28,8 +31,9 @@ export const DEFAULT_REVIEW_BATCH_SIZE = 20;
 /**
  * 默认设置
  */
-export const DEFAULT_SETTINGS: OBReviewsSettings = {
+export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	language: 'auto',
+	deckTagPrefix: DEFAULT_DECK_TAG_PREFIX,
 	debugMode: false,
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	desktopReviewSurface: 'modal',
@@ -50,7 +54,7 @@ export function normalizeReviewBatchSize(value: unknown): number {
  */
 export class SettingsManager {
 	private plugin: Plugin;
-	private settings: OBReviewsSettings;
+	private settings: EasyRecallSettings;
 
 	constructor(plugin: Plugin) {
 		this.plugin = plugin;
@@ -66,6 +70,7 @@ export class SettingsManager {
 			const legacyReviewSurface = loaded.reviewSurface as ReviewSurface | undefined;
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
+				deckTagPrefix: normalizeDeckTagPrefix(loaded.deckTagPrefix ?? DEFAULT_SETTINGS.deckTagPrefix),
 				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
@@ -84,17 +89,20 @@ export class SettingsManager {
 	/**
 	 * 获取当前设置
 	 */
-	get(): OBReviewsSettings {
+	get(): EasyRecallSettings {
 		return { ...this.settings };
 	}
 
 	/**
 	 * 更新设置
 	 */
-	async update(updates: Partial<OBReviewsSettings>): Promise<void> {
+	async update(updates: Partial<EasyRecallSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...updates };
 		if (updates.reviewBatchSize !== undefined) {
 			this.settings.reviewBatchSize = normalizeReviewBatchSize(updates.reviewBatchSize);
+		}
+		if (updates.deckTagPrefix !== undefined) {
+			this.settings.deckTagPrefix = normalizeDeckTagPrefix(updates.deckTagPrefix);
 		}
 		await this.save();
 	}
@@ -115,7 +123,7 @@ export function createSettingsManager(plugin: Plugin): SettingsManager {
 	return new SettingsManager(plugin);
 }
 
-export function getActiveReviewSurface(settings: OBReviewsSettings, isMobile: boolean): ReviewSurface {
+export function getActiveReviewSurface(settings: EasyRecallSettings, isMobile: boolean): ReviewSurface {
 	return isMobile ? settings.mobileReviewSurface : settings.desktopReviewSurface;
 }
 

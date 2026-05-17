@@ -23,7 +23,7 @@ export async function executeReviewCurrentNote(
 	info('Starting due-card review for current note:', file.path);
 	
 	try {
-		const dueCards = await getDueCardsFromFile(app.vault, file);
+		const dueCards = await getDueCardsFromFile(app.vault, file, plugin.settings.deckTagPrefix);
 
 		if (dueCards.length === 0) {
 			new Notice(lang.notifications.noDueCardsInNote, 2000);
@@ -35,7 +35,7 @@ export async function executeReviewCurrentNote(
 			cards: dueCards,
 			vault: app.vault,
 			maxCardsPerReview: plugin.settings.reviewBatchSize,
-			reloadCards: () => getDueCardsFromFile(app.vault, file),
+			reloadCards: () => getDueCardsFromFile(app.vault, file, plugin.settings.deckTagPrefix),
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},

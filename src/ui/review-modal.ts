@@ -39,11 +39,11 @@ export class ReviewModal extends Modal {
 		const lang = t();
 		const { contentEl, titleEl } = this;
 
-		contentEl.addClass('obr-review-modal');
+		contentEl.addClass('er-review-modal');
 		titleEl.setText(lang.review.title);
 
-		this.cardContentEl = contentEl.createDiv({ cls: 'obr-card-content' });
-		this.buttonsContainerEl = contentEl.createDiv({ cls: 'obr-buttons' });
+		this.cardContentEl = contentEl.createDiv({ cls: 'er-card-content' });
+		this.buttonsContainerEl = contentEl.createDiv({ cls: 'er-buttons' });
 
 		this.startSession();
 	}
@@ -91,15 +91,15 @@ export class ReviewModal extends Modal {
 		if (state.remainingDueCount > 0) {
 			this.cardContentEl?.createEl('p', {
 				text: lang.review.complete.remaining(state.remainingDueCount),
-				cls: 'obr-review-complete-remaining',
+				cls: 'er-review-complete-remaining',
 			});
 		}
 
-		const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
+		const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'er-buttons-row' });
 		if (state.remainingDueCount > 0) {
 			const continueButton = buttonRow?.createEl('button', {
 				text: lang.review.complete.continueButton,
-				cls: 'obr-btn-show mod-cta',
+				cls: 'er-btn-show mod-cta',
 			});
 			continueButton?.addEventListener('click', () => {
 				void this.reloadAndStartSession();
@@ -108,7 +108,7 @@ export class ReviewModal extends Modal {
 
 		const doneButton = buttonRow?.createEl('button', {
 			text: lang.review.complete.button,
-			cls: state.remainingDueCount > 0 ? 'obr-btn-secondary' : 'obr-btn-show mod-cta',
+			cls: state.remainingDueCount > 0 ? 'er-btn-secondary' : 'er-btn-show mod-cta',
 		});
 		doneButton?.addEventListener('click', () => {
 			this.notifyComplete();

@@ -24,19 +24,19 @@ function createMockApp(files: Array<{ path: string; cache: CachedMetadata | null
 }
 
 describe('getReviewFiles - MetadataCache optimization', () => {
-  it('should filter files with ob-reviews/ tag in frontmatter', () => {
+  it('should filter files with easy-recall/ tag in frontmatter', () => {
     const mockApp = createMockApp([
       {
         path: 'math.md',
         cache: {
-          frontmatter: { tags: ['ob-reviews/math'] },
+          frontmatter: { tags: ['easy-recall/math'] },
           tags: [],
         } as CachedMetadata,
       },
       {
         path: 'history.md',
         cache: {
-          frontmatter: { tags: ['ob-reviews/history'] },
+          frontmatter: { tags: ['easy-recall/history'] },
           tags: [],
         } as CachedMetadata,
       },
@@ -57,13 +57,13 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     expect(result.map(f => f.path)).not.toContain('random.md');
   });
 
-  it('should filter files with ob-reviews/ inline tag', () => {
+  it('should filter files with easy-recall/ inline tag', () => {
     const mockApp = createMockApp([
       {
         path: 'note1.md',
         cache: {
           frontmatter: {},
-          tags: [{ tag: '#ob-reviews/science' }],
+          tags: [{ tag: '#easy-recall/science' }],
         } as unknown as CachedMetadata,
       },
       {
@@ -81,12 +81,12 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     expect(result[0].path).toBe('note1.md');
   });
 
-  it('should include files with ob-reviews/ in either frontmatter or inline tags', () => {
+  it('should include files with easy-recall/ in either frontmatter or inline tags', () => {
     const mockApp = createMockApp([
       {
         path: 'frontmatter-only.md',
         cache: {
-          frontmatter: { tags: ['ob-reviews/test'] },
+          frontmatter: { tags: ['easy-recall/test'] },
           tags: [],
         } as CachedMetadata,
       },
@@ -94,7 +94,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
         path: 'inline-only.md',
         cache: {
           frontmatter: {},
-          tags: [{ tag: '#ob-reviews/test' }],
+          tags: [{ tag: '#easy-recall/test' }],
         } as unknown as CachedMetadata,
       },
       {
@@ -119,7 +119,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
       {
         path: 'cached.md',
         cache: {
-          frontmatter: { tags: ['ob-reviews/test'] },
+          frontmatter: { tags: ['easy-recall/test'] },
           tags: [],
         } as CachedMetadata,
       },
@@ -140,7 +140,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
       {
         path: 'multi-tag.md',
         cache: {
-          frontmatter: { tags: ['daily', 'ob-reviews/language'] },
+          frontmatter: { tags: ['daily', 'easy-recall/language'] },
           tags: [],
         } as CachedMetadata,
       },
@@ -157,7 +157,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
       {
         path: 'single-tag.md',
         cache: {
-          frontmatter: { tags: 'ob-reviews/test' },
+          frontmatter: { tags: 'easy-recall/test' },
           tags: [],
         } as CachedMetadata,
       },
@@ -169,7 +169,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     expect(result[0].path).toBe('single-tag.md');
   });
 
-  it('should return empty array when no files have ob-reviews tag', () => {
+  it('should return empty array when no files have easy-recall tag', () => {
     const mockApp = createMockApp([
       {
         path: 'note1.md',
@@ -183,5 +183,29 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     const result = getReviewFiles(mockApp);
     
     expect(result).toHaveLength(0);
+  });
+
+  it('should filter files with a custom deck tag prefix', () => {
+    const mockApp = createMockApp([
+      {
+        path: 'custom.md',
+        cache: {
+          frontmatter: { tags: ['custom-recall/math'] },
+          tags: [],
+        } as CachedMetadata,
+      },
+      {
+        path: 'default.md',
+        cache: {
+          frontmatter: { tags: ['easy-recall/math'] },
+          tags: [],
+        } as CachedMetadata,
+      },
+    ]);
+
+    const result = getReviewFiles(mockApp, 'custom-recall');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('custom.md');
   });
 });

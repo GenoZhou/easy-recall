@@ -77,7 +77,7 @@ export const en = {
 	},
 
 	settings: {
-		title: 'ob-reviews Settings',
+		title: 'Easy Recall Settings',
 		language: {
 			name: 'Language',
 			desc: 'Interface language. Auto will follow Obsidian settings.',
@@ -88,6 +88,10 @@ export const en = {
 		debug: {
 			name: 'Debug Mode',
 			desc: 'Show debug logs in console (requires restart).',
+		},
+		deckTagPrefix: {
+			name: 'Deck Tag Prefix',
+			desc: 'Tag prefix used to find decks, such as easy-recall for #easy-recall/math.',
 		},
 		reviewBatchSize: {
 			name: 'Review Batch Size',

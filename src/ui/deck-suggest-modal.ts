@@ -29,12 +29,14 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private hasDueCards: boolean = false;
 	private reviewSurface: ReviewSurface;
 	private maxCardsPerReview: number;
+	private deckTagPrefix: string;
 
-	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, onReviewComplete?: () => void) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, deckTagPrefix: string, onReviewComplete?: () => void) {
 		super(app);
 		this.vault = vault;
 		this.reviewSurface = reviewSurface;
 		this.maxCardsPerReview = maxCardsPerReview;
+		this.deckTagPrefix = deckTagPrefix;
 		this.onReviewComplete = onReviewComplete;
 		
 		const lang = t();
@@ -52,7 +54,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		
 		try {
 			// 异步加载数据
-			const allCards = await scanVault(this.vault, this.app);
+			const allCards = await scanVault(this.vault, this.app, this.deckTagPrefix);
 			this.allCards = allCards;
 			
 			const allDecks = groupByDecks(allCards);
@@ -169,10 +171,10 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	 */
 	renderSuggestion(deck: DeckWithStats, el: HTMLElement) {
 		const lang = t();
-		const container = el.createDiv({ cls: 'obr-suggest-item' });
+		const container = el.createDiv({ cls: 'er-suggest-item' });
 		
 		// 左侧：图标 + 名称
-		const leftEl = container.createDiv({ cls: 'obr-suggest-left' });
+		const leftEl = container.createDiv({ cls: 'er-suggest-left' });
 		
 		// 根据状态选择图标
 		let icon = '📁';
@@ -181,23 +183,23 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		else if (deck.newCount > 0) icon = '🆕';
 		else icon = '⏳';
 		
-		leftEl.createEl('span', { text: icon, cls: 'obr-suggest-icon' });
-		leftEl.createEl('span', { text: deck.tag, cls: 'obr-suggest-name' });
+		leftEl.createEl('span', { text: icon, cls: 'er-suggest-icon' });
+		leftEl.createEl('span', { text: deck.tag, cls: 'er-suggest-name' });
 		
 		// 右侧：统计徽章
-		const rightEl = container.createDiv({ cls: 'obr-suggest-right' });
+		const rightEl = container.createDiv({ cls: 'er-suggest-right' });
 		
 		if (deck.dueCount > 0) {
 			rightEl.createEl('span', {
 				text: lang.deckSelector.deckItem.due(deck.dueCount),
-				cls: 'obr-badge obr-badge-due'
+				cls: 'er-badge er-badge-due'
 			});
 		}
 		
 		if (deck.newCount > 0 && deck.tag !== lang.deckSelector.allDeck.name) {
 			rightEl.createEl('span', {
 				text: lang.deckSelector.deckItem.new(deck.newCount),
-				cls: 'obr-badge obr-badge-new'
+				cls: 'er-badge er-badge-new'
 			});
 		}
 		
@@ -206,12 +208,12 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 			if (deck.nextReviewTime) {
 				rightEl.createEl('span', {
 					text: deck.nextReviewTime,
-					cls: 'obr-badge obr-badge-later'
+					cls: 'er-badge er-badge-later'
 				});
 			} else if (deck.tag !== lang.deckSelector.allDeck.name) {
 				rightEl.createEl('span', {
 					text: lang.deckSelector.deckItem.total(deck.cards.length),
-					cls: 'obr-badge obr-badge-total'
+					cls: 'er-badge er-badge-total'
 				});
 			}
 		}
@@ -220,7 +222,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		if (deck.tag === lang.deckSelector.allDeck.name) {
 			rightEl.createEl('span', {
 				text: lang.deckSelector.allDeck.total(deck.dueCount),
-				cls: 'obr-badge obr-badge-all'
+				cls: 'er-badge er-badge-all'
 			});
 		}
 	}
@@ -266,7 +268,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 
 	private async getDueCardsForDeck(deckTag: string): Promise<Card[]> {
 		const lang = t();
-		const allCards = await scanVault(this.vault, this.app);
+		const allCards = await scanVault(this.vault, this.app, this.deckTagPrefix);
 		const dueCards = getDueCards(allCards);
 
 		if (deckTag === lang.deckSelector.allDeck.name) {
@@ -292,7 +294,8 @@ export async function openDeckModal(
 	vault: Vault,
 	reviewSurface: ReviewSurface,
 	maxCardsPerReview: number,
+	deckTagPrefix: string,
 	onComplete?: () => void
 ): Promise<void> {
-	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, onComplete).open();
+	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, deckTagPrefix, onComplete).open();
 }

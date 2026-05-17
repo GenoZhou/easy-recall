@@ -191,19 +191,19 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		expect(host.buttonsEl.querySelector('.obr-btn-show-hint')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
-		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show-hint')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')).toBeNull();
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.obr-btn-show-hint')).toBeNull();
-		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
+		expect(host.buttonsEl.querySelector('.er-btn-show-hint')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-good')).not.toBeNull();
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
@@ -221,12 +221,12 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		expect(host.buttonsEl.querySelector('.obr-btn-show')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 
-		expect(host.buttonsEl.querySelector('.obr-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-good')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 	});
 
@@ -244,7 +244,7 @@ describe('ReviewSession shortcuts', () => {
 		handlers.get('Space')!(keyEvent(' ', { repeat: true }));
 		await flushPromises();
 
-		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 	});
 
@@ -274,7 +274,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(session.handleShortcutEvent(editableEvent)).toBe(true);
 		expect(inputEvent.preventDefault).not.toHaveBeenCalled();
 		expect(editableEvent.preventDefault).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
 	});
 
 	it('renders desktop shortcut hints on review buttons', async () => {
@@ -285,14 +285,14 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(host.buttonsEl.querySelector('.obr-btn-shortcut')?.textContent).toBe('Space');
+		expect(host.buttonsEl.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 
 		session.showAnswerAction();
 		await flushPromises();
 
-		expect(host.buttonsEl.querySelector('.obr-btn-again')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('1');
-		expect(host.buttonsEl.querySelector('.obr-btn-hard')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('2');
-		expect(host.buttonsEl.querySelector('.obr-btn-good')?.querySelector('.obr-btn-shortcut')?.textContent).toBe('3');
+		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-shortcut')?.textContent).toBe('1');
+		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-shortcut')?.textContent).toBe('2');
+		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
 	});
 
 	it('hides shortcut hints when the review tab is not focused', async () => {
@@ -307,8 +307,8 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 
-		expect(host.buttonsEl.querySelector('.obr-shortcuts-inactive')?.textContent).toBe('点击这里以启用快捷键');
-		expect(host.buttonsEl.querySelector('.obr-btn-shortcut')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-shortcuts-inactive')?.textContent).toBe('点击这里以启用快捷键');
+		expect(host.buttonsEl.querySelector('.er-btn-shortcut')).toBeNull();
 	});
 
 	it('renders a new-card status tag for cards never rated hard or good', async () => {
@@ -320,8 +320,8 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 
-		expect(host.contentEl.querySelector('.obr-tag')?.textContent).toBe('#test');
-		expect(host.contentEl.querySelector('.obr-status-tag-new')?.textContent).toBe('新卡片');
+		expect(host.contentEl.querySelector('.er-tag')?.textContent).toBe('#test');
+		expect(host.contentEl.querySelector('.er-status-tag-new')?.textContent).toBe('新卡片');
 	});
 
 	it('shows heading path text without answer-word masking', async () => {
@@ -336,7 +336,7 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		const headingPath = host.contentEl.querySelector('.obr-heading-path');
+		const headingPath = host.contentEl.querySelector('.er-heading-path');
 		expect(headingPath?.textContent).toBe('answer / answer details');
 		expect(headingPath?.attributes['aria-label']).toContain('answer / answer details');
 	});
@@ -500,7 +500,7 @@ describe('ReviewSession shortcuts', () => {
 
 		handlers.get(shortcut)!(keyEvent(shortcut));
 		await flushPromises();
-		expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 
 		handlers.get('Space')!(keyEvent(' '));
@@ -511,7 +511,7 @@ describe('ReviewSession shortcuts', () => {
 
 		if (shortcut === '1') {
 			expect(host.complete).not.toHaveBeenCalled();
-			expect(host.buttonsEl.querySelector('.obr-btn-show')).not.toBeNull();
+			expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
 		} else {
 			expect(host.complete).toHaveBeenCalledTimes(1);
 		}

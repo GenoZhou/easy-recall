@@ -4,18 +4,19 @@
  */
 
 import { PluginSettingTab, Setting, App } from 'obsidian';
-import OBReviewsPlugin from '../main';
+import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { normalizeReviewBatchSize, ReviewSurface } from './index';
+import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
 import type { DailyReviewCount } from './stats';
 import { error } from '../utils/';
 
 export class SettingsTab extends PluginSettingTab {
-	plugin: OBReviewsPlugin;
+	plugin: EasyRecallPlugin;
 
-	constructor(app: App, plugin: OBReviewsPlugin) {
+	constructor(app: App, plugin: EasyRecallPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -59,6 +60,19 @@ export class SettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.debugMode)
 					.onChange(async (value) => {
 						await this.plugin.settingsManager.update({ debugMode: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(lang.settings.deckTagPrefix.name)
+			.setDesc(lang.settings.deckTagPrefix.desc)
+			.addText(text =>
+				text
+					.setPlaceholder(normalizeDeckTagPrefix(undefined))
+					.setValue(this.plugin.settings.deckTagPrefix)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ deckTagPrefix: value });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);
@@ -109,7 +123,7 @@ export class SettingsTab extends PluginSettingTab {
 					})
 			);
 
-		const statsContainer = containerEl.createDiv({ cls: 'obr-settings-stats' });
+		const statsContainer = containerEl.createDiv({ cls: 'er-settings-stats' });
 		new Setting(containerEl)
 			.setName(lang.settings.stats.name)
 			.setDesc(lang.settings.stats.desc)
@@ -130,7 +144,7 @@ export class SettingsTab extends PluginSettingTab {
 		containerEl.createEl('p', { text: lang.settings.stats.loading });
 
 		try {
-			const cards = await scanVault(this.plugin.app.vault, this.plugin.app);
+			const cards = await scanVault(this.plugin.app.vault, this.plugin.app, this.plugin.settings.deckTagPrefix);
 			const stats = calculateReviewStats(cards);
 
 			containerEl.empty();
@@ -155,13 +169,13 @@ export class SettingsTab extends PluginSettingTab {
 	}
 
 	private renderHighlights(containerEl: HTMLElement, rows: Array<[string, number, string | undefined]>): void {
-		const gridEl = containerEl.createDiv({ cls: 'obr-settings-stats-grid' });
+		const gridEl = containerEl.createDiv({ cls: 'er-settings-stats-grid' });
 		rows.forEach(([label, value, meta]) => {
-			const cardEl = gridEl.createDiv({ cls: 'obr-settings-stat-card' });
-			cardEl.createDiv({ cls: 'obr-settings-stat-label', text: label });
-			cardEl.createDiv({ cls: 'obr-settings-stat-value', text: String(value) });
+			const cardEl = gridEl.createDiv({ cls: 'er-settings-stat-card' });
+			cardEl.createDiv({ cls: 'er-settings-stat-label', text: label });
+			cardEl.createDiv({ cls: 'er-settings-stat-value', text: String(value) });
 			if (meta) {
-				cardEl.createDiv({ cls: 'obr-settings-stat-meta', text: meta });
+				cardEl.createDiv({ cls: 'er-settings-stat-meta', text: meta });
 			}
 		});
 	}
@@ -169,35 +183,35 @@ export class SettingsTab extends PluginSettingTab {
 	private renderUpcomingChart(containerEl: HTMLElement, rows: DailyReviewCount[]): void {
 		const lang = t();
 		const maxCount = Math.max(0, ...rows.map(row => row.count));
-		const chartEl = containerEl.createDiv({ cls: 'obr-settings-chart' });
+		const chartEl = containerEl.createDiv({ cls: 'er-settings-chart' });
 
-		const headerEl = chartEl.createDiv({ cls: 'obr-settings-chart-header' });
-		headerEl.createDiv({ cls: 'obr-settings-chart-axis-title', text: lang.settings.stats.countAxis });
-		headerEl.createDiv({ cls: 'obr-settings-chart-range', text: lang.settings.stats.onlyDueDates });
+		const headerEl = chartEl.createDiv({ cls: 'er-settings-chart-header' });
+		headerEl.createDiv({ cls: 'er-settings-chart-axis-title', text: lang.settings.stats.countAxis });
+		headerEl.createDiv({ cls: 'er-settings-chart-range', text: lang.settings.stats.onlyDueDates });
 
 		if (rows.length === 0) {
-			chartEl.createDiv({ cls: 'obr-settings-chart-empty', text: lang.settings.stats.noUpcoming });
+			chartEl.createDiv({ cls: 'er-settings-chart-empty', text: lang.settings.stats.noUpcoming });
 			return;
 		}
 
-		const bodyEl = chartEl.createDiv({ cls: 'obr-settings-chart-body' });
-		const yAxisEl = bodyEl.createDiv({ cls: 'obr-settings-chart-y-axis' });
-		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-max', text: String(maxCount) });
-		yAxisEl.createDiv({ cls: 'obr-settings-chart-y-zero', text: '0' });
+		const bodyEl = chartEl.createDiv({ cls: 'er-settings-chart-body' });
+		const yAxisEl = bodyEl.createDiv({ cls: 'er-settings-chart-y-axis' });
+		yAxisEl.createDiv({ cls: 'er-settings-chart-y-max', text: String(maxCount) });
+		yAxisEl.createDiv({ cls: 'er-settings-chart-y-zero', text: '0' });
 
-		const plotEl = bodyEl.createDiv({ cls: 'obr-settings-chart-plot' });
+		const plotEl = bodyEl.createDiv({ cls: 'er-settings-chart-plot' });
 		plotEl.style.gridTemplateColumns = `repeat(${rows.length}, minmax(38px, 1fr))`;
 		rows.forEach(row => {
-			const barGroupEl = plotEl.createDiv({ cls: 'obr-settings-chart-bar-group' });
-			const barEl = barGroupEl.createDiv({ cls: 'obr-settings-chart-bar' });
+			const barGroupEl = plotEl.createDiv({ cls: 'er-settings-chart-bar-group' });
+			const barEl = barGroupEl.createDiv({ cls: 'er-settings-chart-bar' });
 			const heightPercent = maxCount > 0 ? Math.max(4, Math.round((row.count / maxCount) * 100)) : 0;
 			barEl.style.height = `${heightPercent}%`;
 			barEl.setAttribute('aria-label', lang.settings.stats.dateCount(this.formatChartDate(row.date), row.count));
 
-			barGroupEl.createDiv({ cls: 'obr-settings-chart-x-label', text: this.formatChartDate(row.date) });
+			barGroupEl.createDiv({ cls: 'er-settings-chart-x-label', text: this.formatChartDate(row.date) });
 		});
 
-		chartEl.createDiv({ cls: 'obr-settings-chart-x-axis-title', text: lang.settings.stats.dayAxis });
+		chartEl.createDiv({ cls: 'er-settings-chart-x-axis-title', text: lang.settings.stats.dayAxis });
 	}
 
 	private formatChartDate(dateKey: string): string {

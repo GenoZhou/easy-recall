@@ -1,10 +1,10 @@
-# ob-reviews
+# Easy Recall
 
 > **English** | [中文](./README.zh.md)
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.10-blue)
+![Version](https://img.shields.io/badge/version-1.2.11--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -12,7 +12,7 @@ A minimalist spaced repetition plugin focused on core memorization features—ze
 
 - **Zero Configuration** - Start reviewing immediately after installation, no complex setup needed
 - **Native Markdown Syntax** - Create cards with `==highlight==` and `?question` syntax, supports full-width question mark `？`
-- **File-level Tags** - Define decks with `#ob-reviews/xxx`, supports Chinese tags
+- **File-level Tags** - Define decks with `#easy-recall/xxx`, supports Chinese tags
 - **Three-state Rating** - Again/Hard/Good, simplify decision fatigue
 - **Instant Feedback** - "Again" cards go back to queue tail immediately, continue reviewing in current session
 - **Multi-language Support** - Auto-adapts to Obsidian language settings (English/Chinese)
@@ -25,7 +25,7 @@ A minimalist spaced repetition plugin focused on core memorization features—ze
 ### Manual Installation
 
 1. Download the latest version of `main.js`, `manifest.json`, `styles.css`
-2. Create `.obsidian/plugins/ob-reviews/` directory in your Obsidian Vault
+2. Create `.obsidian/plugins/easy-recall/` directory in your Obsidian Vault
 3. Copy the downloaded files to that directory
 4. Enable the plugin in Obsidian settings
 
@@ -90,7 +90,7 @@ Add tags at the beginning of the file:
 ```markdown
 ---
 tags:
-  - ob-reviews/math
+  - easy-recall/math
 ---
 
 Card content...
@@ -98,7 +98,7 @@ Card content...
 
 Or in the body:
 ```markdown
-#ob-reviews/math
+#easy-recall/math
 
 Card content...
 ```
@@ -119,10 +119,12 @@ By default, each review session includes up to 20 due cards, so cards marked **A
 
 By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 
-To hide a specific heading from the review path, add `<!--obr-hide-->` at the end of that heading line:
+The default deck tag prefix is `easy-recall`. Change **Deck Tag Prefix** in plugin settings if you want a different prefix.
+
+To hide a specific heading from the review path, add `<!--easy-recall-hide-->` at the end of that heading line:
 
 ```markdown
-# Chapter <!--obr-hide-->
+# Chapter <!--easy-recall-hide-->
 ## Section
 
 ==Answer== content

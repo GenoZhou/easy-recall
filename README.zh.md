@@ -1,10 +1,10 @@
-# ob-reviews
+# Easy Recall
 
 > [English](./README.md) | **中文**
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.10-blue)
+![Version](https://img.shields.io/badge/version-1.2.11--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -12,7 +12,7 @@
 
 - **零配置即用** - 安装后即可开始复习，无需复杂设置
 - **Markdown 原生语法** - 使用 `==高亮==` 和 `?问答` 创建卡片，支持全角问号 `？`
-- **文件级标签** - `#ob-reviews/xxx` 定义卡组，支持中文标签
+- **文件级标签** - `#easy-recall/xxx` 定义卡组，支持中文标签
 - **三态评分** - 没记住/有点难/记住了，简化决策负担
 - **即时反馈** - "没记住"卡片立即放回队尾，当前 session 继续复习
 - **多语言支持** - 自动适配 Obsidian 语言设置（英文/中文）
@@ -25,7 +25,7 @@
 ### 手动安装
 
 1. 下载最新版本的 `main.js`, `manifest.json`, `styles.css`
-2. 在你的 Obsidian Vault 中创建 `.obsidian/plugins/ob-reviews/` 目录
+2. 在你的 Obsidian Vault 中创建 `.obsidian/plugins/easy-recall/` 目录
 3. 将下载的文件复制到该目录
 4. 在 Obsidian 设置中启用插件
 
@@ -90,7 +90,7 @@ S = πr²
 ```markdown
 ---
 tags:
-  - ob-reviews/math
+  - easy-recall/math
 ---
 
 卡片内容...
@@ -98,7 +98,7 @@ tags:
 
 或在正文中：
 ```markdown
-#ob-reviews/math
+#easy-recall/math
 
 卡片内容...
 ```
@@ -119,10 +119,12 @@ tags:
 
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
 
-如需让某个标题不出现在复习路径中，可在标题行末尾添加 `<!--obr-hide-->`：
+默认卡组标签前缀是 `easy-recall`。如需使用其他前缀，可在插件设置中修改「卡组标签前缀」。
+
+如需让某个标题不出现在复习路径中，可在标题行末尾添加 `<!--easy-recall-hide-->`：
 
 ```markdown
-# 大章节 <!--obr-hide-->
+# 大章节 <!--easy-recall-hide-->
 ## 小节
 
 ==答案==内容

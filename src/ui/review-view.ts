@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { t } from '../i18n';
 import { ReviewCompletionState, ReviewOptions, ReviewSession, openCardSource } from './review-session';
 
-export const REVIEW_VIEW_TYPE = 'ob-reviews-review';
+export const REVIEW_VIEW_TYPE = 'easy-recall-review';
 
 export class ReviewView extends ItemView {
 	private cardContentEl: HTMLElement | null = null;
@@ -61,7 +61,7 @@ export class ReviewView extends ItemView {
 		const lang = t();
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass('obr-review-view');
+		contentEl.addClass('er-review-view');
 		contentEl.tabIndex = -1;
 		if (!this.domShortcutsRegistered) {
 			// ItemView Scope can miss keys when focus is not owned by the view.
@@ -87,10 +87,10 @@ export class ReviewView extends ItemView {
 
 		this.titleEl = contentEl.createEl('h2', {
 			text: lang.review.title,
-			cls: 'obr-review-view-title'
+			cls: 'er-review-view-title'
 		});
-		this.cardContentEl = contentEl.createDiv({ cls: 'obr-card-content' });
-		this.buttonsContainerEl = contentEl.createDiv({ cls: 'obr-buttons' });
+		this.cardContentEl = contentEl.createDiv({ cls: 'er-card-content' });
+		this.buttonsContainerEl = contentEl.createDiv({ cls: 'er-buttons' });
 	}
 
 	private setReviewTitle(title: string): void {
@@ -116,19 +116,19 @@ export class ReviewView extends ItemView {
 		if (state.remainingDueCount > 0) {
 			this.cardContentEl?.createEl('p', {
 				text: lang.review.complete.remaining(state.remainingDueCount),
-				cls: 'obr-review-complete-remaining',
+				cls: 'er-review-complete-remaining',
 			});
 
-			const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'obr-buttons-row' });
+			const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'er-buttons-row' });
 			const continueButton = buttonRow?.createEl('button', {
 				text: lang.review.complete.continueButton,
-				cls: 'obr-btn-show mod-cta',
+				cls: 'er-btn-show mod-cta',
 			});
 			continueButton?.addEventListener('click', () => this.continueReview());
 
 			const doneButton = buttonRow?.createEl('button', {
 				text: lang.review.complete.button,
-				cls: 'obr-btn-secondary',
+				cls: 'er-btn-secondary',
 			});
 			doneButton?.addEventListener('click', () => this.finishReview());
 			return;

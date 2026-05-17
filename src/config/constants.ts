@@ -8,9 +8,9 @@ import { t } from '../i18n';
 export function getRatingButtons(): { rating: Rating; label: string; shortcut: string; cls: string }[] {
 	const lang = t();
 	return [
-		{ rating: 1, label: lang.rating.again, shortcut: '1', cls: 'obr-btn-again' },
-		{ rating: 2, label: lang.rating.hard, shortcut: '2', cls: 'obr-btn-hard' },
-		{ rating: 3, label: lang.rating.good, shortcut: '3', cls: 'obr-btn-good' },
+		{ rating: 1, label: lang.rating.again, shortcut: '1', cls: 'er-btn-again' },
+		{ rating: 2, label: lang.rating.hard, shortcut: '2', cls: 'er-btn-hard' },
+		{ rating: 3, label: lang.rating.good, shortcut: '3', cls: 'er-btn-good' },
 	];
 }
 

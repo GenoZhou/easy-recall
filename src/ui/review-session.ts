@@ -54,7 +54,7 @@ export function getReviewStatusTags(card: Card): ReviewStatusTag[] {
 	if (isNewReviewCard(card)) {
 		statusTags.push({
 			label: lang.review.statusTags.newCard,
-			cls: 'obr-status-tag-new',
+			cls: 'er-status-tag-new',
 		});
 	}
 
@@ -229,17 +229,17 @@ export class ReviewSession {
 
 		const statusTags = getReviewStatusTags(card);
 		if (card.tags.length > 0 || statusTags.length > 0) {
-			const tagEl = this.host.contentEl.createDiv({ cls: 'obr-tags' });
+			const tagEl = this.host.contentEl.createDiv({ cls: 'er-tags' });
 			card.tags.forEach(tag => {
 				tagEl.createSpan({
 					text: `#${tag}`,
-					cls: 'obr-tag'
+					cls: 'er-tag'
 				});
 			});
 			statusTags.forEach(tag => {
 				tagEl.createSpan({
 					text: tag.label,
-					cls: `obr-tag obr-status-tag ${tag.cls}`
+					cls: `er-tag er-status-tag ${tag.cls}`
 				});
 			});
 		}
@@ -248,7 +248,7 @@ export class ReviewSession {
 		if (headingPath) {
 			const headingLink = this.host.contentEl.createEl('a', {
 				text: headingPath,
-				cls: 'obr-heading-path obr-heading-path-link'
+				cls: 'er-heading-path er-heading-path-link'
 			});
 			headingLink.href = '#';
 			headingLink.setAttribute('aria-label', `${headingPath} - ${lang.review.openSource}`);
@@ -258,7 +258,7 @@ export class ReviewSession {
 			});
 		}
 
-		const cardBody = this.host.contentEl.createDiv({ cls: 'obr-card-body' });
+		const cardBody = this.host.contentEl.createDiv({ cls: 'er-card-body' });
 
 		const renderContent = card.type === 'cloze'
 			? renderClozeContent(card.content, this.showAnswer)
@@ -325,7 +325,7 @@ export class ReviewSession {
 	}
 
 	private async renderHint(hint: string, filePath: string) {
-		const cardBody = this.host.contentEl.querySelector('.obr-card-body');
+		const cardBody = this.host.contentEl.querySelector('.er-card-body');
 		if (!cardBody) return;
 
 		const component = new Component();
@@ -340,30 +340,30 @@ export class ReviewSession {
 		if (!Platform.isMobile && !shortcutsActive) {
 			this.host.buttonsEl.createDiv({
 				text: lang.review.shortcutsInactive,
-				cls: 'obr-shortcuts-inactive'
+				cls: 'er-shortcuts-inactive'
 			});
 		}
 
 		if (!this.showAnswer) {
-			const btnContainer = this.host.buttonsEl.createDiv({ cls: 'obr-buttons-row' });
+			const btnContainer = this.host.buttonsEl.createDiv({ cls: 'er-buttons-row' });
 
 			if (card.hint && !this.showHint) {
 				const showHintBtn = btnContainer.createEl('button', {
-					cls: 'obr-btn-show-hint'
+					cls: 'er-btn-show-hint'
 				});
-				showHintBtn.createSpan({ text: lang.review.showHint, cls: 'obr-btn-label' });
+				showHintBtn.createSpan({ text: lang.review.showHint, cls: 'er-btn-label' });
 				if (!Platform.isMobile && shortcutsActive) {
-					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
+					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'er-btn-shortcut' });
 				}
 				showHintBtn.addEventListener('click', () => this.handleShowHint());
 			}
 
 			const showBtn = btnContainer.createEl('button', {
-				cls: 'obr-btn-show mod-cta'
+				cls: 'er-btn-show mod-cta'
 			});
-			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'obr-btn-label' });
+			showBtn.createSpan({ text: lang.review.showAnswer, cls: 'er-btn-label' });
 			if (!Platform.isMobile && shortcutsActive && (!card.hint || this.showHint)) {
-				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'obr-btn-shortcut' });
+				showBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'er-btn-shortcut' });
 			}
 			showBtn.addEventListener('click', () => {
 				this.showAnswer = true;
@@ -373,23 +373,23 @@ export class ReviewSession {
 			return;
 		}
 
-		const btnContainer = this.host.buttonsEl.createDiv({ cls: 'obr-rating-buttons obr-rating-3' });
+		const btnContainer = this.host.buttonsEl.createDiv({ cls: 'er-rating-buttons er-rating-3' });
 		const currentCard = this.cards[this.currentIndex];
 		const isDesktop = !Platform.isMobile;
 
 		getRatingButtons().forEach(btn => {
 			const buttonEl = btnContainer.createEl('button', {
-				cls: `obr-btn-rating ${btn.cls}`
+				cls: `er-btn-rating ${btn.cls}`
 			});
 
-			buttonEl.createSpan({ text: btn.label, cls: 'obr-btn-label' });
+			buttonEl.createSpan({ text: btn.label, cls: 'er-btn-label' });
 			if (isDesktop && shortcutsActive) {
-				buttonEl.createSpan({ text: btn.shortcut, cls: 'obr-btn-shortcut' });
+				buttonEl.createSpan({ text: btn.shortcut, cls: 'er-btn-shortcut' });
 			}
 
 			if (isDesktop && currentCard && btn.rating !== 1) {
 				const timeText = getNextReviewShortText(currentCard.schedule, btn.rating);
-				buttonEl.createSpan({ text: timeText, cls: 'obr-btn-time' });
+				buttonEl.createSpan({ text: timeText, cls: 'er-btn-time' });
 			}
 
 			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));

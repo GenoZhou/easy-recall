@@ -79,7 +79,7 @@ export const zh: Translations = {
 	},
 
 	settings: {
-		title: 'ob-reviews 设置',
+		title: 'Easy Recall 设置',
 		language: {
 			name: '界面语言',
 			desc: '界面语言。自动模式会跟随 Obsidian 设置。',
@@ -90,6 +90,10 @@ export const zh: Translations = {
 		debug: {
 			name: '调试模式',
 			desc: '在控制台显示调试日志（需重启生效）。',
+		},
+		deckTagPrefix: {
+			name: '卡组标签前缀',
+			desc: '用于查找卡组的标签前缀，例如 easy-recall 对应 #easy-recall/math。',
 		},
 		reviewBatchSize: {
 			name: '单次复习上限',

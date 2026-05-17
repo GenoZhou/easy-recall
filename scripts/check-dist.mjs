@@ -124,7 +124,7 @@ for (const pattern of debugPatterns) {
 }
 // 注意：我们使用 utils.ts 的日志，所以 console.log 可能被保留用于错误日志
 // 这里只检查是否有明显的调试日志
-if (mainJsContent.includes('console.log("[ob-reviews]"') && mainJsContent.includes("Loading ob-reviews")) {
+if (mainJsContent.includes('console.log("[easy-recall]"') && mainJsContent.includes("Loading easy-recall")) {
   pass(); // 这是正常的启动日志
 } else {
   pass();

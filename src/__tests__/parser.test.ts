@@ -40,7 +40,7 @@ describe('parser', () => {
     it('should extract tag from YAML frontmatter', () => {
       const content = `---
 tags:
-  - ob-reviews/math
+  - easy-recall/math
 ---
 
 Some content`;
@@ -49,21 +49,21 @@ Some content`;
     });
 
     it('should extract tag from inline tag', () => {
-      const content = `#ob-reviews/history
+      const content = `#easy-recall/history
 
 Some content`;
       const tag = extractFileDeckTag(content);
       expect(tag).toBe('history');
     });
 
-    it('should return null if no ob-reviews tag', () => {
+    it('should return null if no easy-recall tag', () => {
       const content = `Some content without tag`;
       const tag = extractFileDeckTag(content);
       expect(tag).toBeNull();
     });
 
     it('should extract Chinese tag from inline tag', () => {
-      const content = `#ob-reviews/中文
+      const content = `#easy-recall/中文
 
 Some content`;
       const tag = extractFileDeckTag(content);
@@ -73,7 +73,7 @@ Some content`;
     it('should extract Chinese tag from YAML frontmatter', () => {
       const content = `---
 tags:
-  - ob-reviews/中文
+  - easy-recall/中文
 ---
 
 Some content`;
@@ -82,11 +82,27 @@ Some content`;
     });
 
     it('should extract mixed Chinese-English tag', () => {
-      const content = `#ob-reviews/中文-english-混合
+      const content = `#easy-recall/中文-english-混合
 
 Some content`;
       const tag = extractFileDeckTag(content);
       expect(tag).toBe('中文-english-混合');
+    });
+
+    it('should extract tag with custom prefix', () => {
+      const content = `#custom-recall/science
+
+Some content`;
+      const tag = extractFileDeckTag(content, 'custom-recall');
+      expect(tag).toBe('science');
+    });
+
+    it('should ignore tags without the active prefix', () => {
+      const content = `#other-recall/science
+
+Some content`;
+      const tag = extractFileDeckTag(content);
+      expect(tag).toBeNull();
     });
   });
 
@@ -115,7 +131,7 @@ Some content`;
     it('should parse cloze card with schedule', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 <!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
@@ -134,7 +150,7 @@ tags:
     it('should parse multiple cloze cards', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 第一行==答案1==内容。
@@ -150,7 +166,7 @@ tags:
       expect(cards[1].content).toContain('答案2');
     });
 
-    it('should return empty array without ob-reviews tag', () => {
+    it('should return empty array without easy-recall tag', () => {
       const content = `Some ==cloze== text without tag`;
       const cards = parseNote(content, 'test.md');
       expect(cards).toHaveLength(0);
@@ -159,7 +175,7 @@ tags:
     it('should merge adjacent cloze lines into a single card', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 应用：
@@ -184,7 +200,7 @@ tags:
     it('should place SR comment before context line when merging', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 <!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
@@ -205,7 +221,7 @@ tags:
     it('should keep cloze cards separate when separated by empty lines', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 第一行==答案1==内容。
@@ -224,7 +240,7 @@ tags:
     it('should parse multi-line cloze card with hint callout', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 ==麻黄==的功效：
@@ -248,7 +264,7 @@ tags:
     it('should keep lineStart after frontmatter when body starts immediately', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 第一行==答案==内容。`;
 
@@ -264,7 +280,7 @@ tags:
     it('should inject SR comment below frontmatter when body starts immediately', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 第一行==答案==内容。`;
 
@@ -278,7 +294,7 @@ tags:
 
       expect(result).toBe(`---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 <!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
 第一行==答案==内容。`);
@@ -289,7 +305,7 @@ tags:
     it('should parse QA card with ? on separate line', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 《黄帝内经》的成书时期
@@ -309,7 +325,7 @@ tags:
     it('should parse QA card with ? at end of question line', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 什么是 2+2?
@@ -327,7 +343,7 @@ tags:
     it('should parse QA card with multi-line answer', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 问题的答案是什么?
@@ -345,7 +361,7 @@ tags:
     it('should parse QA card with full-width question mark (？)', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 什么是全角问号？
@@ -363,7 +379,7 @@ tags:
     it('should parse QA card with full-width question mark on separate line', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 问题在这里
@@ -383,7 +399,7 @@ tags:
     it('should NOT include SR comment in QA answer (bug fix)', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 《黄帝内经》的成书时期
@@ -403,7 +419,7 @@ tags:
     it('should parse mixed cloze and QA cards', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 中医学是研究==人体生命运动==的科学。
@@ -426,15 +442,15 @@ tags:
     it('should hide cloze when not showing answer', () => {
       const content = 'This is ==hidden== text';
       const rendered = renderClozeContent(content, false);
-      expect(rendered).toContain('obr-cloze-hidden');
-      expect(rendered).not.toContain('obr-cloze-show');
+      expect(rendered).toContain('er-cloze-hidden');
+      expect(rendered).not.toContain('er-cloze-show');
     });
 
     it('should show cloze when showing answer', () => {
       const content = 'This is ==visible== text';
       const rendered = renderClozeContent(content, true);
-      expect(rendered).toContain('obr-cloze-show');
-      expect(rendered).not.toContain('obr-cloze-hidden');
+      expect(rendered).toContain('er-cloze-show');
+      expect(rendered).not.toContain('er-cloze-hidden');
     });
   });
 
@@ -442,7 +458,7 @@ tags:
     it('should capture heading path for cards under headings', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 # 第一章
@@ -470,7 +486,7 @@ tags:
     it('should handle nested headings up to level 3', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 # 一级标题
@@ -489,10 +505,10 @@ tags:
     it('should render marked heading segments as hidden placeholders in heading path', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
-# 隐藏章 <!--obr-hide-->
+# 隐藏章 <!--easy-recall-hide-->
 
 ## 显示节
 
@@ -506,12 +522,12 @@ tags:
     it('should strip hide marker from hidden heading path segments', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 # 显示章
 
-## 隐藏节 <!--obr-hide-->
+## 隐藏节 <!--easy-recall-hide-->
 
 ### 显示小节
 
@@ -525,22 +541,22 @@ tags:
     it('should only hide heading markers at the end of the heading line', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
-# 标题 <!--obr-hide--> 后缀
+# 标题 <!--easy-recall-hide--> 后缀
 
 ==答案==在这里。`;
 
       const cards = parseNote(content, 'test.md');
       expect(cards).toHaveLength(1);
-      expect(cards[0].headingPath).toEqual(['标题 <!--obr-hide--> 后缀']);
+      expect(cards[0].headingPath).toEqual(['标题 <!--easy-recall-hide--> 后缀']);
     });
 
     it('should not include heading path when no headings exist', () => {
       const content = `---
 tags:
-  - ob-reviews/test
+  - easy-recall/test
 ---
 
 ==答案==在这里。`;

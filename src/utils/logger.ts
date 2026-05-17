@@ -12,7 +12,7 @@ const DEBUG = false;
  */
 export function debug(...args: unknown[]): void {
 	if (DEBUG) {
-		console.log('[ob-reviews]', ...args);
+		console.log('[easy-recall]', ...args);
 	}
 }
 
@@ -20,19 +20,19 @@ export function debug(...args: unknown[]): void {
  * 信息日志 - 始终输出
  */
 export function info(...args: unknown[]): void {
-	console.log('[ob-reviews]', ...args);
+	console.log('[easy-recall]', ...args);
 }
 
 /**
  * 警告日志 - 始终输出
  */
 export function warn(...args: unknown[]): void {
-	console.warn('[ob-reviews]', ...args);
+	console.warn('[easy-recall]', ...args);
 }
 
 /**
  * 错误日志 - 始终输出
  */
 export function error(...args: unknown[]): void {
-	console.error('[ob-reviews]', ...args);
+	console.error('[easy-recall]', ...args);
 }

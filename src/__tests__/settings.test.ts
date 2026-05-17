@@ -2,7 +2,7 @@
  * Tests for settings module
  */
 
-import { SettingsManager, DEFAULT_SETTINGS, OBReviewsSettings, getActiveReviewSurface } from '../settings';
+import { SettingsManager, DEFAULT_SETTINGS, EasyRecallSettings, getActiveReviewSurface } from '../settings';
 
 // Mock Obsidian's Plugin class
 const mockLoadData = jest.fn();
@@ -31,6 +31,7 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('auto');
+			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(false);
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
@@ -44,6 +45,7 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('en');
+			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(true);
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
@@ -88,14 +90,15 @@ describe('SettingsManager', () => {
 			const settings = manager.get();
 			expect(settings).toEqual({
 				language: 'zh',
+				deckTagPrefix: 'easy-recall',
 				debugMode: true,
 				reviewBatchSize: 20,
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
 			});
-			expect((settings as OBReviewsSettings & { defaultEase?: number; reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
-			expect((settings as OBReviewsSettings & { reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).reviewSurface).toBeUndefined();
-			expect((settings as OBReviewsSettings & { hideReviewPathHiddenWords?: boolean }).hideReviewPathHiddenWords).toBeUndefined();
+			expect((settings as EasyRecallSettings & { defaultEase?: number; reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
+			expect((settings as EasyRecallSettings & { reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).reviewSurface).toBeUndefined();
+			expect((settings as EasyRecallSettings & { hideReviewPathHiddenWords?: boolean }).hideReviewPathHiddenWords).toBeUndefined();
 		});
 
 		it('should handle empty object', async () => {
@@ -128,6 +131,7 @@ describe('SettingsManager', () => {
 			
 			const settings = manager.get();
 			expect(settings.language).toBe('zh');
+			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(false); // unchanged
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
@@ -142,6 +146,23 @@ describe('SettingsManager', () => {
 
 			const settings = manager.get();
 			expect(settings.reviewBatchSize).toBe(12);
+		});
+
+		it('should update and normalize deck tag prefix', async () => {
+			mockLoadData.mockResolvedValue(null);
+			await manager.load();
+
+			await manager.update({ deckTagPrefix: ' #custom-recall/ ' });
+
+			expect(manager.get().deckTagPrefix).toBe('custom-recall');
+		});
+
+		it('should normalize empty deck tag prefix to the default', async () => {
+			mockLoadData.mockResolvedValue({ deckTagPrefix: '   ' });
+
+			await manager.load();
+
+			expect(manager.get().deckTagPrefix).toBe('easy-recall');
 		});
 
 		it('should normalize invalid review batch size', async () => {
@@ -211,6 +232,7 @@ describe('SettingsManager', () => {
 describe('DEFAULT_SETTINGS', () => {
 	it('should have correct default values', () => {
 		expect(DEFAULT_SETTINGS.language).toBe('auto');
+		expect(DEFAULT_SETTINGS.deckTagPrefix).toBe('easy-recall');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
@@ -220,7 +242,7 @@ describe('DEFAULT_SETTINGS', () => {
 
 describe('getActiveReviewSurface', () => {
 	it('should return desktop surface for desktop platform', () => {
-		const settings: OBReviewsSettings = {
+		const settings: EasyRecallSettings = {
 			...DEFAULT_SETTINGS,
 			desktopReviewSurface: 'tab',
 			mobileReviewSurface: 'modal',
@@ -230,7 +252,7 @@ describe('getActiveReviewSurface', () => {
 	});
 
 	it('should return mobile surface for mobile platform', () => {
-		const settings: OBReviewsSettings = {
+		const settings: EasyRecallSettings = {
 			...DEFAULT_SETTINGS,
 			desktopReviewSurface: 'tab',
 			mobileReviewSurface: 'modal',
