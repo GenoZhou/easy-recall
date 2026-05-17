@@ -1,3 +1,4 @@
+import { getLanguage as getObsidianLanguage } from 'obsidian';
 import type { Translations } from './en';
 import { en } from './en';
 import { zh } from './zh';
@@ -36,8 +37,9 @@ export function t(): Translations {
  * 根据 Obsidian 语言自动检测
  */
 export function detectLanguage(): Exclude<Language, 'auto'> {
-	// Obsidian 的 localStorage 中存储了语言设置
-	const obsidianLang = localStorage.getItem('language');
+	const obsidianLang = typeof getObsidianLanguage === 'function'
+		? getObsidianLanguage()
+		: globalThis.navigator?.language;
 	if (obsidianLang?.startsWith('zh')) {
 		return 'zh';
 	}
