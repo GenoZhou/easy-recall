@@ -6,7 +6,7 @@
 import { spawnSync } from "child_process";
 
 const version = process.argv[2];
-const repo = readArg("--repo") || "GenoZhou/ob-reviews";
+const repo = readArg("--repo") || "GenoZhou/easy-recall";
 const remote = readArg("--remote") || "origin";
 const workflow = readArg("--workflow") || "Release";
 
