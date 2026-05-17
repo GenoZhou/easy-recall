@@ -9,12 +9,19 @@ import { App, TFile, CachedMetadata } from 'obsidian';
 // Mock Obsidian's App and metadataCache
 function createMockApp(files: Array<{ path: string; cache: CachedMetadata | null }>): App {
   const fileMap = new Map(files.map(f => [f.path, f]));
+  const tfileMap = new Map(files.map(f => {
+    const file = new TFile();
+    file.path = f.path;
+    file.extension = 'md';
+    return [f.path, file];
+  }));
   
   return {
     vault: {
-      getMarkdownFiles: () => files.map(f => ({ path: f.path, extension: 'md' } as TFile)),
+      getAbstractFileByPath: (path: string) => tfileMap.get(path) || null,
     },
     metadataCache: {
+      fileCache: Object.fromEntries(files.filter(f => f.cache).map(f => [f.path, f.cache])),
       getFileCache: (file: TFile) => {
         const entry = fileMap.get(file.path);
         return entry?.cache || null;

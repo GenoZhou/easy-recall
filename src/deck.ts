@@ -1,4 +1,4 @@
-import { TFile, Vault, App, Notice } from 'obsidian';
+import { TFile, Vault, App, Notice, CachedMetadata } from 'obsidian';
 import { Card, Deck } from './types';
 import { parseNote } from './parser';
 import { isDue } from './scheduler';
@@ -6,43 +6,41 @@ import { error } from './utils/';
 import { DEFAULT_DECK_TAG_PREFIX, hasDeckTagPrefix } from './tag-prefix';
 
 /**
- * 使用 MetadataCache 快速筛选包含 easy-recall 标签的文件
- * 符合 Obsidian 最佳实践：利用内置缓存而非全量扫描
+ * 使用 MetadataCache 已索引的条目筛选包含 easy-recall 标签的文件
  */
 export function getReviewFiles(app: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): TFile[] {
-	const allFiles = app.vault.getMarkdownFiles();
-	
-	return allFiles.filter(file => {
-		const cache = app.metadataCache.getFileCache(file);
-		if (!cache) return false;
-		
-		// 检查 frontmatter 中的 tags
-		const frontmatterTags = cache.frontmatter?.tags || [];
-		const frontmatterTagList = Array.isArray(frontmatterTags) 
-			? frontmatterTags 
-			: [frontmatterTags];
-		
-		// 检查内联标签 (metadataCache.tags 包含 #easy-recall/xxx 格式)
-		const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
-		
-		const allTags = [...frontmatterTagList, ...inlineTags];
-		return allTags.some((tag: string) => 
-			typeof tag === 'string' && hasDeckTagPrefix(tag, deckTagPrefix)
-		);
+	const fileCache = (app.metadataCache as unknown as { fileCache?: Record<string, CachedMetadata> }).fileCache || {};
+
+	return Object.entries(fileCache).flatMap(([path, cache]) => {
+		if (!hasReviewTag(cache, deckTagPrefix)) return [];
+
+		const file = app.vault.getAbstractFileByPath(path);
+		return file instanceof TFile ? [file] : [];
 	});
 }
 
+function hasReviewTag(cache: CachedMetadata | null | undefined, deckTagPrefix: string): boolean {
+	if (!cache) return false;
+
+	const frontmatterTags = cache.frontmatter?.tags || [];
+	const frontmatterTagList = Array.isArray(frontmatterTags)
+		? frontmatterTags
+		: [frontmatterTags];
+	const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
+
+	return [...frontmatterTagList, ...inlineTags].some((tag: string) =>
+		typeof tag === 'string' && hasDeckTagPrefix(tag, deckTagPrefix)
+	);
+}
+
 /**
- * 扫描整个 Vault，提取所有卡片
+ * 扫描 MetadataCache 中带复习标签的文件，提取所有卡片
  * 使用分批处理避免阻塞 UI
  * 
- * 注意：当传入 app 参数时，会使用 MetadataCache 预筛选文件，大幅提升性能
  */
 export async function scanVault(vault: Vault, app?: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): Promise<Card[]> {
 	const cards: Card[] = [];
-	
-	// 如果有 App 实例，使用 MetadataCache 预筛选（Obsidian 最佳实践）
-	const filesToScan = app ? getReviewFiles(app, deckTagPrefix) : vault.getMarkdownFiles();
+	const filesToScan = app ? getReviewFiles(app, deckTagPrefix) : [];
 	
 	const BATCH_SIZE = 10; // 每批处理 10 个文件
 
