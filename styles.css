@@ -83,6 +83,7 @@
 .er-card-content {
 	margin-bottom: 20px;
 	min-height: 200px;
+	animation: er-fade-in 0.2s ease;
 }
 
 /* 标签样式 */
@@ -173,8 +174,8 @@
 .er-btn-show {
 	padding: 14px 40px;
 	font-size: 1.1em;
-	background-color: var(--interactive-accent) !important;
-	color: var(--text-on-accent) !important;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
@@ -192,29 +193,29 @@
 .er-btn-show-hint {
 	padding: 14px 30px;
 	font-size: 1.05em;
-	background-color: var(--background-secondary-alt) !important;
-	color: var(--text-normal) !important;
+	background-color: var(--background-secondary-alt);
+	color: var(--text-normal);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 8px;
 	cursor: pointer;
 }
 
 .er-btn-show-hint:hover {
-	background-color: var(--background-modifier-border-hover) !important;
+	background-color: var(--background-modifier-border-hover);
 }
 
 .er-btn-secondary {
 	padding: 14px 30px;
 	font-size: 1.05em;
-	background-color: var(--background-secondary-alt) !important;
-	color: var(--text-normal) !important;
+	background-color: var(--background-secondary-alt);
+	color: var(--text-normal);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 8px;
 	cursor: pointer;
 }
 
 .er-btn-secondary:hover {
-	background-color: var(--background-modifier-border-hover) !important;
+	background-color: var(--background-modifier-border-hover);
 }
 
 .er-review-complete-remaining {
@@ -259,39 +260,40 @@
 	border-radius: 8px;
 	cursor: pointer;
 	font-weight: 500;
-	transition: none !important;
+	transition: none;
 	min-height: 48px;
 }
 
 /* Again - 红色 */
 .er-btn-rating-again {
 	--btn-bg: #e53935;
-	background-color: var(--btn-bg) !important;
-	color: white !important;
+	background-color: var(--btn-bg);
+	color: white;
 }
 
 /* Hard - 橙色 */
 .er-btn-rating-hard {
 	--btn-bg: #fb8c00;
-	background-color: var(--btn-bg) !important;
-	color: white !important;
+	background-color: var(--btn-bg);
+	color: white;
 }
 
 /* Good - 绿色 */
 .er-btn-rating-good {
 	--btn-bg: #43a047;
-	background-color: var(--btn-bg) !important;
-	color: white !important;
+	background-color: var(--btn-bg);
+	color: white;
 }
 
 /* 禁用悬停效果（移动端友好） */
 .er-btn-rating:hover {
-	filter: none !important;
-	transform: none !important;
+	filter: none;
+	transform: none;
 }
 
 .er-btn-rating:active {
 	opacity: 0.9;
+	animation: er-btn-pulse 0.15s ease;
 }
 
 /* 按钮文字和快捷键提示 */
@@ -537,8 +539,8 @@
 	padding: 14px 20px;
 	font-size: 1.1em;
 	margin-bottom: 10px;
-	background-color: var(--interactive-accent) !important;
-	color: var(--text-on-accent) !important;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
@@ -639,8 +641,8 @@
 .er-deck-btn-small {
 	padding: 6px 14px;
 	font-size: 0.9em;
-	background-color: var(--interactive-accent) !important;
-	color: var(--text-on-accent) !important;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
@@ -679,10 +681,6 @@
 	}
 }
 
-.er-card-content {
-	animation: er-fade-in 0.2s ease;
-}
-
 /* 按钮动画 */
 @keyframes er-btn-pulse {
 	0%, 100% {
@@ -691,10 +689,6 @@
 	50% {
 		transform: scale(0.98);
 	}
-}
-
-.er-btn-rating:active {
-	animation: er-btn-pulse 0.15s ease;
 }
 
 /* 响应式调整 */
