@@ -29,9 +29,9 @@ A minimalist spaced repetition plugin focused on core memorization features—ze
 3. Copy the downloaded files to that directory
 4. Enable the plugin in Obsidian settings
 
-### From Community Plugin Marketplace (Coming Soon)
+### From Community Plugin Marketplace
 
-Wait for the plugin to be listed on Obsidian Community Plugin Marketplace for direct installation.
+Easy Recall has been submitted to the Obsidian Community Plugin Marketplace. After approval, install it from Obsidian settings under Community plugins.
 
 ## Usage
 
