@@ -9,9 +9,11 @@ const version = process.argv[2];
 const repo = readArg("--repo") || "GenoZhou/easy-recall";
 const remote = readArg("--remote") || "origin";
 const workflow = readArg("--workflow") || "Release";
+const timeoutMs = readNumberArg("--timeout-ms", 300000);
+const intervalMs = readNumberArg("--interval-ms", 5000);
 
 if (!version || version === "--help") {
-  console.log(`Usage: node scripts/verify-release.mjs <version> [--repo owner/name] [--remote origin] [--workflow Release]`);
+  console.log(`Usage: node scripts/verify-release.mjs <version> [--repo owner/name] [--remote origin] [--workflow Release] [--timeout-ms 300000] [--interval-ms 5000]`);
   process.exit(version ? 0 : 1);
 }
 
@@ -25,15 +27,7 @@ if (remoteTagSha !== tagSha) {
 const headSha = commandOutputStrict("git", ["rev-parse", "HEAD"]);
 const localStatus = tagSha === headSha ? "tag matches HEAD" : `tag points to ${tagSha}`;
 
-const release = JSON.parse(commandOutputStrict("gh", [
-  "release",
-  "view",
-  version,
-  "--repo",
-  repo,
-  "--json",
-  "tagName,isPrerelease,isDraft,url,name",
-]));
+const release = waitForRelease(version);
 if (release.tagName !== version) {
   fail(`GitHub release tag is ${release.tagName}, expected ${version}.`);
 }
@@ -41,25 +35,7 @@ if (release.isDraft) {
   fail(`GitHub release ${version} is still a draft.`);
 }
 
-const runs = JSON.parse(commandOutputStrict("gh", [
-  "run",
-  "list",
-  "--repo",
-  repo,
-  "--workflow",
-  workflow,
-  "--limit",
-  "20",
-  "--json",
-  "databaseId,headSha,status,conclusion,displayTitle,url,createdAt",
-]));
-const run = runs.find((candidate) => candidate.headSha === tagSha);
-if (!run) {
-  fail(`Could not find a ${workflow} workflow run for ${version} at ${tagSha}.`);
-}
-if (run.status !== "completed" || run.conclusion !== "success") {
-  fail(`Release workflow ${run.databaseId} is ${run.status}/${run.conclusion || "pending"}: ${run.url}`);
-}
+const run = waitForWorkflowRun(version, tagSha);
 
 console.log(`Release ${version} verified`);
 console.log(`- Local tag: ${tagSha} (${localStatus})`);
@@ -74,15 +50,122 @@ function readArg(name) {
   return process.argv[index + 1] ?? null;
 }
 
+function readNumberArg(name, defaultValue) {
+  const value = readArg(name);
+  if (value === null) return defaultValue;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    fail(`Invalid ${name} "${value}". Expected a positive number.`);
+  }
+  return parsed;
+}
+
+function waitForRelease(targetVersion) {
+  return retryUntil(`GitHub release ${targetVersion}`, () => {
+    const result = commandOutput("gh", [
+      "release",
+      "view",
+      targetVersion,
+      "--repo",
+      repo,
+      "--json",
+      "tagName,isPrerelease,isDraft,url,name",
+    ]);
+
+    if (result.status !== 0) {
+      return { pending: true, message: shortCommandError(result) };
+    }
+
+    const release = JSON.parse(result.stdout);
+    if (release.isDraft) {
+      return { pending: true, message: `release is still draft: ${release.url}` };
+    }
+
+    return { value: release };
+  });
+}
+
+function waitForWorkflowRun(targetVersion, targetSha) {
+  return retryUntil(`${workflow} workflow for ${targetVersion}`, () => {
+    const result = commandOutput("gh", [
+      "run",
+      "list",
+      "--repo",
+      repo,
+      "--workflow",
+      workflow,
+      "--limit",
+      "20",
+      "--json",
+      "databaseId,headSha,status,conclusion,displayTitle,url,createdAt",
+    ]);
+
+    if (result.status !== 0) {
+      return { pending: true, message: shortCommandError(result) };
+    }
+
+    const runs = JSON.parse(result.stdout);
+    const run = runs.find((candidate) => candidate.headSha === targetSha);
+    if (!run) {
+      return { pending: true, message: `run for ${targetSha} not found yet` };
+    }
+
+    if (run.status !== "completed") {
+      return { pending: true, message: `run ${run.databaseId} is ${run.status}: ${run.url}` };
+    }
+
+    if (run.conclusion !== "success") {
+      fail(`Release workflow ${run.databaseId} completed with ${run.conclusion || "unknown"}: ${run.url}`);
+    }
+
+    return { value: run };
+  });
+}
+
+function retryUntil(label, check) {
+  const deadline = Date.now() + timeoutMs;
+  let lastMessage = "";
+
+  while (Date.now() <= deadline) {
+    const result = check();
+    if ("value" in result) {
+      return result.value;
+    }
+
+    lastMessage = result.message;
+    console.log(`Waiting for ${label}: ${lastMessage}`);
+    sleep(intervalMs);
+  }
+
+  fail(`Timed out waiting for ${label}.${lastMessage ? ` Last status: ${lastMessage}` : ""}`);
+}
+
+function sleep(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
 function commandOutputStrict(command, args) {
+  const result = commandOutput(command, args);
+  if (result.status !== 0) {
+    fail(`Command failed: ${[command, ...args].join(" ")}\n${shortCommandError(result)}`);
+  }
+  return result.stdout.trim();
+}
+
+function commandOutput(command, args) {
   const result = spawnSync(command, args, {
     encoding: "utf-8",
   });
-  if (result.status !== 0) {
-    const details = result.stderr?.trim() || result.stdout?.trim() || `${command} exited with status ${result.status}`;
-    fail(`Command failed: ${[command, ...args].join(" ")}\n${details}`);
-  }
-  return result.stdout.trim();
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout.trim(),
+    stderr: result.stderr.trim(),
+  };
+}
+
+function shortCommandError(result) {
+  return result.stderr || result.stdout || `exited with status ${result.status}`;
 }
 
 function fail(message) {

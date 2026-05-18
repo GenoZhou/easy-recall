@@ -1,4 +1,4 @@
-# AGENTS.md - ob-reviews 仓库工作规范
+# AGENTS.md - easy-recall 仓库工作规范
 
 > 面向智能体与贡献者的仓库级约束。用户可见行为、卡片语法、安装与使用说明以 `README.md` / `README.zh.md` 为准。
 
@@ -46,7 +46,8 @@
 	- 如果接下来马上运行 `npm run release:prerelease` / `npm run release:stable`，优先依赖发布命令自带的 `prepublish`，不要在同一轮里重复跑同样的完整检查，除非刚修过失败。
 - GitHub 发布核验要直达当前版本：
 	- 优先运行 `npm run verify:release -- <version>`。
-	- 手动核验时只查当前 tag / release / workflow run。
+	- 该命令会等待 GitHub release / workflow 的短暂异步创建；不要先手动查大量历史 workflow。
+	- 手动核验只在核验脚本失败时使用，并且只查当前 tag / release / workflow run。
 	- 不要拉大量历史 workflow，除非当前 run 查不到。
 - 命令输出要避开环境噪音：
 	- 如果 shell 初始化持续输出与任务无关的错误，优先使用不会触发登录初始化的命令方式。
@@ -63,7 +64,7 @@
 | `src/parser.ts` | 负责卡片解析与渲染辅助；`lineStart` / `lineEnd` / `scheduleLine` 的语义必须稳定。 |
 | `src/store.ts` | 只负责 SR 注释读写，不承载解析规则。 |
 | `src/scheduler.ts` | 只负责调度算法，不混入 UI 或存储逻辑。 |
-| `src/deck.ts` | 负责卡组发现、扫描与过滤，优先依赖 `MetadataCache`。 |
+| `src/deck.ts` | 负责卡组发现、扫描与过滤；枚举文件用公开 Vault API，MetadataCache 只做预过滤。 |
 | `src/commands/` | 负责命令注册与调用路径，不堆业务细节到 `main.ts`。 |
 | `src/settings/` | 负责设置加载、更新和设置页接入。 |
 | `src/ui/` | 负责 Modal / 交互层；文件写入要通过 `Vault.process()` 等安全路径完成。 |
@@ -86,7 +87,8 @@
 
 ### Obsidian 最佳实践
 
-- 文件筛选优先用 `app.metadataCache.getFileCache()`，避免无差别全量读取。
+- 文件筛选先用 `vault.getMarkdownFiles()` 取得 Markdown 文件，再用 `app.metadataCache.getFileCache(file)` 预过滤；不要依赖 `metadataCache.fileCache` 这类内部字段。
+- MetadataCache 缺失或单文件 cache 尚未生成时，必须有可解释 fallback，避免全库复习静默扫出 0 张卡。
 - 修改文件优先用 `vault.process()`，避免 `read -> modify -> write` 的非原子流程。
 - 事件监听使用 `registerEvent()`，让资源在 `onunload` 时自动清理。
 - 读取内容优先考虑 `vault.cachedRead()`，不要自建长期内容缓存。
