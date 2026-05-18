@@ -10,6 +10,9 @@ export interface OpenReviewOptions {
 	maxCardsPerReview?: number;
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
+	clickToRevealCloze?: boolean;
+	clickToRevealHardThreshold?: number;
+	clickToRevealGoodThreshold?: number;
 }
 
 export async function openReview(

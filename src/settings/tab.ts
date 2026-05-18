@@ -6,7 +6,7 @@
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
-import { normalizeReviewBatchSize, ReviewSurface } from './index';
+import { normalizeClickToRevealThreshold, normalizeReviewBatchSize, ReviewSurface } from './index';
 import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
@@ -60,6 +60,61 @@ export class SettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.debugMode)
 					.onChange(async (value) => {
 						await this.plugin.settingsManager.update({ debugMode: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		const clickToRevealContainer = containerEl.createDiv({ cls: 'er-settings-click-reveal' });
+		clickToRevealContainer.createEl('h3', { text: lang.settings.clickToRevealCloze.title });
+		clickToRevealContainer.createEl('p', {
+			text: lang.settings.clickToRevealCloze.help,
+			cls: 'er-settings-help'
+		});
+
+		new Setting(clickToRevealContainer)
+			.setName(lang.settings.clickToRevealCloze.name)
+			.setDesc(lang.settings.clickToRevealCloze.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.clickToRevealCloze)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ clickToRevealCloze: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(clickToRevealContainer)
+			.setName(lang.settings.clickToRevealCloze.hardThresholdName)
+			.setDesc(lang.settings.clickToRevealCloze.hardThresholdDesc)
+			.addText(text =>
+				text
+					.setPlaceholder(String(normalizeClickToRevealThreshold(undefined, 50)))
+					.setValue(String(this.plugin.settings.clickToRevealHardThreshold))
+					.onChange(async (value) => {
+						const parsedValue = Number.parseInt(value, 10);
+						if (!Number.isFinite(parsedValue)) {
+							return;
+						}
+
+						await this.plugin.settingsManager.update({ clickToRevealHardThreshold: parsedValue });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(clickToRevealContainer)
+			.setName(lang.settings.clickToRevealCloze.goodThresholdName)
+			.setDesc(lang.settings.clickToRevealCloze.goodThresholdDesc)
+			.addText(text =>
+				text
+					.setPlaceholder(String(normalizeClickToRevealThreshold(undefined, 80)))
+					.setValue(String(this.plugin.settings.clickToRevealGoodThreshold))
+					.onChange(async (value) => {
+						const parsedValue = Number.parseInt(value, 10);
+						if (!Number.isFinite(parsedValue)) {
+							return;
+						}
+
+						await this.plugin.settingsManager.update({ clickToRevealGoodThreshold: parsedValue });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

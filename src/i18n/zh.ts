@@ -107,6 +107,16 @@ export const zh: Translations = {
 			modal: '模态窗口',
 			tab: '标签页',
 		},
+		clickToRevealCloze: {
+			title: '点击逐项复习',
+			help: '开启后，每个挖空项会按隐藏、显示、删除线循环。全部挖空项都进入显示或删除线状态后，确认按钮会按显示项比例自动计算评分。',
+			name: '启用点击逐项复习',
+			desc: '使用逐项点按自测替代普通的显示答案流程。',
+			hardThresholdName: '有点难阈值 (%)',
+			hardThresholdDesc: '显示项比例达到该值时判为有点难；低于该值判为没记住。',
+			goodThresholdName: '记住了阈值 (%)',
+			goodThresholdDesc: '显示项比例达到该值时判为记住了；低于该值但达到有点难阈值时判为有点难。',
+		},
 		stats: {
 			name: '复习统计',
 			desc: '查看复习摘要和接下来几个复习窗口。',

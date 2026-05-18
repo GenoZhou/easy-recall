@@ -64,13 +64,42 @@ class TestElement {
 		return this.findByClass(className);
 	}
 
+	querySelectorAll(selector: string): TestElement[] {
+		const className = selector.startsWith('.') ? selector.slice(1) : selector;
+		return this.findAllByClass(className);
+	}
+
+	removeAttribute(_name: string): void {
+		delete this.attributes[_name];
+	}
+
 	setAttribute(name: string, value: string): void {
 		this.attributes[name] = value;
+	}
+
+	getAttribute(name: string): string | null {
+		return this.attributes[name] ?? null;
 	}
 
 	addEventListener(eventName: string, listener: Function): void {
 		this.listeners[eventName] = this.listeners[eventName] ?? [];
 		this.listeners[eventName].push(listener);
+	}
+
+	get classList() {
+		return {
+			add: (className: string) => {
+				const classes = new Set(this.className.split(/\s+/).filter(Boolean));
+				classes.add(className);
+				this.className = Array.from(classes).join(' ');
+			},
+			remove: (className: string) => {
+				this.className = this.className
+					.split(/\s+/)
+					.filter(existing => existing && existing !== className)
+					.join(' ');
+			},
+		};
 	}
 
 	private findByClass(className: string): TestElement | null {
@@ -84,6 +113,17 @@ class TestElement {
 		}
 
 		return null;
+	}
+
+	private findAllByClass(className: string): TestElement[] {
+		const results: TestElement[] = [];
+		if (this.className.split(/\s+/).includes(className)) {
+			results.push(this);
+		}
+		for (const child of this.children) {
+			results.push(...child.findAllByClass(className));
+		}
+		return results;
 	}
 }
 
@@ -135,6 +175,22 @@ function keyEvent(key: string, options: Partial<KeyboardEvent> = {}): KeyboardEv
 async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 	await Promise.resolve();
+}
+
+function mockRenderedClozeItems(count: number): void {
+	const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+	renderMarkdown.mockImplementationOnce((_markdown, el: TestElement) => {
+		for (let index = 0; index < count; index++) {
+			const item = el.createSpan({ cls: 'er-cloze-hidden er-cloze-reveal-item', text: `answer-${index}` });
+			item.setAttribute('data-cloze-reveal', 'true');
+			item.setAttribute('data-cloze-index', String(index));
+			item.setAttribute('data-cloze-state', 'hidden');
+			item.setAttribute('role', 'button');
+			item.setAttribute('tabindex', '0');
+			item.setAttribute('aria-label', 'Reveal answer');
+		}
+		return Promise.resolve();
+	});
 }
 
 describe('ReviewSession shortcuts', () => {
@@ -449,6 +505,189 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Older due');
+	});
+
+	it('passes clickable reveal markup to renderMarkdown when clickToRevealCloze is enabled', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==answer==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+
+		await session.render();
+		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		expect(markdownArg).toContain('er-cloze-reveal-item');
+		expect(markdownArg).toContain('role="button"');
+		expect(markdownArg).toContain('tabindex="0"');
+		expect(markdownArg).toContain('data-cloze-reveal="true"');
+	});
+
+	it('cycles only the clicked cloze item through shown, deleted, and hidden states', async () => {
+		const host = createHost();
+		mockRenderedClozeItems(2);
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==first== and ==second==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+
+		await session.render();
+		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
+		items[0].listeners.click[0]();
+
+		expect(items[0].className).toContain('er-cloze-show');
+		expect(items[0].className).not.toContain('er-cloze-hidden');
+		expect(items[0].attributes['data-cloze-state']).toBe('shown');
+		expect(items[1].className).toContain('er-cloze-hidden');
+		expect(items[1].className).not.toContain('er-cloze-show');
+
+		items[0].listeners.click[0]();
+		expect(items[0].className).toContain('er-cloze-deleted');
+		expect(items[0].className).not.toContain('er-cloze-show');
+		expect(items[0].attributes['data-cloze-state']).toBe('deleted');
+		expect(items[1].className).toContain('er-cloze-hidden');
+
+		items[0].listeners.click[0]();
+		expect(items[0].className).toContain('er-cloze-hidden');
+		expect(items[0].className).not.toContain('er-cloze-deleted');
+		expect(items[0].attributes['data-cloze-state']).toBe('hidden');
+	});
+
+	it('keeps the click-to-reveal confirm button disabled until every cloze item is answered', async () => {
+		const host = createHost();
+		mockRenderedClozeItems(2);
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==first== and ==second==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+
+		await session.render();
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+
+		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
+		items[0].listeners.click[0]();
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+
+		items[1].listeners.click[0]();
+		expect(host.buttonsEl.querySelector('.er-btn-good')?.textContent).toBe('');
+		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-label')?.textContent).toBe('记住了');
+	});
+
+	it('calculates the click-to-reveal confirmation rating from shown item thresholds', async () => {
+		const host = createHost();
+		mockRenderedClozeItems(3);
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==a== ==b== ==c==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+			clickToRevealHardThreshold: 50,
+			clickToRevealGoodThreshold: 80,
+		}, host as any);
+
+		await session.render();
+		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
+		items[0].listeners.click[0]();
+		items[1].listeners.click[0]();
+		items[2].listeners.click[0]();
+		items[2].listeners.click[0]();
+
+		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-label')?.textContent).toBe('有点难');
+		host.buttonsEl.querySelector('.er-btn-hard')?.listeners.click[0]();
+		await flushPromises();
+		expect(host.complete).toHaveBeenCalledTimes(1);
+	});
+
+	it('calculates Again when all click-to-reveal items are crossed out', async () => {
+		const host = createHost();
+		mockRenderedClozeItems(2);
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==a== ==b==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+
+		await session.render();
+		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
+		items[0].listeners.click[0]();
+		items[0].listeners.click[0]();
+		items[1].listeners.click[0]();
+		items[1].listeners.click[0]();
+
+		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
+	});
+
+	it('disables answer and rating shortcuts in click-to-reveal mode while keeping the hint shortcut', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ hint: 'Helpful hint' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+		const { scope, handlers } = createScope();
+
+		session.registerShortcuts(scope as any);
+		await session.render();
+
+		handlers.get('1')!(keyEvent('1'));
+		await flushPromises();
+		expect(host.complete).not.toHaveBeenCalled();
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+
+		handlers.get('Space')!(keyEvent(' '));
+		await flushPromises();
+		expect(host.buttonsEl.querySelector('.er-btn-show-hint')).toBeNull();
+
+		handlers.get('Space')!(keyEvent(' '));
+		await flushPromises();
+		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+	});
+
+	it('does not pass reveal markup when clickToRevealCloze is disabled', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==answer==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: false,
+		}, host as any);
+
+		await session.render();
+		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		expect(markdownArg).toContain('er-cloze-hidden');
+		expect(markdownArg).not.toContain('er-cloze-reveal-item');
+	});
+
+	it('ignores showAnswerAction in click-to-reveal mode', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==answer==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+
+		await session.render();
+		session.showAnswerAction();
+		await flushPromises();
+
+		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		expect(markdownArg).toContain('er-cloze-reveal-item');
+		expect(markdownArg).toContain('er-cloze-hidden');
+		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
 	});
 
 	it('reviews learned due cards before learning cards with zero reps', async () => {

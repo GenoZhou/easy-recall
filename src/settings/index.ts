@@ -22,6 +22,12 @@ export interface EasyRecallSettings {
 	desktopReviewSurface: ReviewSurface;
 	/** 手机端复习界面展示方式 */
 	mobileReviewSurface: ReviewSurface;
+	/** 是否支持点击逐个显示 Cloze 答案 */
+	clickToRevealCloze: boolean;
+	/** 点击逐个显示模式下判为“有点难”的最低显示比例 */
+	clickToRevealHardThreshold: number;
+	/** 点击逐个显示模式下判为“记住了”的最低显示比例 */
+	clickToRevealGoodThreshold: number;
 }
 
 export type ReviewSurface = 'modal' | 'tab';
@@ -38,6 +44,9 @@ export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	desktopReviewSurface: 'modal',
 	mobileReviewSurface: 'modal',
+	clickToRevealCloze: false,
+	clickToRevealHardThreshold: 50,
+	clickToRevealGoodThreshold: 80,
 };
 
 export function normalizeReviewBatchSize(value: unknown): number {
@@ -47,6 +56,30 @@ export function normalizeReviewBatchSize(value: unknown): number {
 	}
 
 	return Math.floor(numericValue);
+}
+
+export function normalizeClickToRevealThreshold(value: unknown, fallback: number): number {
+	const numericValue = typeof value === 'number' ? value : Number(value);
+	if (!Number.isFinite(numericValue)) {
+		return fallback;
+	}
+
+	return Math.max(0, Math.min(100, Math.floor(numericValue)));
+}
+
+function normalizeClickToRevealThresholds(settings: EasyRecallSettings): void {
+	settings.clickToRevealHardThreshold = normalizeClickToRevealThreshold(
+		settings.clickToRevealHardThreshold,
+		DEFAULT_SETTINGS.clickToRevealHardThreshold
+	);
+	settings.clickToRevealGoodThreshold = normalizeClickToRevealThreshold(
+		settings.clickToRevealGoodThreshold,
+		DEFAULT_SETTINGS.clickToRevealGoodThreshold
+	);
+
+	if (settings.clickToRevealHardThreshold > settings.clickToRevealGoodThreshold) {
+		settings.clickToRevealHardThreshold = settings.clickToRevealGoodThreshold;
+	}
 }
 
 /**
@@ -75,7 +108,11 @@ export class SettingsManager {
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
 				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
+				clickToRevealCloze: loaded.clickToRevealCloze ?? DEFAULT_SETTINGS.clickToRevealCloze,
+				clickToRevealHardThreshold: loaded.clickToRevealHardThreshold ?? DEFAULT_SETTINGS.clickToRevealHardThreshold,
+				clickToRevealGoodThreshold: loaded.clickToRevealGoodThreshold ?? DEFAULT_SETTINGS.clickToRevealGoodThreshold,
 			};
+			normalizeClickToRevealThresholds(this.settings);
 		}
 	}
 
@@ -103,6 +140,9 @@ export class SettingsManager {
 		}
 		if (updates.deckTagPrefix !== undefined) {
 			this.settings.deckTagPrefix = normalizeDeckTagPrefix(updates.deckTagPrefix);
+		}
+		if (updates.clickToRevealHardThreshold !== undefined || updates.clickToRevealGoodThreshold !== undefined) {
+			normalizeClickToRevealThresholds(this.settings);
 		}
 		await this.save();
 	}

@@ -452,6 +452,33 @@ tags:
       expect(rendered).toContain('er-cloze-show');
       expect(rendered).not.toContain('er-cloze-hidden');
     });
+
+    it('should generate clickable reveal items when clickToReveal is enabled and answer hidden', () => {
+      const content = 'This is ==hidden== text';
+      const rendered = renderClozeContent(content, false, true);
+      expect(rendered).toContain('er-cloze-hidden');
+      expect(rendered).toContain('er-cloze-reveal-item');
+      expect(rendered).toContain('role="button"');
+      expect(rendered).toContain('tabindex="0"');
+      expect(rendered).toContain('data-cloze-reveal="true"');
+      expect(rendered).toContain('data-cloze-state="hidden"');
+      expect(rendered).toContain('data-cloze-index="0"');
+      expect(rendered).not.toContain('er-cloze-show');
+    });
+
+    it('should show all cloze normally when clickToReveal is enabled and answer shown', () => {
+      const content = 'This is ==visible== text';
+      const rendered = renderClozeContent(content, true, true);
+      expect(rendered).toContain('er-cloze-show');
+      expect(rendered).not.toContain('er-cloze-hidden');
+      expect(rendered).not.toContain('er-cloze-reveal-item');
+    });
+
+    it('should ignore clickToReveal when answer is already shown', () => {
+      const content = '==a== and ==b==';
+      const rendered = renderClozeContent(content, true, true);
+      expect(rendered).toBe('<span class="er-cloze-show">a</span> and <span class="er-cloze-show">b</span>');
+    });
   });
 
   describe('parseNote - heading path', () => {

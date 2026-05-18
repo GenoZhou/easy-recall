@@ -22,7 +22,7 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
 		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
-		});
+		}, plugin.settings.clickToRevealCloze, plugin.settings.clickToRevealHardThreshold, plugin.settings.clickToRevealGoodThreshold);
 	} catch (err) {
 		console.error('Failed to start review:', err);
 		new Notice(lang.notifications.failedToStart, 3000);

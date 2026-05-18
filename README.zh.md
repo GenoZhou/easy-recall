@@ -4,7 +4,7 @@
 
 极简 Obsidian 间隔重复插件，专注核心记忆功能，去除复杂配置。
 
-![Version](https://img.shields.io/badge/version-1.2.14-blue)
+![Version](https://img.shields.io/badge/version-1.2.15--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -120,6 +120,8 @@ tags:
 复习默认使用模态窗口。可在插件设置中分别配置「桌面端复习界面」和「手机端复习界面」，为不同平台选择模态窗口或复用一个专用 Obsidian 标签页。
 
 默认卡组标签前缀是 `easy-recall`。如需使用其他前缀，可在插件设置中修改「卡组标签前缀」。
+
+在插件设置中开启「点击逐项复习」，可以逐个自测挖空答案。每个隐藏挖空项点按后会按隐藏、显示、删除线循环。所有挖空项都进入显示或删除线状态后，确认按钮会从「显示答案」自动变为「没记住」「有点难」或「记住了」，评分按显示项比例计算。默认阈值为「有点难」50%、「记住了」80%，可在设置中自定义。该模式默认关闭，且除有提示时可用空格显示提示外，不启用显示答案或评分快捷键。
 
 如需让某个标题不出现在复习路径中，可在标题行末尾添加 `<!--easy-recall-hide-->`：
 

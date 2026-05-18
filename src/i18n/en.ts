@@ -105,6 +105,16 @@ export const en = {
 			modal: 'Modal',
 			tab: 'Tab',
 		},
+		clickToRevealCloze: {
+			title: 'Click-to-Reveal Review',
+			help: 'When enabled, each cloze item cycles through hidden, shown, and crossed out. Once every item is shown or crossed out, the confirmation button is calculated from the shown-item percentage.',
+			name: 'Enable click-to-reveal review',
+			desc: 'Use tap-by-tap cloze self-checking instead of the normal Show Answer flow.',
+			hardThresholdName: 'Hard Threshold (%)',
+			hardThresholdDesc: 'Minimum shown-answer percentage for Hard. Lower scores are Again.',
+			goodThresholdName: 'Good Threshold (%)',
+			goodThresholdDesc: 'Minimum shown-answer percentage for Good. Scores below this but at or above Hard are Hard.',
+		},
 		stats: {
 			name: 'Review Stats',
 			desc: 'Summary of review counts and upcoming review windows.',

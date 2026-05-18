@@ -412,12 +412,18 @@ export function parseNote(content: string, filePath: string, deckTagPrefix: stri
  * 渲染 Cloze 卡片内容（将 ==文本== 替换为可隐藏的 span）
  * @param showAnswer 是否显示答案
  */
-export function renderClozeContent(content: string, showAnswer: boolean): string {
+export function renderClozeContent(content: string, showAnswer: boolean, clickToReveal?: boolean): string {
 	if (showAnswer) {
 		return content.replace(CLOZE_REGEX, '<span class="er-cloze-show">$1</span>');
-	} else {
-		return content.replace(CLOZE_REGEX, '<span class="er-cloze-hidden">$1</span>');
 	}
+	if (clickToReveal) {
+		let clozeIndex = 0;
+		return content.replace(CLOZE_REGEX, (_match, answer) => {
+			const index = clozeIndex++;
+			return `<span class="er-cloze-hidden er-cloze-reveal-item" role="button" tabindex="0" data-cloze-reveal="true" data-cloze-state="hidden" data-cloze-index="${index}" aria-label="Reveal answer">${answer}</span>`;
+		});
+	}
+	return content.replace(CLOZE_REGEX, '<span class="er-cloze-hidden">$1</span>');
 }
 
 /**

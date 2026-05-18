@@ -39,6 +39,9 @@ export async function executeReviewCurrentNote(
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
+			clickToRevealCloze: plugin.settings.clickToRevealCloze,
+			clickToRevealHardThreshold: plugin.settings.clickToRevealHardThreshold,
+			clickToRevealGoodThreshold: plugin.settings.clickToRevealGoodThreshold,
 		}, reviewSurface);
 
 	} catch (err) {

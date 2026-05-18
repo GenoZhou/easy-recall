@@ -160,6 +160,28 @@
 	padding: 0 4px;
 }
 
+.er-cloze-deleted {
+	background-color: var(--background-modifier-error);
+	color: var(--text-on-accent);
+	border-radius: 3px;
+	padding: 0 4px;
+	text-decoration: line-through;
+	text-decoration-thickness: 2px;
+}
+
+.er-cloze-reveal-item {
+	cursor: pointer;
+}
+
+.er-cloze-reveal-item:hover {
+	opacity: 0.85;
+}
+
+.er-cloze-reveal-item:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
 /* 按钮容器 */
 .er-buttons {
 	display: flex;
@@ -179,6 +201,11 @@
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
+}
+
+.er-btn-show-pending {
+	opacity: 0.65;
+	cursor: not-allowed;
 }
 
 /* 按钮行（并排显示） */
@@ -244,6 +271,26 @@
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 10px;
+}
+
+.er-settings-click-reveal {
+	margin: 18px 0;
+	padding: 14px 16px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+}
+
+.er-settings-click-reveal h3 {
+	margin: 0 0 8px;
+	font-size: 1em;
+}
+
+.er-settings-help {
+	margin: 0 0 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
 }
 
 @media (max-width: 768px) {

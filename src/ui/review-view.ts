@@ -38,7 +38,12 @@ export class ReviewView extends ItemView {
 		this.onComplete = options.onComplete;
 		this.reviewOptions = options;
 		this.session?.dispose();
-		this.session = new ReviewSession(this.app, options, {
+		this.session = new ReviewSession(this.app, {
+			...options,
+			clickToRevealCloze: options.clickToRevealCloze,
+			clickToRevealHardThreshold: options.clickToRevealHardThreshold,
+			clickToRevealGoodThreshold: options.clickToRevealGoodThreshold,
+		}, {
 			contentEl: this.cardContentEl!,
 			buttonsEl: this.buttonsContainerEl!,
 			setTitle: (title) => this.setReviewTitle(title),

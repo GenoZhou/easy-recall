@@ -30,14 +30,20 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private reviewSurface: ReviewSurface;
 	private maxCardsPerReview: number;
 	private deckTagPrefix: string;
+	private clickToRevealCloze: boolean;
+	private clickToRevealHardThreshold: number;
+	private clickToRevealGoodThreshold: number;
 
-	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, deckTagPrefix: string, onReviewComplete?: () => void) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, deckTagPrefix: string, onReviewComplete?: () => void, clickToRevealCloze?: boolean, clickToRevealHardThreshold?: number, clickToRevealGoodThreshold?: number) {
 		super(app);
 		this.vault = vault;
 		this.reviewSurface = reviewSurface;
 		this.maxCardsPerReview = maxCardsPerReview;
 		this.deckTagPrefix = deckTagPrefix;
 		this.onReviewComplete = onReviewComplete;
+		this.clickToRevealCloze = clickToRevealCloze ?? false;
+		this.clickToRevealHardThreshold = clickToRevealHardThreshold ?? 50;
+		this.clickToRevealGoodThreshold = clickToRevealGoodThreshold ?? 80;
 		
 		const lang = t();
 		// 设置空状态文本
@@ -254,7 +260,10 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 					if (this.onReviewComplete) {
 						this.onReviewComplete();
 					}
-				}
+				},
+				clickToRevealCloze: this.clickToRevealCloze,
+				clickToRevealHardThreshold: this.clickToRevealHardThreshold,
+				clickToRevealGoodThreshold: this.clickToRevealGoodThreshold,
 			}, this.reviewSurface);
 		}, 100);
 	}
@@ -295,7 +304,10 @@ export async function openDeckModal(
 	reviewSurface: ReviewSurface,
 	maxCardsPerReview: number,
 	deckTagPrefix: string,
-	onComplete?: () => void
+	onComplete?: () => void,
+	clickToRevealCloze?: boolean,
+	clickToRevealHardThreshold?: number,
+	clickToRevealGoodThreshold?: number
 ): Promise<void> {
-	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, deckTagPrefix, onComplete).open();
+	new DeckSuggestModal(app, vault, reviewSurface, maxCardsPerReview, deckTagPrefix, onComplete, clickToRevealCloze, clickToRevealHardThreshold, clickToRevealGoodThreshold).open();
 }

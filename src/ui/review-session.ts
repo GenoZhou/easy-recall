@@ -13,6 +13,9 @@ export interface ReviewOptions {
 	maxCardsPerReview?: number;
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
+	clickToRevealCloze?: boolean;
+	clickToRevealHardThreshold?: number;
+	clickToRevealGoodThreshold?: number;
 }
 
 export interface ReviewCompletionState {
@@ -31,6 +34,15 @@ export interface ReviewSessionHost {
 interface ReviewStatusTag {
 	label: string;
 	cls: string;
+}
+
+type ClozeRevealState = 'hidden' | 'shown' | 'deleted';
+
+interface ClozeRevealStats {
+	total: number;
+	hidden: number;
+	shown: number;
+	deleted: number;
 }
 
 function isNewReviewCard(card: Card): boolean {
@@ -107,6 +119,10 @@ export class ReviewSession {
 	private isComplete: boolean = false;
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
+	private clickToRevealCloze: boolean = false;
+	private clickToRevealHardThreshold: number = 50;
+	private clickToRevealGoodThreshold: number = 80;
+	private clozeRevealStatesByCardId: Map<string, ClozeRevealState[]> = new Map();
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -114,6 +130,9 @@ export class ReviewSession {
 		this.host = host;
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
+		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
+		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
+		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -145,6 +164,20 @@ export class ReviewSession {
 		}
 
 		const key = evt.key || fallbackKey;
+		const card = this.cards[this.currentIndex];
+		const isClickRevealClozeCard = this.isClickRevealClozeCard(card);
+
+		if (isClickRevealClozeCard) {
+			if ((key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') && card?.hint && !this.showHint) {
+				evt.preventDefault();
+				if (!evt.repeat) {
+					this.handleShowHint();
+				}
+				return false;
+			}
+
+			return true;
+		}
 
 		if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {
 			evt.preventDefault();
@@ -195,6 +228,12 @@ export class ReviewSession {
 	}
 
 	rateAction(rating: Rating): void {
+		const autoRating = this.getCurrentClickRevealRating();
+		if (autoRating !== null && autoRating === rating) {
+			void this.handleRate(rating);
+			return;
+		}
+
 		if (this.showAnswer) {
 			void this.handleRate(rating);
 		}
@@ -206,6 +245,10 @@ export class ReviewSession {
 
 		if (card.hint && !this.showHint) {
 			this.handleShowHint();
+			return;
+		}
+
+		if (this.isClickRevealClozeCard(card)) {
 			return;
 		}
 
@@ -261,11 +304,15 @@ export class ReviewSession {
 		const cardBody = this.host.contentEl.createDiv({ cls: 'er-card-body' });
 
 		const renderContent = card.type === 'cloze'
-			? renderClozeContent(card.content, this.showAnswer)
+			? renderClozeContent(card.content, this.showAnswer, this.clickToRevealCloze)
 			: renderQAContent(card.question || '', card.answer || '', this.showAnswer);
 
 		const component = new Component();
 		await MarkdownRenderer.renderMarkdown(renderContent, cardBody, card.filePath, component);
+
+		if (!this.showAnswer && this.clickToRevealCloze && card.type === 'cloze') {
+			this.attachClozeRevealListeners(cardBody);
+		}
 
 		if (this.showHint && card.hint) {
 			await this.renderHint(card.hint, card.filePath);
@@ -310,6 +357,10 @@ export class ReviewSession {
 	}
 
 	private handleShowAnswer() {
+		if (this.isClickRevealClozeCard(this.cards[this.currentIndex])) {
+			return;
+		}
+
 		if (!this.showAnswer) {
 			this.showAnswer = true;
 			this.showHint = true;
@@ -336,8 +387,10 @@ export class ReviewSession {
 		const lang = t();
 		this.host.buttonsEl.empty();
 		const shortcutsActive = this.host.areShortcutsActive?.() ?? true;
+		const isClickRevealClozeCard = this.isClickRevealClozeCard(card);
+		const hasActiveShortcut = !isClickRevealClozeCard || Boolean(card.hint && !this.showHint);
 
-		if (!Platform.isMobile && !shortcutsActive) {
+		if (!Platform.isMobile && !shortcutsActive && hasActiveShortcut) {
 			this.host.buttonsEl.createDiv({
 				text: lang.review.shortcutsInactive,
 				cls: 'er-shortcuts-inactive'
@@ -356,6 +409,28 @@ export class ReviewSession {
 					showHintBtn.createSpan({ text: KEYBOARD_SHORTCUTS.REVEAL, cls: 'er-btn-shortcut' });
 				}
 				showHintBtn.addEventListener('click', () => this.handleShowHint());
+			}
+
+			if (isClickRevealClozeCard) {
+				const autoRating = this.getCurrentClickRevealRating();
+				const showBtn = btnContainer.createEl('button', {
+					cls: autoRating === null
+						? 'er-btn-show er-btn-show-pending'
+						: `er-btn-rating ${getRatingButtons().find(btn => btn.rating === autoRating)?.cls ?? 'er-btn-show'}`
+				});
+				showBtn.createSpan({
+					text: autoRating === null
+						? lang.review.showAnswer
+						: getRatingButtons().find(btn => btn.rating === autoRating)?.label ?? lang.review.showAnswer,
+					cls: 'er-btn-label'
+				});
+				if (autoRating === null) {
+					showBtn.setAttribute('disabled', 'true');
+					showBtn.setAttribute('aria-disabled', 'true');
+				} else {
+					showBtn.addEventListener('click', () => this.handleRate(autoRating));
+				}
+				return;
 			}
 
 			const showBtn = btnContainer.createEl('button', {
@@ -437,7 +512,7 @@ export class ReviewSession {
 				const currentCard = this.cards[this.currentIndex];
 				this.cards.splice(this.currentIndex, 1);
 				this.cards.push(currentCard);
-				this.resetRevealState();
+				this.resetRevealState(card.id);
 
 				if (this.currentIndex >= this.cards.length) {
 					this.currentIndex = 0;
@@ -447,9 +522,9 @@ export class ReviewSession {
 				return;
 			}
 
-			this.currentIndex++;
 			this.completedCardIds.add(card.id);
-			this.resetRevealState();
+			this.resetRevealState(card.id);
+			this.currentIndex++;
 			void this.render();
 		} catch (err) {
 			error('Failed to update schedule:', err);
@@ -457,7 +532,103 @@ export class ReviewSession {
 		}
 	}
 
-	private resetRevealState(): void {
+	private attachClozeRevealListeners(cardBody: HTMLElement): void {
+		const items = cardBody.querySelectorAll('.er-cloze-reveal-item');
+		const card = this.cards[this.currentIndex];
+		if (!card) return;
+
+		const states = this.ensureClozeRevealStates(card.id, items.length);
+		items.forEach(item => {
+			const el = item as HTMLElement;
+			const index = Number(el.getAttribute('data-cloze-index'));
+			if (!Number.isInteger(index) || index < 0 || index >= states.length) {
+				return;
+			}
+
+			this.applyClozeRevealState(el, states[index]);
+			const cycle = () => {
+				states[index] = this.getNextClozeRevealState(states[index]);
+				this.applyClozeRevealState(el, states[index]);
+				this.renderButtons(card);
+			};
+			el.addEventListener('click', cycle);
+			el.addEventListener('keydown', (evt: KeyboardEvent) => {
+				if (evt.key === 'Enter' || evt.key === ' ') {
+					evt.preventDefault();
+					cycle();
+				}
+			});
+		});
+	}
+
+	private isClickRevealClozeCard(card: Card | undefined): boolean {
+		return this.clickToRevealCloze && card?.type === 'cloze' && !this.showAnswer;
+	}
+
+	private ensureClozeRevealStates(cardId: string, count: number): ClozeRevealState[] {
+		const states = this.clozeRevealStatesByCardId.get(cardId) ?? [];
+		while (states.length < count) {
+			states.push('hidden');
+		}
+		if (states.length > count) {
+			states.length = count;
+		}
+		this.clozeRevealStatesByCardId.set(cardId, states);
+		return states;
+	}
+
+	private getNextClozeRevealState(state: ClozeRevealState): ClozeRevealState {
+		if (state === 'hidden') return 'shown';
+		if (state === 'shown') return 'deleted';
+		return 'hidden';
+	}
+
+	private applyClozeRevealState(el: HTMLElement, state: ClozeRevealState): void {
+		el.classList.remove('er-cloze-hidden');
+		el.classList.remove('er-cloze-show');
+		el.classList.remove('er-cloze-deleted');
+		el.classList.add(state === 'shown' ? 'er-cloze-show' : `er-cloze-${state}`);
+		el.setAttribute('data-cloze-state', state);
+	}
+
+	private getCurrentClickRevealRating(): Rating | null {
+		const card = this.cards[this.currentIndex];
+		if (!this.isClickRevealClozeCard(card)) {
+			return null;
+		}
+
+		const stats = this.getClozeRevealStats(card.id);
+		if (!stats || stats.total === 0 || stats.hidden > 0) {
+			return null;
+		}
+
+		const shownPercent = (stats.shown / stats.total) * 100;
+		if (shownPercent >= this.clickToRevealGoodThreshold) {
+			return 3;
+		}
+		if (shownPercent >= this.clickToRevealHardThreshold) {
+			return 2;
+		}
+		return 1;
+	}
+
+	private getClozeRevealStats(cardId: string): ClozeRevealStats | null {
+		const states = this.clozeRevealStatesByCardId.get(cardId);
+		if (!states) {
+			return null;
+		}
+
+		return states.reduce<ClozeRevealStats>((stats, state) => {
+			stats.total += 1;
+			stats[state] += 1;
+			return stats;
+		}, { total: 0, hidden: 0, shown: 0, deleted: 0 });
+	}
+
+	private resetRevealState(cardId?: string): void {
+		if (cardId) {
+			this.clozeRevealStatesByCardId.delete(cardId);
+		}
 		this.showAnswer = false;
 		this.showHint = false;
 	}
