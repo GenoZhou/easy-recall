@@ -282,8 +282,28 @@
 }
 
 .er-settings-click-reveal h3 {
-	margin: 0 0 8px;
+	margin: 0;
 	font-size: 1em;
+}
+
+.er-settings-click-reveal-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 8px;
+}
+
+.er-settings-beta-badge {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 999px;
+	padding: 1px 7px;
+	color: var(--text-accent);
+	background: var(--background-primary);
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+	line-height: 1.4;
 }
 
 .er-settings-help {
