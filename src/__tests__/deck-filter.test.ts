@@ -3,8 +3,23 @@
  * Tests getReviewFiles function which uses Obsidian's MetadataCache
  */
 
-import { getReviewFiles } from '../deck';
-import { App, TFile, CachedMetadata } from 'obsidian';
+import { getReviewFiles, scanVault } from '../deck';
+import { App, TFile, CachedMetadata, Vault } from 'obsidian';
+
+// Mock parseNote to avoid parser overhead in scanVault tests
+jest.mock('../parser', () => ({
+  parseNote: jest.fn((_content: string, filePath: string, _deckTagPrefix: string) => {
+    return [{
+      id: `${filePath}-1`,
+      type: 'cloze' as const,
+      content: `Content from ${filePath}`,
+      tags: ['test'],
+      filePath,
+      lineStart: 0,
+      lineEnd: 0,
+    }];
+  }),
+}));
 
 // Mock Obsidian's App and metadataCache
 function createMockApp(files: Array<{ path: string; cache: CachedMetadata | null }>): App {
@@ -15,10 +30,12 @@ function createMockApp(files: Array<{ path: string; cache: CachedMetadata | null
     file.extension = 'md';
     return [f.path, file];
   }));
-  
+  const tfileList = Array.from(tfileMap.values());
+
   return {
     vault: {
       getAbstractFileByPath: (path: string) => tfileMap.get(path) || null,
+      getMarkdownFiles: () => tfileList,
     },
     metadataCache: {
       fileCache: Object.fromEntries(files.filter(f => f.cache).map(f => [f.path, f.cache])),
@@ -57,7 +74,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(2);
     expect(result.map(f => f.path)).toContain('math.md');
     expect(result.map(f => f.path)).toContain('history.md');
@@ -83,7 +100,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('note1.md');
   });
@@ -114,14 +131,14 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(2);
     expect(result.map(f => f.path)).toContain('frontmatter-only.md');
     expect(result.map(f => f.path)).toContain('inline-only.md');
     expect(result.map(f => f.path)).not.toContain('no-tag.md');
   });
 
-  it('should handle files without cache (return null)', () => {
+  it('should include files with missing cache to avoid silently skipping potential review files', () => {
     const mockApp = createMockApp([
       {
         path: 'cached.md',
@@ -137,9 +154,11 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
-    expect(result).toHaveLength(1);
-    expect(result[0].path).toBe('cached.md');
+
+    // uncached.md is included as a safe fallback when cache is missing
+    expect(result).toHaveLength(2);
+    expect(result.map(f => f.path)).toContain('cached.md');
+    expect(result.map(f => f.path)).toContain('uncached.md');
   });
 
   it('should handle array frontmatter tags', () => {
@@ -154,7 +173,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('multi-tag.md');
   });
@@ -171,7 +190,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('single-tag.md');
   });
@@ -188,7 +207,7 @@ describe('getReviewFiles - MetadataCache optimization', () => {
     ]);
 
     const result = getReviewFiles(mockApp);
-    
+
     expect(result).toHaveLength(0);
   });
 
@@ -214,5 +233,173 @@ describe('getReviewFiles - MetadataCache optimization', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('custom.md');
+  });
+
+  it('should work when metadataCache has getFileCache but no fileCache', () => {
+    const files = [
+      {
+        path: 'math.md',
+        cache: {
+          frontmatter: { tags: ['easy-recall/math'] },
+          tags: [],
+        } as CachedMetadata,
+      },
+      {
+        path: 'random.md',
+        cache: {
+          frontmatter: { tags: ['other-tag'] },
+          tags: [],
+        } as CachedMetadata,
+      },
+    ];
+    const tfileMap = new Map(files.map(f => {
+      const file = new TFile();
+      file.path = f.path;
+      file.extension = 'md';
+      return [f.path, file];
+    }));
+    const fileMap = new Map(files.map(f => [f.path, f]));
+
+    const mockApp = {
+      vault: {
+        getMarkdownFiles: () => Array.from(tfileMap.values()),
+      },
+      metadataCache: {
+        // No fileCache property at all
+        getFileCache: (file: TFile) => {
+          const entry = fileMap.get(file.path);
+          return entry?.cache || null;
+        },
+      },
+    } as unknown as App;
+
+    const result = getReviewFiles(mockApp);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('math.md');
+  });
+
+  it('should fall back to all markdown files when getFileCache is unavailable', () => {
+    const tfile1 = new TFile(); tfile1.path = 'a.md'; tfile1.extension = 'md';
+    const tfile2 = new TFile(); tfile2.path = 'b.md'; tfile2.extension = 'md';
+
+    const mockApp = {
+      vault: {
+        getMarkdownFiles: () => [tfile1, tfile2],
+      },
+      metadataCache: {
+        // No getFileCache at all
+      },
+    } as unknown as App;
+
+    const result = getReviewFiles(mockApp);
+
+    expect(result).toHaveLength(2);
+    expect(result.map(f => f.path)).toContain('a.md');
+    expect(result.map(f => f.path)).toContain('b.md');
+  });
+});
+
+describe('scanVault', () => {
+  it('should parse matching markdown files when app is provided', async () => {
+    const reviewFile = new TFile();
+    reviewFile.path = 'review.md';
+    reviewFile.extension = 'md';
+
+    const otherFile = new TFile();
+    otherFile.path = 'other.md';
+    otherFile.extension = 'md';
+
+    const mockVault = {
+      getMarkdownFiles: () => [reviewFile, otherFile],
+      read: jest.fn().mockResolvedValue('test content'),
+    } as unknown as Vault;
+
+    const mockApp = {
+      vault: mockVault,
+      metadataCache: {
+        getFileCache: (file: TFile) => {
+          if (file.path === 'review.md') {
+            return {
+              frontmatter: { tags: ['easy-recall/test'] },
+              tags: [],
+            } as CachedMetadata;
+          }
+          return {
+            frontmatter: { tags: ['other'] },
+            tags: [],
+          } as CachedMetadata;
+        },
+      },
+    } as unknown as App;
+
+    const cards = await scanVault(mockVault, mockApp);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].filePath).toBe('review.md');
+    expect(mockVault.read).toHaveBeenCalledTimes(1);
+    expect(mockVault.read).toHaveBeenCalledWith(reviewFile);
+  });
+
+  it('should not read files without matching deck tags when cache is present', async () => {
+    const reviewFile = new TFile();
+    reviewFile.path = 'review.md';
+    reviewFile.extension = 'md';
+
+    const otherFile = new TFile();
+    otherFile.path = 'other.md';
+    otherFile.extension = 'md';
+
+    const mockVault = {
+      getMarkdownFiles: () => [reviewFile, otherFile],
+      read: jest.fn().mockResolvedValue('test content'),
+    } as unknown as Vault;
+
+    const mockApp = {
+      vault: mockVault,
+      metadataCache: {
+        getFileCache: (file: TFile) => {
+          if (file.path === 'review.md') {
+            return {
+              frontmatter: { tags: ['easy-recall/test'] },
+              tags: [],
+            } as CachedMetadata;
+          }
+          return {
+            frontmatter: { tags: ['other'] },
+            tags: [],
+          } as CachedMetadata;
+        },
+      },
+    } as unknown as App;
+
+    await scanVault(mockVault, mockApp);
+
+    expect(mockVault.read).toHaveBeenCalledTimes(1);
+    expect(mockVault.read).toHaveBeenCalledWith(reviewFile);
+  });
+
+  it('should read files when cache is missing (safe fallback)', async () => {
+    const file1 = new TFile();
+    file1.path = 'file1.md';
+    file1.extension = 'md';
+
+    const mockVault = {
+      getMarkdownFiles: () => [file1],
+      read: jest.fn().mockResolvedValue('test content'),
+    } as unknown as Vault;
+
+    const mockApp = {
+      vault: mockVault,
+      metadataCache: {
+        getFileCache: () => null, // Cache missing for all files
+      },
+    } as unknown as App;
+
+    const cards = await scanVault(mockVault, mockApp);
+
+    expect(mockVault.read).toHaveBeenCalledTimes(1);
+    expect(mockVault.read).toHaveBeenCalledWith(file1);
+    expect(cards).toHaveLength(1);
   });
 });

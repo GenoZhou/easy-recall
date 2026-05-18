@@ -9,13 +9,20 @@ import { DEFAULT_DECK_TAG_PREFIX, hasDeckTagPrefix } from './tag-prefix';
  * 使用 MetadataCache 已索引的条目筛选包含 easy-recall 标签的文件
  */
 export function getReviewFiles(app: App, deckTagPrefix: string = DEFAULT_DECK_TAG_PREFIX): TFile[] {
-	const fileCache = (app.metadataCache as unknown as { fileCache?: Record<string, CachedMetadata> }).fileCache || {};
+	const markdownFiles = app.vault.getMarkdownFiles();
+	const getFileCache = app.metadataCache?.getFileCache?.bind(app.metadataCache);
 
-	return Object.entries(fileCache).flatMap(([path, cache]) => {
-		if (!hasReviewTag(cache, deckTagPrefix)) return [];
+	// 如果 MetadataCache 预过滤器不可用，回退到所有 Markdown 文件，
+	// 防止因内部 API 缺失导致全局复习静默返回空结果。
+	if (!getFileCache) {
+		return markdownFiles;
+	}
 
-		const file = app.vault.getAbstractFileByPath(path);
-		return file instanceof TFile ? [file] : [];
+	return markdownFiles.filter(file => {
+		const cache = getFileCache(file);
+		// 缓存缺失时包含该文件，避免静默跳过潜在的复习文件
+		if (!cache) return true;
+		return hasReviewTag(cache, deckTagPrefix);
 	});
 }
 
