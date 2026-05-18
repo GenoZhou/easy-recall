@@ -13,6 +13,7 @@
 		"prerelease": "node scripts/prerelease.mjs",
 		"release:prerelease": "node scripts/prerelease.mjs --publish",
 		"release:stable": "node scripts/release.mjs --publish",
+		"changelog:release": "node scripts/generate-release-notes.mjs",
 		"verify": "npm test -- --runInBand && npm run build",
 		"verify:release": "node scripts/verify-release.mjs",
 		"prepublish": "npm run build && npm test && npm run check-dist",

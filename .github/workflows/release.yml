@@ -17,6 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -41,7 +43,12 @@ jobs:
         with:
           subject-path: |
             main.js
+            manifest.json
             styles.css
+
+      - name: Generate Stable Release Notes
+        if: ${{ !contains(github.ref_name, '-') }}
+        run: node scripts/generate-release-notes.mjs "$GITHUB_REF_NAME" --output release-notes.md
 
       - name: Create Release
         env:
@@ -56,6 +63,11 @@ jobs:
             echo "Detected pre-release version: $tag"
           fi
 
+          notes_args=(--generate-notes)
+          if [[ -f release-notes.md ]]; then
+            notes_args=(--notes-file release-notes.md)
+          fi
+
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag already exists; skipping release creation."
             exit 0
@@ -64,6 +76,6 @@ jobs:
           # 创建发布
           gh release create "$tag" \
             --title="Release $tag" \
-            --generate-notes \
+            "${notes_args[@]}" \
             $prerelease_flag \
             main.js manifest.json styles.css

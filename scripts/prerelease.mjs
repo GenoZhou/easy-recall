@@ -93,6 +93,7 @@ async function main() {
   ensureVersionAvailable(nextVersion);
   if (shouldPublish) {
     ensureReleaseGitIdentity();
+    ensureCleanWorkingTree();
   }
 
   updateVersions(manifest, packageJson, nextVersion);
@@ -206,6 +207,19 @@ function ensureReleaseGitIdentity() {
   }
 
   console.log(`Configured release git author: ${nextName} <${nextEmail}>`);
+}
+
+function ensureCleanWorkingTree() {
+  const status = commandOutput("git", ["status", "--short"]);
+  if (!status) {
+    return;
+  }
+
+  fail([
+    "Working tree has changes before release version files are generated.",
+    "Commit or stash these changes first so the release commit only contains generated release files.",
+    status,
+  ].join("\n"));
 }
 
 function updateVersions(manifest, packageJson, version) {
