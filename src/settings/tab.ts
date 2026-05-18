@@ -145,7 +145,7 @@ export class SettingsTab extends PluginSettingTab {
 		const clickToRevealContainer = containerEl.createDiv({ cls: 'er-settings-click-reveal' });
 		const titleEl = clickToRevealContainer.createDiv({ cls: 'er-settings-click-reveal-title' });
 		titleEl.createEl('h3', { text: lang.settings.clickToRevealCloze.title });
-		titleEl.createSpan({ text: 'Beta', cls: 'er-settings-beta-badge' });
+		titleEl.createSpan({ text: 'New', cls: 'er-settings-beta-badge' });
 		clickToRevealContainer.createEl('p', {
 			text: lang.settings.clickToRevealCloze.help,
 			cls: 'er-settings-help'
