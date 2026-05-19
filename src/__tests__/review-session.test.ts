@@ -558,7 +558,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(items[0].attributes['data-cloze-state']).toBe('hidden');
 	});
 
-	it('keeps the click-to-reveal confirm button disabled until every cloze item is answered', async () => {
+	it('shows no Show Answer button in click-to-reveal mode while any cloze item remains hidden', async () => {
 		const host = createHost();
 		mockRenderedClozeItems(2);
 
@@ -569,11 +569,11 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
 		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
 		items[0].listeners.click[0]();
-		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
 		items[1].listeners.click[0]();
 		expect(host.buttonsEl.querySelector('.er-btn-good')?.textContent).toBe('');
@@ -640,7 +640,7 @@ describe('ReviewSession shortcuts', () => {
 		handlers.get('1')!(keyEvent('1'));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
@@ -649,7 +649,7 @@ describe('ReviewSession shortcuts', () => {
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
-		expect(host.buttonsEl.querySelector('.er-btn-show')?.attributes.disabled).toBe('true');
+		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 	});
 
 	it('does not pass reveal markup when clickToRevealCloze is disabled', async () => {

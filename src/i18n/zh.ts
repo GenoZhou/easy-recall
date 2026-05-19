@@ -15,6 +15,7 @@ export const zh: Translations = {
 	commands: {
 		startReview: '开始复习',
 		reviewCurrentNote: '复习当前笔记内到期卡片',
+		toggleClickToRevealCloze: '切换点击逐项复习',
 	},
 
 	// 通知
@@ -26,6 +27,8 @@ export const zh: Translations = {
 		failedToSave: '❌ 保存失败，请重试',
 		failedToOpenFile: '❌ 打开原文失败，请重试',
 		fileChanged: (path: string) => `复习文件已变更: ${path}`,
+		clickToRevealEnabled: '已启用点击逐项复习',
+		clickToRevealDisabled: '已关闭点击逐项复习',
 	},
 
 	// 卡组选择器

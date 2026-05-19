@@ -413,23 +413,17 @@ export class ReviewSession {
 
 			if (isClickRevealClozeCard) {
 				const autoRating = this.getCurrentClickRevealRating();
+				if (autoRating === null) {
+					return;
+				}
 				const showBtn = btnContainer.createEl('button', {
-					cls: autoRating === null
-						? 'er-btn-show er-btn-show-pending'
-						: `er-btn-rating ${getRatingButtons().find(btn => btn.rating === autoRating)?.cls ?? 'er-btn-show'}`
+					cls: `er-btn-rating ${getRatingButtons().find(btn => btn.rating === autoRating)?.cls ?? 'er-btn-show'}`
 				});
 				showBtn.createSpan({
-					text: autoRating === null
-						? lang.review.showAnswer
-						: getRatingButtons().find(btn => btn.rating === autoRating)?.label ?? lang.review.showAnswer,
+					text: getRatingButtons().find(btn => btn.rating === autoRating)?.label ?? lang.review.showAnswer,
 					cls: 'er-btn-label'
 				});
-				if (autoRating === null) {
-					showBtn.setAttribute('disabled', 'true');
-					showBtn.setAttribute('aria-disabled', 'true');
-				} else {
-					showBtn.addEventListener('click', () => this.handleRate(autoRating));
-				}
+				showBtn.addEventListener('click', () => this.handleRate(autoRating));
 				return;
 			}
 

@@ -1,4 +1,5 @@
 import { getReviewCurrentNoteCommand, reviewCurrentNoteCheckCallback } from '../commands/review-current-note';
+import { getToggleClickToRevealClozeCommand } from '../commands/toggle-click-to-reveal';
 import { setLanguage } from '../i18n';
 
 jest.mock('obsidian', () => ({
@@ -49,5 +50,44 @@ describe('commands', () => {
 
 		context.app.workspace.getActiveFile.mockReturnValue({ extension: 'md' });
 		expect(reviewCurrentNoteCheckCallback(context, true)).toBe(true);
+	});
+
+	it('should toggle click-to-reveal cloze setting from false to true', async () => {
+		setLanguage('en');
+		const updateMock = jest.fn().mockResolvedValue(undefined);
+		const plugin = {
+			settings: { clickToRevealCloze: false },
+			settingsManager: {
+				update: updateMock,
+				get: jest.fn().mockReturnValue({ clickToRevealCloze: true }),
+			},
+		} as any;
+
+		const command = getToggleClickToRevealClozeCommand({ app: {} as any, plugin });
+		expect(command.id).toBe('toggle-click-to-reveal-cloze');
+		expect(command.name).toBe('Toggle Click-to-Reveal Cloze Review');
+
+		await command.callback();
+		expect(updateMock).toHaveBeenCalledWith({ clickToRevealCloze: true });
+		expect(plugin.settings.clickToRevealCloze).toBe(true);
+	});
+
+	it('should toggle click-to-reveal cloze setting from true to false', async () => {
+		setLanguage('zh');
+		const updateMock = jest.fn().mockResolvedValue(undefined);
+		const plugin = {
+			settings: { clickToRevealCloze: true },
+			settingsManager: {
+				update: updateMock,
+				get: jest.fn().mockReturnValue({ clickToRevealCloze: false }),
+			},
+		} as any;
+
+		const command = getToggleClickToRevealClozeCommand({ app: {} as any, plugin });
+		expect(command.name).toBe('切换点击逐项复习');
+
+		await command.callback();
+		expect(updateMock).toHaveBeenCalledWith({ clickToRevealCloze: false });
+		expect(plugin.settings.clickToRevealCloze).toBe(false);
 	});
 });

@@ -13,6 +13,7 @@ export const en = {
 	commands: {
 		startReview: 'Start Review',
 		reviewCurrentNote: 'Review Due Cards in Current Note',
+		toggleClickToRevealCloze: 'Toggle Click-to-Reveal Cloze Review',
 	},
 
 	// Notifications
@@ -24,6 +25,8 @@ export const en = {
 		failedToSave: '❌ Failed to save, please retry',
 		failedToOpenFile: '❌ Failed to open source note, please retry',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
+		clickToRevealEnabled: 'Click-to-reveal cloze review enabled',
+		clickToRevealDisabled: 'Click-to-reveal cloze review disabled',
 	},
 
 	// Deck selector
