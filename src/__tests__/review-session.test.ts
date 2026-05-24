@@ -23,7 +23,7 @@ jest.mock('obsidian', () => {
 
 import type { Card } from '../types';
 import { MarkdownRenderer } from 'obsidian';
-import { ReviewSession, getReviewStatusTags } from '../ui/review-session';
+import { ReviewSession, getReviewStatusTags, normalizeReviewBoolean } from '../ui/review-session';
 
 class TestElement {
 	tag: string;
@@ -578,6 +578,7 @@ describe('ReviewSession shortcuts', () => {
 		items[1].listeners.click[0]();
 		expect(host.buttonsEl.querySelector('.er-btn-good')?.textContent).toBe('');
 		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-label')?.textContent).toBe('记住了');
+		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
 	});
 
 	it('calculates the click-to-reveal confirmation rating from shown item thresholds', async () => {
@@ -670,6 +671,8 @@ describe('ReviewSession shortcuts', () => {
 		items[0].listeners.click[0]();
 		items[1].listeners.click[0]();
 
+		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
+
 		const event = keyEvent('3');
 		handlers.get('3')!(event);
 		await flushPromises();
@@ -695,7 +698,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(markdownArg).not.toContain('er-cloze-reveal-item');
 	});
 
-	it('does not treat legacy mode strings as enabled in the review session', async () => {
+	it('normalizes non-true clickToRevealCloze values as disabled in the review session', async () => {
 		const host = createHost();
 		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
 		renderMarkdown.mockClear();
@@ -703,7 +706,7 @@ describe('ReviewSession shortcuts', () => {
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ content: 'Question ==answer==' })],
 			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
-			clickToRevealCloze: 'disabled',
+			clickToRevealCloze: 'disabled' as any,
 		}, host as any);
 
 		await session.render();
@@ -767,6 +770,29 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Learned due');
+	});
+
+	it('returns true for unregistered keys in click-to-reveal mode so they are not swallowed', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==answer==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+		await session.render();
+
+		const result = session.handleShortcutEvent(keyEvent('a'));
+		expect(result).toBe(true);
+	});
+
+	describe('normalizeReviewBoolean', () => {
+		it('returns true only for the literal boolean true', () => {
+			expect(normalizeReviewBoolean(true)).toBe(true);
+			expect(normalizeReviewBoolean(false)).toBe(false);
+			expect(normalizeReviewBoolean('enabled')).toBe(false);
+			expect(normalizeReviewBoolean({})).toBe(false);
+			expect(normalizeReviewBoolean(undefined)).toBe(false);
+		});
 	});
 
 	it.each(['1', '2', '3'])('rates with %s immediately after answer is visible', async (shortcut) => {

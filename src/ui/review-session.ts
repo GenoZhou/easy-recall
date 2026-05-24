@@ -13,7 +13,7 @@ export interface ReviewOptions {
 	maxCardsPerReview?: number;
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
-	clickToRevealCloze?: unknown;
+	clickToRevealCloze?: boolean;
 	clickToRevealHardThreshold?: number;
 	clickToRevealGoodThreshold?: number;
 }
@@ -47,6 +47,10 @@ interface ClozeRevealStats {
 
 function isNewReviewCard(card: Card): boolean {
 	return !card.schedule || card.schedule.reps === 0;
+}
+
+export function normalizeReviewBoolean(value: unknown): boolean {
+	return value === true;
 }
 
 export function buildHeadingPathLabel(card: Card): string | null {
@@ -130,7 +134,7 @@ export class ReviewSession {
 		this.host = host;
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
-		this.clickToRevealCloze = options.clickToRevealCloze === true;
+		this.clickToRevealCloze = normalizeReviewBoolean(options.clickToRevealCloze);
 		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
 		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
@@ -166,6 +170,7 @@ export class ReviewSession {
 		const key = evt.key || fallbackKey;
 		const card = this.cards[this.currentIndex];
 		const isClickRevealClozeCard = this.isClickRevealClozeCard(card);
+		const ratingShortcut = KEYBOARD_SHORTCUTS.RATINGS.find(shortcut => shortcut === key);
 
 		if (isClickRevealClozeCard) {
 			if ((key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') && card?.hint && !this.showHint) {
@@ -176,14 +181,10 @@ export class ReviewSession {
 				return false;
 			}
 
-			const ratingShortcut = KEYBOARD_SHORTCUTS.RATINGS.find(shortcut => shortcut === key);
-			if (ratingShortcut) {
-				evt.preventDefault();
-				this.rateAction(Number(ratingShortcut) as Rating);
-				return false;
+			// In click-reveal mode, Space/Reveal does nothing else; do not swallow.
+			if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {
+				return true;
 			}
-
-			return true;
 		}
 
 		if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {
@@ -194,7 +195,6 @@ export class ReviewSession {
 			return false;
 		}
 
-		const ratingShortcut = KEYBOARD_SHORTCUTS.RATINGS.find(shortcut => shortcut === key);
 		if (ratingShortcut) {
 			evt.preventDefault();
 			this.rateAction(Number(ratingShortcut) as Rating);
@@ -423,13 +423,17 @@ export class ReviewSession {
 				if (autoRating === null) {
 					return;
 				}
+				const autoButton = getRatingButtons().find(btn => btn.rating === autoRating);
 				const showBtn = btnContainer.createEl('button', {
-					cls: `er-btn-rating ${getRatingButtons().find(btn => btn.rating === autoRating)?.cls ?? 'er-btn-show'}`
+					cls: `er-btn-rating ${autoButton?.cls ?? 'er-btn-show'}`
 				});
 				showBtn.createSpan({
-					text: getRatingButtons().find(btn => btn.rating === autoRating)?.label ?? lang.review.showAnswer,
+					text: autoButton?.label ?? lang.review.showAnswer,
 					cls: 'er-btn-label'
 				});
+				if (!Platform.isMobile && shortcutsActive && autoButton) {
+					showBtn.createSpan({ text: autoButton.shortcut, cls: 'er-btn-shortcut' });
+				}
 				showBtn.addEventListener('click', () => this.handleRate(autoRating));
 				return;
 			}

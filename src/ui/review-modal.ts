@@ -36,7 +36,7 @@ export class ReviewModal extends Modal {
 		this.maxCardsPerReview = options.maxCardsPerReview;
 		this.reloadCards = options.reloadCards;
 		this.onComplete = options.onComplete;
-		this.clickToRevealCloze = options.clickToRevealCloze === true;
+		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
 		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
 		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
