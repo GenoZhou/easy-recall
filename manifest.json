@@ -1,7 +1,7 @@
 {
 	"id": "easy-recall",
 	"name": "Easy Recall",
-	"version": "1.2.18-beta.3",
+	"version": "1.2.18-beta.4",
 	"minAppVersion": "0.15.0",
 	"description": "Simple spaced repetition for flashcards: Cloze, Q&A, zero-config.",
 	"author": "Geno Zhou",
