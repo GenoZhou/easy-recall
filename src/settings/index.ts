@@ -22,8 +22,8 @@ export interface EasyRecallSettings {
 	desktopReviewSurface: ReviewSurface;
 	/** 手机端复习界面展示方式 */
 	mobileReviewSurface: ReviewSurface;
-	/** 是否支持点击逐个显示 Cloze 答案 */
-	clickToRevealCloze: boolean;
+	/** 点击逐个显示 Cloze 答案的启用范围 */
+	clickToRevealCloze: ClickToRevealClozeMode;
 	/** 点击逐个显示模式下判为“有点难”的最低显示比例 */
 	clickToRevealHardThreshold: number;
 	/** 点击逐个显示模式下判为“记住了”的最低显示比例 */
@@ -31,6 +31,7 @@ export interface EasyRecallSettings {
 }
 
 export type ReviewSurface = 'modal' | 'tab';
+export type ClickToRevealClozeMode = 'desktop' | 'mobile' | 'enabled' | 'disabled';
 
 export const DEFAULT_REVIEW_BATCH_SIZE = 20;
 
@@ -44,7 +45,7 @@ export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	desktopReviewSurface: 'modal',
 	mobileReviewSurface: 'modal',
-	clickToRevealCloze: false,
+	clickToRevealCloze: 'disabled',
 	clickToRevealHardThreshold: 50,
 	clickToRevealGoodThreshold: 80,
 };
@@ -65,6 +66,20 @@ export function normalizeClickToRevealThreshold(value: unknown, fallback: number
 	}
 
 	return Math.max(0, Math.min(100, Math.floor(numericValue)));
+}
+
+export function normalizeClickToRevealClozeMode(value: unknown): ClickToRevealClozeMode {
+	if (value === true) {
+		return 'enabled';
+	}
+	if (value === false) {
+		return 'disabled';
+	}
+	if (value === 'desktop' || value === 'mobile' || value === 'enabled' || value === 'disabled') {
+		return value;
+	}
+
+	return DEFAULT_SETTINGS.clickToRevealCloze;
 }
 
 function normalizeClickToRevealThresholds(settings: EasyRecallSettings): void {
@@ -108,7 +123,7 @@ export class SettingsManager {
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
 				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
-				clickToRevealCloze: loaded.clickToRevealCloze ?? DEFAULT_SETTINGS.clickToRevealCloze,
+				clickToRevealCloze: normalizeClickToRevealClozeMode(loaded.clickToRevealCloze),
 				clickToRevealHardThreshold: loaded.clickToRevealHardThreshold ?? DEFAULT_SETTINGS.clickToRevealHardThreshold,
 				clickToRevealGoodThreshold: loaded.clickToRevealGoodThreshold ?? DEFAULT_SETTINGS.clickToRevealGoodThreshold,
 			};
@@ -141,6 +156,9 @@ export class SettingsManager {
 		if (updates.deckTagPrefix !== undefined) {
 			this.settings.deckTagPrefix = normalizeDeckTagPrefix(updates.deckTagPrefix);
 		}
+		if (updates.clickToRevealCloze !== undefined) {
+			this.settings.clickToRevealCloze = normalizeClickToRevealClozeMode(updates.clickToRevealCloze);
+		}
 		if (updates.clickToRevealHardThreshold !== undefined || updates.clickToRevealGoodThreshold !== undefined) {
 			normalizeClickToRevealThresholds(this.settings);
 		}
@@ -165,6 +183,20 @@ export function createSettingsManager(plugin: Plugin): SettingsManager {
 
 export function getActiveReviewSurface(settings: EasyRecallSettings, isMobile: boolean): ReviewSurface {
 	return isMobile ? settings.mobileReviewSurface : settings.desktopReviewSurface;
+}
+
+export function getActiveClickToRevealCloze(settings: EasyRecallSettings, isMobile: boolean): boolean {
+	switch (settings.clickToRevealCloze) {
+		case 'enabled':
+			return true;
+		case 'desktop':
+			return !isMobile;
+		case 'mobile':
+			return isMobile;
+		case 'disabled':
+		default:
+			return false;
+	}
 }
 
 // 设置面板单独导出（避免测试时加载 Obsidian UI 依赖）

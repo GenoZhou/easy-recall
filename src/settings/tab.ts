@@ -7,6 +7,7 @@ import { PluginSettingTab, Setting, App } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { normalizeClickToRevealThreshold, normalizeReviewBatchSize, ReviewSurface } from './index';
+import type { ClickToRevealClozeMode } from './index';
 import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
@@ -154,11 +155,15 @@ export class SettingsTab extends PluginSettingTab {
 		new Setting(clickToRevealContainer)
 			.setName(lang.settings.clickToRevealCloze.name)
 			.setDesc(lang.settings.clickToRevealCloze.desc)
-			.addToggle(toggle =>
-				toggle
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('desktop', lang.settings.clickToRevealCloze.desktop)
+					.addOption('mobile', lang.settings.clickToRevealCloze.mobile)
+					.addOption('enabled', lang.settings.clickToRevealCloze.enabled)
+					.addOption('disabled', lang.settings.clickToRevealCloze.disabled)
 					.setValue(this.plugin.settings.clickToRevealCloze)
 					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ clickToRevealCloze: value });
+						await this.plugin.settingsManager.update({ clickToRevealCloze: value as ClickToRevealClozeMode });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

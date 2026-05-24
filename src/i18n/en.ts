@@ -13,7 +13,6 @@ export const en = {
 	commands: {
 		startReview: 'Start Review',
 		reviewCurrentNote: 'Review Due Cards in Current Note',
-		toggleClickToRevealCloze: 'Toggle Click-to-Reveal Cloze Review',
 	},
 
 	// Notifications
@@ -25,8 +24,6 @@ export const en = {
 		failedToSave: '❌ Failed to save, please retry',
 		failedToOpenFile: '❌ Failed to open source note, please retry',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
-		clickToRevealEnabled: 'Click-to-reveal cloze review enabled',
-		clickToRevealDisabled: 'Click-to-reveal cloze review disabled',
 	},
 
 	// Deck selector
@@ -111,8 +108,12 @@ export const en = {
 		clickToRevealCloze: {
 			title: 'Click-to-Reveal Review',
 			help: 'When enabled, each cloze item cycles through hidden, shown, and crossed out. Once every item is shown or crossed out, the confirmation button is calculated from the shown-item percentage.',
-			name: 'Enable click-to-reveal review',
-			desc: 'Use tap-by-tap cloze self-checking instead of the normal Show Answer flow.',
+			name: 'Click-to-reveal review',
+			desc: 'Choose where tap-by-tap cloze self-checking replaces the normal Show Answer flow.',
+			desktop: 'Desktop only',
+			mobile: 'Mobile only',
+			enabled: 'Enabled',
+			disabled: 'Disabled',
 			hardThresholdName: 'Hard Threshold (%)',
 			hardThresholdDesc: 'Minimum shown-answer percentage for Hard. Lower scores are Again.',
 			goodThresholdName: 'Good Threshold (%)',

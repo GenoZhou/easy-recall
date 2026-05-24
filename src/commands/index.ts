@@ -7,7 +7,6 @@ import { Plugin } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { getStartReviewCommand } from './start-review';
 import { getReviewCurrentNoteCommand } from './review-current-note';
-import { getToggleClickToRevealClozeCommand } from './toggle-click-to-reveal';
 import type { CommandContext } from './types';
 
 /**
@@ -34,13 +33,5 @@ export function registerCommands(plugin: EasyRecallPlugin): void {
 		id: reviewCurrentCmd.id,
 		name: reviewCurrentCmd.name,
 		checkCallback: reviewCurrentCmd.checkCallback,
-	});
-
-	// 注册：切换点击逐项复习
-	const toggleClickToRevealCmd = getToggleClickToRevealClozeCommand(context);
-	plugin.addCommand({
-		id: toggleClickToRevealCmd.id,
-		name: toggleClickToRevealCmd.name,
-		callback: toggleClickToRevealCmd.callback,
 	});
 }

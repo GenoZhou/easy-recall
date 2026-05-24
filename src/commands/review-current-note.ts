@@ -8,7 +8,7 @@ import { t } from '../i18n';
 import { info } from '../utils/';
 import type { CommandContext } from './types';
 import { openReview } from '../ui/open-review';
-import { getActiveReviewSurface } from '../settings';
+import { getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
 
 /**
  * 执行当前笔记内到期卡片复习
@@ -31,6 +31,7 @@ export async function executeReviewCurrentNote(
 		}
 
 		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
+		const clickToRevealCloze = getActiveClickToRevealCloze(plugin.settings, Platform.isMobile);
 		await openReview(app, {
 			cards: dueCards,
 			vault: app.vault,
@@ -39,7 +40,7 @@ export async function executeReviewCurrentNote(
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
-			clickToRevealCloze: plugin.settings.clickToRevealCloze,
+			clickToRevealCloze,
 			clickToRevealHardThreshold: plugin.settings.clickToRevealHardThreshold,
 			clickToRevealGoodThreshold: plugin.settings.clickToRevealGoodThreshold,
 		}, reviewSurface);

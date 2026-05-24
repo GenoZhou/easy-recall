@@ -6,7 +6,7 @@ import { Notice, Platform } from 'obsidian';
 import { openDeckModal } from '../ui/deck-suggest-modal';
 import { t } from '../i18n';
 import { info } from '../utils/';
-import { getActiveReviewSurface } from '../settings';
+import { getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
 import type { CommandContext } from './types';
 
 /**
@@ -20,9 +20,10 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 	
 	try {
 		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
+		const clickToRevealCloze = getActiveClickToRevealCloze(plugin.settings, Platform.isMobile);
 		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
-		}, plugin.settings.clickToRevealCloze, plugin.settings.clickToRevealHardThreshold, plugin.settings.clickToRevealGoodThreshold);
+		}, clickToRevealCloze, plugin.settings.clickToRevealHardThreshold, plugin.settings.clickToRevealGoodThreshold);
 	} catch (err) {
 		console.error('Failed to start review:', err);
 		new Notice(lang.notifications.failedToStart, 3000);

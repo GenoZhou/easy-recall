@@ -4,7 +4,7 @@
 
 A minimalist spaced repetition plugin focused on core memorization features—zero configuration, just write and review.
 
-![Version](https://img.shields.io/badge/version-1.2.17-blue)
+![Version](https://img.shields.io/badge/version-1.2.18--beta.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Obsidian](https://img.shields.io/badge/obsidian-0.15%2B-purple)
 
@@ -115,15 +115,13 @@ Card content...
 
 You can also run "Review Due Cards in Current Note" from the command palette in any Markdown note to review only due cards from that note.
 
-Use "Toggle Click-to-Reveal Cloze Review" from the command palette (or bind it to a hotkey in Obsidian Settings → Hotkeys) to quickly turn click-to-reveal mode on or off globally. The change applies to newly opened review sessions.
-
 By default, each review session includes up to 20 due cards, so cards marked **Again** can return quickly within the same smaller batch. Change **Review Batch Size** in plugin settings to adjust this limit. If more due cards remain after the batch is finished, the completion screen offers **Continue Review** to start the next batch.
 
 By default, reviews open in a modal window. In plugin settings, configure **Desktop Review Interface** and **Mobile Review Interface** separately to use either a modal window or a reusable Obsidian tab on each platform.
 
 The default deck tag prefix is `easy-recall`. Change **Deck Tag Prefix** in plugin settings if you want a different prefix.
 
-Enable **Click-to-Reveal Review** in plugin settings to self-check cloze answers item by item. Each hidden cloze cycles through hidden, shown, and crossed out as you tap it. While any cloze item remains hidden, no **Show Answer** button appears. After every cloze item is either shown or crossed out, the confirmation button (**Again**, **Hard**, or **Good**) appears automatically, with the rating calculated from the shown-item percentage. The default thresholds are 50% for **Hard** and 80% for **Good**, and both can be customized in settings. This mode is off by default and disables answer/rating shortcuts; Space can still show the hint when a hint is available.
+Set **Click-to-Reveal Review** in plugin settings to **Desktop only**, **Mobile only**, **Enabled**, or **Disabled** to self-check cloze answers item by item on the selected platforms. Each hidden cloze cycles through hidden, shown, and crossed out as you tap it. While any cloze item remains hidden, no **Show Answer** button appears. After every cloze item is either shown or crossed out, the confirmation button (**Again**, **Hard**, or **Good**) appears automatically, with the rating calculated from the shown-item percentage. The default thresholds are 50% for **Hard** and 80% for **Good**, and both can be customized in settings. This mode is **Disabled** by default and disables answer/rating shortcuts when active; Space can still show the hint when a hint is available.
 
 To hide a specific heading from the review path, add `<!--easy-recall-hide-->` at the end of that heading line:
 

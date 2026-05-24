@@ -2,7 +2,7 @@
  * Tests for settings module
  */
 
-import { SettingsManager, DEFAULT_SETTINGS, EasyRecallSettings, getActiveReviewSurface } from '../settings';
+import { SettingsManager, DEFAULT_SETTINGS, EasyRecallSettings, getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
 
 // Mock Obsidian's Plugin class
 const mockLoadData = jest.fn();
@@ -36,7 +36,7 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.clickToRevealCloze).toBe('disabled');
 			expect(settings.clickToRevealHardThreshold).toBe(50);
 			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
@@ -53,7 +53,7 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.clickToRevealCloze).toBe('disabled');
 			expect(settings.clickToRevealHardThreshold).toBe(50);
 			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
@@ -83,6 +83,14 @@ describe('SettingsManager', () => {
 			expect(settings.mobileReviewSurface).toBe('tab');
 		});
 
+		it('should migrate legacy boolean click-to-reveal setting', async () => {
+			mockLoadData.mockResolvedValue({ clickToRevealCloze: true });
+
+			await manager.load();
+
+			expect(manager.get().clickToRevealCloze).toBe('enabled');
+		});
+
 		it('should ignore removed legacy settings fields', async () => {
 			mockLoadData.mockResolvedValue({
 				language: 'zh',
@@ -101,7 +109,7 @@ describe('SettingsManager', () => {
 				reviewBatchSize: 20,
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
-				clickToRevealCloze: false,
+				clickToRevealCloze: 'disabled',
 				clickToRevealHardThreshold: 50,
 				clickToRevealGoodThreshold: 80,
 			});
@@ -145,7 +153,7 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.clickToRevealCloze).toBe('disabled');
 			expect(settings.clickToRevealHardThreshold).toBe(50);
 			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
@@ -196,13 +204,13 @@ describe('SettingsManager', () => {
 			expect(settings.mobileReviewSurface).toBe('modal');
 		});
 
-		it('should update clickToRevealCloze', async () => {
+		it('should update clickToRevealCloze mode', async () => {
 			mockLoadData.mockResolvedValue(null);
 			await manager.load();
 
-			await manager.update({ clickToRevealCloze: true });
+			await manager.update({ clickToRevealCloze: 'mobile' });
 
-			expect(manager.get().clickToRevealCloze).toBe(true);
+			expect(manager.get().clickToRevealCloze).toBe('mobile');
 		});
 
 		it('should update and normalize click-to-reveal thresholds', async () => {
@@ -278,7 +286,7 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
-		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe(false);
+		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe('disabled');
 		expect(DEFAULT_SETTINGS.clickToRevealHardThreshold).toBe(50);
 		expect(DEFAULT_SETTINGS.clickToRevealGoodThreshold).toBe(80);
 	});
@@ -303,5 +311,21 @@ describe('getActiveReviewSurface', () => {
 		};
 
 		expect(getActiveReviewSurface(settings, true)).toBe('modal');
+	});
+});
+
+describe('getActiveClickToRevealCloze', () => {
+	it('should resolve enabled and disabled modes', () => {
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'enabled' }, false)).toBe(true);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'enabled' }, true)).toBe(true);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'disabled' }, false)).toBe(false);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'disabled' }, true)).toBe(false);
+	});
+
+	it('should resolve platform-specific modes', () => {
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'desktop' }, false)).toBe(true);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'desktop' }, true)).toBe(false);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'mobile' }, false)).toBe(false);
+		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'mobile' }, true)).toBe(true);
 	});
 });
