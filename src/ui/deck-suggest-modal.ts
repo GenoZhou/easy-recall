@@ -34,14 +34,14 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private clickToRevealHardThreshold: number;
 	private clickToRevealGoodThreshold: number;
 
-	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, deckTagPrefix: string, onReviewComplete?: () => void, clickToRevealCloze?: boolean, clickToRevealHardThreshold?: number, clickToRevealGoodThreshold?: number) {
+	constructor(app: App, vault: Vault, reviewSurface: ReviewSurface, maxCardsPerReview: number, deckTagPrefix: string, onReviewComplete?: () => void, clickToRevealCloze?: unknown, clickToRevealHardThreshold?: number, clickToRevealGoodThreshold?: number) {
 		super(app);
 		this.vault = vault;
 		this.reviewSurface = reviewSurface;
 		this.maxCardsPerReview = maxCardsPerReview;
 		this.deckTagPrefix = deckTagPrefix;
 		this.onReviewComplete = onReviewComplete;
-		this.clickToRevealCloze = clickToRevealCloze ?? false;
+		this.clickToRevealCloze = clickToRevealCloze === true;
 		this.clickToRevealHardThreshold = clickToRevealHardThreshold ?? 50;
 		this.clickToRevealGoodThreshold = clickToRevealGoodThreshold ?? 80;
 		
@@ -305,7 +305,7 @@ export async function openDeckModal(
 	maxCardsPerReview: number,
 	deckTagPrefix: string,
 	onComplete?: () => void,
-	clickToRevealCloze?: boolean,
+	clickToRevealCloze?: unknown,
 	clickToRevealHardThreshold?: number,
 	clickToRevealGoodThreshold?: number
 ): Promise<void> {

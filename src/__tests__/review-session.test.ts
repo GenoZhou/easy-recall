@@ -669,6 +669,23 @@ describe('ReviewSession shortcuts', () => {
 		expect(markdownArg).not.toContain('er-cloze-reveal-item');
 	});
 
+	it('does not treat legacy mode strings as enabled in the review session', async () => {
+		const host = createHost();
+		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
+		renderMarkdown.mockClear();
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==answer==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: 'disabled',
+		}, host as any);
+
+		await session.render();
+		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		expect(markdownArg).toContain('er-cloze-hidden');
+		expect(markdownArg).not.toContain('er-cloze-reveal-item');
+	});
+
 	it('ignores showAnswerAction in click-to-reveal mode', async () => {
 		const host = createHost();
 		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;

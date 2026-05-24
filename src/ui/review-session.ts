@@ -13,7 +13,7 @@ export interface ReviewOptions {
 	maxCardsPerReview?: number;
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
-	clickToRevealCloze?: boolean;
+	clickToRevealCloze?: unknown;
 	clickToRevealHardThreshold?: number;
 	clickToRevealGoodThreshold?: number;
 }
@@ -130,7 +130,7 @@ export class ReviewSession {
 		this.host = host;
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
-		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
+		this.clickToRevealCloze = options.clickToRevealCloze === true;
 		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
 		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
