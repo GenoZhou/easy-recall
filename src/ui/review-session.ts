@@ -176,6 +176,13 @@ export class ReviewSession {
 				return false;
 			}
 
+			const ratingShortcut = KEYBOARD_SHORTCUTS.RATINGS.find(shortcut => shortcut === key);
+			if (ratingShortcut) {
+				evt.preventDefault();
+				this.rateAction(Number(ratingShortcut) as Rating);
+				return false;
+			}
+
 			return true;
 		}
 

@@ -625,7 +625,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
 	});
 
-	it('disables answer and rating shortcuts in click-to-reveal mode while keeping the hint shortcut', async () => {
+	it('ignores rating shortcuts while click-to-reveal items remain hidden and keeps the hint shortcut', async () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ hint: 'Helpful hint' })],
@@ -650,6 +650,32 @@ describe('ReviewSession shortcuts', () => {
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
+	});
+
+	it('uses the matching rating shortcut once click-to-reveal items are resolved', async () => {
+		const host = createHost();
+		mockRenderedClozeItems(2);
+
+		const session = new ReviewSession({} as any, {
+			cards: [createCard({ content: 'Question ==first== and ==second==' })],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			clickToRevealCloze: true,
+		}, host as any);
+		const { scope, handlers } = createScope();
+
+		session.registerShortcuts(scope as any);
+		await session.render();
+
+		const items = host.contentEl.querySelectorAll('.er-cloze-reveal-item');
+		items[0].listeners.click[0]();
+		items[1].listeners.click[0]();
+
+		const event = keyEvent('3');
+		handlers.get('3')!(event);
+		await flushPromises();
+
+		expect(event.preventDefault).toHaveBeenCalled();
+		expect(host.complete).toHaveBeenCalledTimes(1);
 	});
 
 	it('does not pass reveal markup when clickToRevealCloze is disabled', async () => {
