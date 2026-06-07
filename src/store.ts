@@ -45,6 +45,21 @@ export function injectSchedule(text: string, schedule: Schedule, lineStart: numb
 }
 
 /**
+ * 从文本中移除指定行的 SR 注释（用于 undo 新卡片评分）
+ */
+export function deleteScheduleLine(text: string, lineIndex: number): string {
+	const lines = text.split('\n');
+	if (lineIndex >= 0 && lineIndex < lines.length) {
+		const line = lines[lineIndex];
+		if (line && line.trim().startsWith('<!--SR:')) {
+			lines.splice(lineIndex, 1);
+			return lines.join('\n');
+		}
+	}
+	return text;
+}
+
+/**
  * 从文本中移除 SR 注释（用于重置卡片）
  */
 export function removeSchedule(text: string): string {

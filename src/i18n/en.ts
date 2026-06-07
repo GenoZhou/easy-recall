@@ -24,6 +24,7 @@ export const en = {
 		failedToSave: '❌ Failed to save, please retry',
 		failedToOpenFile: '❌ Failed to open source note, please retry',
 		fileChanged: (path: string) => `Review file changed: ${path}`,
+		undoFailed: '❌ Failed to undo, please retry',
 	},
 
 	// Deck selector
@@ -65,6 +66,7 @@ export const en = {
 		openSource: 'Open source',
 		hint: 'Hint',
 		shortcutsInactive: 'Click here to enable shortcuts',
+		undo: 'Press Backspace to undo the last rating',
 		statusTags: {
 			newCard: 'New card',
 		},
@@ -118,6 +120,9 @@ export const en = {
 			hardThresholdDesc: 'Minimum shown-answer percentage for Hard. Lower scores are Again.',
 			goodThresholdName: 'Good Threshold (%)',
 			goodThresholdDesc: 'Minimum shown-answer percentage for Good. Scores below this but at or above Hard are Hard.',
+		},
+		shortcuts: {
+			title: 'Keyboard Shortcuts',
 		},
 		stats: {
 			name: 'Review Stats',

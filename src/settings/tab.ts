@@ -139,6 +139,17 @@ export class SettingsTab extends PluginSettingTab {
 		void this.renderStats(statsContainer);
 
 		this.renderClickToRevealSettings(containerEl);
+		this.renderUndoHint(containerEl);
+	}
+
+	private renderUndoHint(containerEl: HTMLElement): void {
+		const lang = t();
+		const undoContainer = containerEl.createDiv({ cls: 'er-settings-undo' });
+		undoContainer.createEl('h3', { text: lang.settings.shortcuts.title });
+		undoContainer.createEl('p', {
+			text: lang.review.undo,
+			cls: 'er-settings-help',
+		});
 	}
 
 	private renderClickToRevealSettings(containerEl: HTMLElement): void {

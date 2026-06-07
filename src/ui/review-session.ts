@@ -1,8 +1,8 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
-import { Card, Rating } from '../types';
+import { Card, Rating, Schedule } from '../types';
 import { calcSchedule, getNextReviewShortText } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
-import { injectSchedule } from '../store';
+import { injectSchedule, deleteScheduleLine } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
 import { error } from '../utils/';
 import { t } from '../i18n';
@@ -43,6 +43,22 @@ interface ClozeRevealStats {
 	hidden: number;
 	shown: number;
 	deleted: number;
+}
+
+interface RateHistoryEntry {
+	cardId: string;
+	cardIndex: number;
+	wasAgain: boolean;
+	originalSchedule: Schedule | undefined;
+	originalScheduleLine: number | undefined;
+	originalLineStart: number;
+	originalLineEnd: number;
+	affectedCards: Array<{
+		cardId: string;
+		lineStart: number;
+		lineEnd: number;
+		scheduleLine?: number;
+	}>;
 }
 
 function isNewReviewCard(card: Card): boolean {
@@ -127,6 +143,7 @@ export class ReviewSession {
 	private clickToRevealHardThreshold: number = 50;
 	private clickToRevealGoodThreshold: number = 80;
 	private clozeRevealStatesByCardId: Map<string, ClozeRevealState[]> = new Map();
+	private lastRateEntry: RateHistoryEntry | null = null;
 
 	constructor(app: App, options: ReviewOptions, host: ReviewSessionHost) {
 		this.app = app;
@@ -156,6 +173,10 @@ export class ReviewSession {
 				return this.handleShortcutEvent(evt, shortcut);
 			}));
 		});
+
+		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.UNDO, (evt: KeyboardEvent) => {
+			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.UNDO);
+		}));
 	}
 
 	handleShortcutEvent(evt: KeyboardEvent, fallbackKey?: string): boolean {
@@ -198,6 +219,12 @@ export class ReviewSession {
 		if (ratingShortcut) {
 			evt.preventDefault();
 			this.rateAction(Number(ratingShortcut) as Rating);
+			return false;
+		}
+
+		if (key === KEYBOARD_SHORTCUTS.UNDO) {
+			evt.preventDefault();
+			void this.undo();
 			return false;
 		}
 
@@ -493,6 +520,25 @@ export class ReviewSession {
 				const lineShift = isNewScheduleLine ? 1 : 0;
 				const originalLineStart = card.lineStart;
 
+				// 保存 undo 快照（在修改任何 session 状态之前）
+				this.lastRateEntry = {
+					cardId: card.id,
+					cardIndex: this.currentIndex,
+					wasAgain: rating === 1,
+					originalSchedule: card.schedule ? { ...card.schedule } : undefined,
+					originalScheduleLine: card.scheduleLine,
+					originalLineStart: card.lineStart,
+					originalLineEnd: card.lineEnd,
+					affectedCards: this.cards
+						.filter(queueCard => queueCard.id !== card.id && queueCard.filePath === card.filePath && queueCard.lineStart >= originalLineStart)
+						.map(queueCard => ({
+							cardId: queueCard.id,
+							lineStart: queueCard.lineStart,
+							lineEnd: queueCard.lineEnd,
+							scheduleLine: queueCard.scheduleLine,
+						})),
+				};
+
 				card.schedule = newSchedule;
 				if (isNewScheduleLine) {
 					card.scheduleLine = card.lineStart - 1;
@@ -511,6 +557,8 @@ export class ReviewSession {
 						}
 					}
 				}
+			} else {
+				this.lastRateEntry = null;
 			}
 
 			if (rating === 1) {
@@ -532,8 +580,65 @@ export class ReviewSession {
 			this.currentIndex++;
 			void this.render();
 		} catch (err) {
+			this.lastRateEntry = null;
 			error('Failed to update schedule:', err);
 			new Notice(t().notifications.failedToSave, 3000);
+		}
+	}
+
+	async undo(): Promise<void> {
+		if (!this.lastRateEntry) return;
+
+		const entry = this.lastRateEntry;
+		this.lastRateEntry = null;
+
+		const card = this.cards.find(c => c.id === entry.cardId);
+		if (!card) return;
+
+		try {
+			const file = this.vault.getAbstractFileByPath(card.filePath);
+			if (file && file instanceof TFile) {
+				await this.vault.process(file, (content) => {
+					if (entry.originalSchedule) {
+						return injectSchedule(content, entry.originalSchedule, entry.originalLineStart, entry.originalScheduleLine);
+					} else {
+						return deleteScheduleLine(content, entry.originalLineStart);
+					}
+				});
+			}
+
+			// 恢复 affected cards 的行号
+			for (const snapshot of entry.affectedCards) {
+				const affectedCard = this.cards.find(c => c.id === snapshot.cardId);
+				if (affectedCard) {
+					affectedCard.lineStart = snapshot.lineStart;
+					affectedCard.lineEnd = snapshot.lineEnd;
+					affectedCard.scheduleLine = snapshot.scheduleLine;
+				}
+			}
+
+			// 恢复被评分卡片
+			card.schedule = entry.originalSchedule;
+			card.scheduleLine = entry.originalScheduleLine;
+			card.lineStart = entry.originalLineStart;
+			card.lineEnd = entry.originalLineEnd;
+
+			if (entry.wasAgain) {
+				const currentIndex = this.cards.findIndex(c => c.id === entry.cardId);
+				if (currentIndex !== -1) {
+					this.cards.splice(currentIndex, 1);
+					this.cards.splice(entry.cardIndex, 0, card);
+				}
+			} else {
+				this.completedCardIds.delete(card.id);
+			}
+
+			this.currentIndex = entry.cardIndex;
+			this.resetRevealState(card.id);
+			void this.render();
+		} catch (err) {
+			error('Failed to undo rating:', err);
+			new Notice(t().notifications.undoFailed, 3000);
 		}
 	}
 

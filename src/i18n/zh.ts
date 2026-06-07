@@ -26,6 +26,7 @@ export const zh: Translations = {
 		failedToSave: '❌ 保存失败，请重试',
 		failedToOpenFile: '❌ 打开原文失败，请重试',
 		fileChanged: (path: string) => `复习文件已变更: ${path}`,
+		undoFailed: '❌ 撤回失败，请重试',
 	},
 
 	// 卡组选择器
@@ -67,6 +68,7 @@ export const zh: Translations = {
 		openSource: '打开原文',
 		hint: '提示',
 		shortcutsInactive: '点击这里以启用快捷键',
+		undo: '按 Backspace 撤回上一次评分',
 		statusTags: {
 			newCard: '新卡片',
 		},
@@ -120,6 +122,9 @@ export const zh: Translations = {
 			hardThresholdDesc: '显示项比例达到该值时判为有点难；低于该值判为没记住。',
 			goodThresholdName: '记住了阈值 (%)',
 			goodThresholdDesc: '显示项比例达到该值时判为记住了；低于该值但达到有点难阈值时判为有点难。',
+		},
+		shortcuts: {
+			title: '快捷键',
 		},
 		stats: {
 			name: '复习统计',
