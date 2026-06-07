@@ -113,6 +113,8 @@ Card content...
    - **2 - Hard** (🟠): Interval ×1.2, ease -15
    - **3 - Good** (🔵): Standard interval, ease unchanged
 
+> 💡 **Rating guide for multi-cloze cards**: Rate based on the *worst* cloze, not the average. If even one cloze is completely blank → **Again**. If all clozes are recallable but some feel slow or uncertain → **Hard**. Only choose **Good** when every cloze is recalled smoothly.
+
 You can also run "Review Due Cards in Current Note" from the command palette in any Markdown note to review only due cards from that note.
 
 By default, each review session includes up to 20 due cards, so cards marked **Again** can return quickly within the same smaller batch. Change **Review Batch Size** in plugin settings to adjust this limit. If more due cards remain after the batch is finished, the completion screen offers **Continue Review** to start the next batch.

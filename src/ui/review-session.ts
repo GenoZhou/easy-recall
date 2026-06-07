@@ -29,6 +29,7 @@ export interface ReviewSessionHost {
 	complete(state: ReviewCompletionState): void;
 	openSource(card: Card): Promise<boolean>;
 	areShortcutsActive?(): boolean;
+	handleCompleteSpace?(): void;
 }
 
 interface ReviewStatusTag {
@@ -206,6 +207,14 @@ export class ReviewSession {
 			if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {
 				return true;
 			}
+		}
+
+		if (this.isComplete && (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ')) {
+			evt.preventDefault();
+			if (!evt.repeat) {
+				this.host.handleCompleteSpace?.();
+			}
+			return false;
 		}
 
 		if (key === KEYBOARD_SHORTCUTS.REVEAL || key === ' ') {

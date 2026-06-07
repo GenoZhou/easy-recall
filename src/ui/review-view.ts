@@ -13,6 +13,7 @@ export class ReviewView extends ItemView {
 	private onComplete?: () => void;
 	private domShortcutsRegistered: boolean = false;
 	private shortcutsActive: boolean = false;
+	private completionState: ReviewCompletionState | null = null;
 
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf);
@@ -37,6 +38,7 @@ export class ReviewView extends ItemView {
 
 		this.onComplete = options.onComplete;
 		this.reviewOptions = options;
+		this.completionState = null;
 		this.session?.dispose();
 		this.session = new ReviewSession(this.app, {
 			...options,
@@ -50,6 +52,13 @@ export class ReviewView extends ItemView {
 			complete: (state) => this.completeReview(state),
 			openSource: (card) => openCardSource(this.app, options.vault, card, true),
 			areShortcutsActive: () => this.shortcutsActive,
+			handleCompleteSpace: () => {
+				if (this.completionState && this.completionState.remainingDueCount > 0) {
+					this.continueReview();
+				} else {
+					this.finishReview();
+				}
+			},
 		});
 		await this.session.render();
 		this.contentEl.focus();
@@ -112,6 +121,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private completeReview(state: ReviewCompletionState): void {
+		this.completionState = state;
 		const lang = t();
 		this.cardContentEl?.empty();
 		this.buttonsContainerEl?.empty();
@@ -176,5 +186,6 @@ export class ReviewView extends ItemView {
 		} else {
 			new Notice(t().notifications.reviewComplete, 2000);
 		}
+		this.leaf.detach();
 	}
 }

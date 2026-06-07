@@ -83,6 +83,14 @@ export class ReviewModal extends Modal {
 				}
 				return opened;
 			},
+			handleCompleteSpace: () => {
+				if (this.completionState && this.completionState.remainingDueCount > 0) {
+					void this.reloadAndStartSession();
+				} else {
+					this.notifyComplete();
+					this.close();
+				}
+			},
 		});
 		// Modals own keyboard focus in Obsidian, so Scope is reliable here.
 		this.session.registerShortcuts(this.scope);
