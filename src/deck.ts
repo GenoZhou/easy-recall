@@ -29,7 +29,7 @@ export function getReviewFiles(app: App, deckTagPrefix: string = DEFAULT_DECK_TA
 function hasReviewTag(cache: CachedMetadata | null | undefined, deckTagPrefix: string): boolean {
 	if (!cache) return false;
 
-	const frontmatter = cache.frontmatter as { tags?: unknown | unknown[] } | undefined;
+	const frontmatter = cache.frontmatter as { tags?: unknown } | undefined;
 	const frontmatterTags = frontmatter?.tags || [];
 	const frontmatterTagList: unknown[] = Array.isArray(frontmatterTags)
 		? frontmatterTags

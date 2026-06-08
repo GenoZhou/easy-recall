@@ -78,7 +78,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 			this.resultContainerEl.empty();
 			
 			// 调用父类 onOpen 设置搜索
-			super.onOpen();
+			await super.onOpen();
 			
 			// 设置 placeholder
 			this.inputEl.placeholder = lang.deckSelector.placeholder;

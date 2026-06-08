@@ -92,7 +92,7 @@ export default class EasyRecallPlugin extends Plugin {
 				if (!(file instanceof TFile) || file.extension !== 'md') return;
 				
 				// 检查是否是复习相关的文件
-				const frontmatter = cache.frontmatter as { tags?: unknown | unknown[] } | undefined;
+				const frontmatter = cache.frontmatter as { tags?: unknown } | undefined;
 				const frontmatterTags = frontmatter?.tags || [];
 				const frontmatterTagList: unknown[] = Array.isArray(frontmatterTags)
 					? frontmatterTags

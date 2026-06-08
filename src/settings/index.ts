@@ -115,7 +115,7 @@ export class SettingsManager {
 	async load(): Promise<void> {
 		const loaded = await this.plugin.loadData() as Partial<EasyRecallSettings & { reviewSurface?: ReviewSurface }> | null;
 		if (loaded) {
-			const legacyReviewSurface = loaded.reviewSurface as ReviewSurface | undefined;
+			const legacyReviewSurface = loaded.reviewSurface;
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
 				deckTagPrefix: normalizeDeckTagPrefix(loaded.deckTagPrefix ?? DEFAULT_SETTINGS.deckTagPrefix),
