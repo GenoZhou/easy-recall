@@ -150,7 +150,6 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	 */
 	getSuggestions(query: string): DeckWithStats[] {
 		const normalized = query.toLowerCase().trim();
-		const lang = t();
 		
 		// 特殊指令：@all 或 all - 只返回 @all
 		if (normalized === '@all' || normalized === 'all') {
@@ -250,7 +249,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		this.close();
 		
 		// 延迟打开，避免模态框动画冲突
-		setTimeout(() => {
+		window.setTimeout(() => {
 			void openReview(this.app, {
 				cards: cardsToReview,
 				vault: this.vault,

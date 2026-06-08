@@ -65,7 +65,7 @@ export default class EasyRecallPlugin extends Plugin {
 		// 添加左侧栏图标
 		const context: CommandContext = { plugin: this, app: this.app };
 		this.addRibbonIcon('easy-recall', lang.commands.startReview, () => {
-			executeStartReview(context);
+			void executeStartReview(context);
 		});
 		
 		// 注册文件事件监听（符合 Obsidian 最佳实践）
@@ -92,13 +92,14 @@ export default class EasyRecallPlugin extends Plugin {
 				if (!(file instanceof TFile) || file.extension !== 'md') return;
 				
 				// 检查是否是复习相关的文件
-				const frontmatterTags = cache.frontmatter?.tags || [];
-				const frontmatterTagList = Array.isArray(frontmatterTags)
+				const frontmatter = cache.frontmatter as { tags?: unknown | unknown[] } | undefined;
+				const frontmatterTags = frontmatter?.tags || [];
+				const frontmatterTagList: unknown[] = Array.isArray(frontmatterTags)
 					? frontmatterTags
 					: [frontmatterTags];
 				const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
 				const hasReviewTag = [...frontmatterTagList, ...inlineTags].some(
-					(tag: string) => typeof tag === 'string' && hasDeckTagPrefix(tag, this.settings.deckTagPrefix)
+					(tag: unknown) => typeof tag === 'string' && hasDeckTagPrefix(tag, this.settings.deckTagPrefix)
 				);
 				
 				if (hasReviewTag) {

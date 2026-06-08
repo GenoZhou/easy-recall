@@ -29,7 +29,7 @@ export class SettingsTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// 标题
-		containerEl.createEl('h2', { text: lang.settings.title });
+		new Setting(containerEl).setName(lang.settings.title).setHeading();
 
 		// 语言设置
 		new Setting(containerEl)
@@ -145,7 +145,7 @@ export class SettingsTab extends PluginSettingTab {
 	private renderUndoHint(containerEl: HTMLElement): void {
 		const lang = t();
 		const undoContainer = containerEl.createDiv({ cls: 'er-settings-undo' });
-		undoContainer.createEl('h3', { text: lang.settings.shortcuts.title });
+		new Setting(undoContainer).setName(lang.settings.shortcuts.title).setHeading();
 		undoContainer.createEl('p', {
 			text: lang.review.undo,
 			cls: 'er-settings-help',
@@ -155,9 +155,10 @@ export class SettingsTab extends PluginSettingTab {
 	private renderClickToRevealSettings(containerEl: HTMLElement): void {
 		const lang = t();
 		const clickToRevealContainer = containerEl.createDiv({ cls: 'er-settings-click-reveal' });
-		const titleEl = clickToRevealContainer.createDiv({ cls: 'er-settings-click-reveal-title' });
-		titleEl.createEl('h3', { text: lang.settings.clickToRevealCloze.title });
-		titleEl.createSpan({ text: 'New', cls: 'er-settings-beta-badge' });
+		const titleSetting = new Setting(clickToRevealContainer)
+			.setName(lang.settings.clickToRevealCloze.title)
+			.setHeading();
+		titleSetting.nameEl.createEl('span', { text: 'New', cls: 'er-settings-beta-badge' });
 		clickToRevealContainer.createEl('p', {
 			text: lang.settings.clickToRevealCloze.help,
 			cls: 'er-settings-help'
@@ -237,7 +238,7 @@ export class SettingsTab extends PluginSettingTab {
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 
-			containerEl.createEl('h3', { text: lang.settings.stats.upcoming });
+			new Setting(containerEl).setName(lang.settings.stats.upcoming).setHeading();
 			this.renderUpcomingChart(containerEl, stats.upcomingDaily);
 		} catch (err) {
 			containerEl.empty();

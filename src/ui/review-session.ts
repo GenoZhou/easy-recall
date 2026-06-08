@@ -351,7 +351,7 @@ export class ReviewSession {
 			: renderQAContent(card.question || '', card.answer || '', this.showAnswer);
 
 		const component = new Component();
-		await MarkdownRenderer.renderMarkdown(renderContent, cardBody, card.filePath, component);
+		await MarkdownRenderer.render(this.app, renderContent, cardBody, card.filePath, component);
 
 		if (!this.showAnswer && this.clickToRevealCloze && card.type === 'cloze') {
 			this.attachClozeRevealListeners(cardBody);
@@ -423,7 +423,7 @@ export class ReviewSession {
 		if (!cardBody) return;
 
 		const component = new Component();
-		await MarkdownRenderer.renderMarkdown(hint, cardBody as HTMLElement, filePath, component);
+		await MarkdownRenderer.render(this.app, hint, cardBody as HTMLElement, filePath, component);
 	}
 
 	private renderButtons(card: Card) {
@@ -470,7 +470,7 @@ export class ReviewSession {
 				if (!Platform.isMobile && shortcutsActive && autoButton) {
 					showBtn.createSpan({ text: autoButton.shortcut, cls: 'er-btn-shortcut' });
 				}
-				showBtn.addEventListener('click', () => this.handleRate(autoRating));
+				showBtn.addEventListener('click', () => { void this.handleRate(autoRating); });
 				return;
 			}
 
@@ -508,7 +508,7 @@ export class ReviewSession {
 				buttonEl.createSpan({ text: timeText, cls: 'er-btn-time' });
 			}
 
-			buttonEl.addEventListener('click', () => this.handleRate(btn.rating));
+			buttonEl.addEventListener('click', () => { void this.handleRate(btn.rating); });
 		});
 	}
 

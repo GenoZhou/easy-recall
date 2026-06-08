@@ -113,7 +113,7 @@ export class SettingsManager {
 	 * 加载设置
 	 */
 	async load(): Promise<void> {
-		const loaded = await this.plugin.loadData();
+		const loaded = await this.plugin.loadData() as Partial<EasyRecallSettings & { reviewSurface?: ReviewSurface }> | null;
 		if (loaded) {
 			const legacyReviewSurface = loaded.reviewSurface as ReviewSurface | undefined;
 			this.settings = {

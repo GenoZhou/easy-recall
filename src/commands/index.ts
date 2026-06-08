@@ -3,7 +3,6 @@
  * 统一注册所有插件命令
  */
 
-import { Plugin } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { getStartReviewCommand } from './start-review';
 import { getReviewCurrentNoteCommand } from './review-current-note';

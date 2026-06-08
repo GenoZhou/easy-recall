@@ -63,6 +63,6 @@ export function deleteScheduleLine(text: string, lineIndex: number): string {
  * 从文本中移除 SR 注释（用于重置卡片）
  */
 export function removeSchedule(text: string): string {
-	const SR_COMMENT_REGEX = /<!--SR:[\d\.]+,\d+,[^,]+,\d+-->\n?/g;
+	const SR_COMMENT_REGEX = /<!--SR:[\d.]+,\d+,[^,]+,\d+-->\n?/g;
 	return text.replace(SR_COMMENT_REGEX, '');
 }

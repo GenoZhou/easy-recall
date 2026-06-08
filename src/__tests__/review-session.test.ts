@@ -16,7 +16,7 @@ jest.mock('obsidian', () => {
 		Notice,
 		Platform: obsidianPlatform,
 		MarkdownRenderer: {
-			renderMarkdown: jest.fn().mockResolvedValue(undefined),
+			render: jest.fn().mockResolvedValue(undefined),
 		},
 	};
 }, { virtual: true });
@@ -178,8 +178,8 @@ async function flushPromises(): Promise<void> {
 }
 
 function mockRenderedClozeItems(count: number): void {
-	const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-	renderMarkdown.mockImplementationOnce((_markdown, el: TestElement) => {
+	const render = MarkdownRenderer.render as jest.Mock;
+	render.mockImplementationOnce((_app, _markdown, el: TestElement) => {
 		for (let index = 0; index < count; index++) {
 			const item = el.createSpan({ cls: 'er-cloze-hidden er-cloze-reveal-item', text: `answer-${index}` });
 			item.setAttribute('data-cloze-reveal', 'true');
@@ -473,8 +473,8 @@ describe('ReviewSession shortcuts', () => {
 	it('reviews due scheduled cards before new cards', async () => {
 		jest.setSystemTime(new Date('2026-05-10T00:00:00Z'));
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [
@@ -504,13 +504,13 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Older due');
+		expect(render.mock.calls.at(-1)?.[1]).toContain('Older due');
 	});
 
-	it('passes clickable reveal markup to renderMarkdown when clickToRevealCloze is enabled', async () => {
+	it('passes clickable reveal markup to render when clickToRevealCloze is enabled', async () => {
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ content: 'Question ==answer==' })],
@@ -519,7 +519,7 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		const markdownArg = render.mock.calls.at(-1)?.[1] as string;
 		expect(markdownArg).toContain('er-cloze-reveal-item');
 		expect(markdownArg).toContain('role="button"');
 		expect(markdownArg).toContain('tabindex="0"');
@@ -683,8 +683,8 @@ describe('ReviewSession shortcuts', () => {
 
 	it('does not pass reveal markup when clickToRevealCloze is disabled', async () => {
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ content: 'Question ==answer==' })],
@@ -693,15 +693,15 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		const markdownArg = render.mock.calls.at(-1)?.[1] as string;
 		expect(markdownArg).toContain('er-cloze-hidden');
 		expect(markdownArg).not.toContain('er-cloze-reveal-item');
 	});
 
 	it('normalizes non-true clickToRevealCloze values as disabled in the review session', async () => {
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ content: 'Question ==answer==' })],
@@ -710,15 +710,15 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		const markdownArg = render.mock.calls.at(-1)?.[1] as string;
 		expect(markdownArg).toContain('er-cloze-hidden');
 		expect(markdownArg).not.toContain('er-cloze-reveal-item');
 	});
 
 	it('ignores showAnswerAction in click-to-reveal mode', async () => {
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [createCard({ content: 'Question ==answer==' })],
@@ -730,7 +730,7 @@ describe('ReviewSession shortcuts', () => {
 		session.showAnswerAction();
 		await flushPromises();
 
-		const markdownArg = renderMarkdown.mock.calls.at(-1)?.[0] as string;
+		const markdownArg = render.mock.calls.at(-1)?.[1] as string;
 		expect(markdownArg).toContain('er-cloze-reveal-item');
 		expect(markdownArg).toContain('er-cloze-hidden');
 		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
@@ -739,8 +739,8 @@ describe('ReviewSession shortcuts', () => {
 	it('reviews learned due cards before learning cards with zero reps', async () => {
 		jest.setSystemTime(new Date('2026-05-10T00:00:00Z'));
 		const host = createHost();
-		const renderMarkdown = MarkdownRenderer.renderMarkdown as jest.Mock;
-		renderMarkdown.mockClear();
+		const render = MarkdownRenderer.render as jest.Mock;
+		render.mockClear();
 
 		const session = new ReviewSession({} as any, {
 			cards: [
@@ -769,7 +769,7 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(renderMarkdown.mock.calls.at(-1)?.[0]).toContain('Learned due');
+		expect(render.mock.calls.at(-1)?.[1]).toContain('Learned due');
 	});
 
 	it('returns true for unregistered keys in click-to-reveal mode so they are not swallowed', async () => {

@@ -9,7 +9,7 @@ import {
 	openCardSource,
 } from './review-session';
 
-export interface ReviewModalOptions extends ReviewOptions {}
+export type ReviewModalOptions = ReviewOptions;
 
 export { buildHeadingPathLabel, openCardSource };
 

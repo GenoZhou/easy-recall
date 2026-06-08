@@ -62,7 +62,7 @@ export function reviewCurrentNoteCheckCallback(
 	const isValid = activeFile !== null && activeFile.extension === 'md';
 	
 	if (!checking && isValid && activeFile) {
-		executeReviewCurrentNote(context, activeFile);
+		void executeReviewCurrentNote(context, activeFile);
 	}
 	
 	return isValid;

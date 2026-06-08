@@ -1,4 +1,4 @@
-import { TFile, Vault, App, Notice, CachedMetadata } from 'obsidian';
+import { TFile, Vault, App, CachedMetadata } from 'obsidian';
 import { Card, Deck } from './types';
 import { parseNote } from './parser';
 import { isDue } from './scheduler';
@@ -29,13 +29,14 @@ export function getReviewFiles(app: App, deckTagPrefix: string = DEFAULT_DECK_TA
 function hasReviewTag(cache: CachedMetadata | null | undefined, deckTagPrefix: string): boolean {
 	if (!cache) return false;
 
-	const frontmatterTags = cache.frontmatter?.tags || [];
-	const frontmatterTagList = Array.isArray(frontmatterTags)
+	const frontmatter = cache.frontmatter as { tags?: unknown | unknown[] } | undefined;
+	const frontmatterTags = frontmatter?.tags || [];
+	const frontmatterTagList: unknown[] = Array.isArray(frontmatterTags)
 		? frontmatterTags
 		: [frontmatterTags];
 	const inlineTags = (cache.tags || []).map((t: { tag: string }) => t.tag);
 
-	return [...frontmatterTagList, ...inlineTags].some((tag: string) =>
+	return [...frontmatterTagList, ...inlineTags].some((tag: unknown) =>
 		typeof tag === 'string' && hasDeckTagPrefix(tag, deckTagPrefix)
 	);
 }
@@ -64,7 +65,7 @@ export async function scanVault(vault: Vault, app?: App, deckTagPrefix: string =
 
 		// 每处理一批后让出时间片，避免阻塞 UI
 		if ((i + 1) % BATCH_SIZE === 0) {
-			await new Promise(resolve => setTimeout(resolve, 0));
+			await new Promise(resolve => window.setTimeout(resolve, 0));
 		}
 	}
 
