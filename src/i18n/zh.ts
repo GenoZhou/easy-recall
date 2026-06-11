@@ -111,17 +111,13 @@ export const zh: Translations = {
 		},
 		clickToRevealCloze: {
 			title: '点击逐项复习',
-			help: '开启后，每个挖空项会按隐藏、显示、删除线循环。全部挖空项都进入显示或删除线状态后，确认按钮会按显示项比例自动计算评分。',
+			help: '开启后，每个挖空项会按隐藏、显示、删除线循环。只要有一个挖空项标记为删除线，就视为"没记住"；全部挖空项都显示后，再根据自己的感觉选择"有点难"或"记住了"。',
 			name: '点击逐项复习',
 			desc: '选择在哪些设备上使用逐项点按自测替代普通的显示答案流程。',
 			desktop: '仅桌面端',
 			mobile: '仅移动端',
 			enabled: '启用',
 			disabled: '关闭',
-			hardThresholdName: '有点难阈值 (%)',
-			hardThresholdDesc: '显示项比例达到该值时判为有点难；低于该值判为没记住。',
-			goodThresholdName: '记住了阈值 (%)',
-			goodThresholdDesc: '显示项比例达到该值时判为记住了；低于该值但达到有点难阈值时判为有点难。',
 		},
 		shortcuts: {
 			title: '快捷键',

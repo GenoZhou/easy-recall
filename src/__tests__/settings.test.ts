@@ -37,8 +37,6 @@ describe('SettingsManager', () => {
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe('disabled');
-			expect(settings.clickToRevealHardThreshold).toBe(50);
-			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -54,8 +52,6 @@ describe('SettingsManager', () => {
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe('disabled');
-			expect(settings.clickToRevealHardThreshold).toBe(50);
-			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
 
 		it('should load separate desktop and mobile review surfaces', async () => {
@@ -110,8 +106,6 @@ describe('SettingsManager', () => {
 				desktopReviewSurface: 'modal',
 				mobileReviewSurface: 'modal',
 				clickToRevealCloze: 'disabled',
-				clickToRevealHardThreshold: 50,
-				clickToRevealGoodThreshold: 80,
 			});
 			expect((settings as EasyRecallSettings & { defaultEase?: number; reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
 			expect((settings as EasyRecallSettings & { reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).reviewSurface).toBeUndefined();
@@ -154,8 +148,6 @@ describe('SettingsManager', () => {
 			expect(settings.desktopReviewSurface).toBe('modal');
 			expect(settings.mobileReviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe('disabled');
-			expect(settings.clickToRevealHardThreshold).toBe(50);
-			expect(settings.clickToRevealGoodThreshold).toBe(80);
 		});
 
 		it('should update review batch size', async () => {
@@ -213,25 +205,6 @@ describe('SettingsManager', () => {
 			expect(manager.get().clickToRevealCloze).toBe('mobile');
 		});
 
-		it('should update and normalize click-to-reveal thresholds', async () => {
-			mockLoadData.mockResolvedValue(null);
-			await manager.load();
-
-			await manager.update({ clickToRevealHardThreshold: 64, clickToRevealGoodThreshold: 150 });
-
-			expect(manager.get().clickToRevealHardThreshold).toBe(64);
-			expect(manager.get().clickToRevealGoodThreshold).toBe(100);
-		});
-
-		it('should keep click-to-reveal hard threshold at or below good threshold', async () => {
-			mockLoadData.mockResolvedValue(null);
-			await manager.load();
-
-			await manager.update({ clickToRevealHardThreshold: 90, clickToRevealGoodThreshold: 70 });
-
-			expect(manager.get().clickToRevealHardThreshold).toBe(70);
-			expect(manager.get().clickToRevealGoodThreshold).toBe(70);
-		});
 
 		it('should save after update', async () => {
 			mockLoadData.mockResolvedValue(null);
@@ -287,8 +260,6 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe('disabled');
-		expect(DEFAULT_SETTINGS.clickToRevealHardThreshold).toBe(50);
-		expect(DEFAULT_SETTINGS.clickToRevealGoodThreshold).toBe(80);
 	});
 });
 

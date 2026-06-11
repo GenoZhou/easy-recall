@@ -41,8 +41,6 @@ export async function executeReviewCurrentNote(
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
 			clickToRevealCloze,
-			clickToRevealHardThreshold: plugin.settings.clickToRevealHardThreshold,
-			clickToRevealGoodThreshold: plugin.settings.clickToRevealGoodThreshold,
 		}, reviewSurface);
 
 	} catch (err) {

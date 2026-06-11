@@ -109,17 +109,13 @@ export const en = {
 		},
 		clickToRevealCloze: {
 			title: 'Click-to-Reveal Review',
-			help: 'When enabled, each cloze item cycles through hidden, shown, and crossed out. Once every item is shown or crossed out, the confirmation button is calculated from the shown-item percentage.',
+			help: 'When enabled, each cloze item cycles through hidden, shown, and crossed out. As long as any item is crossed out, it is counted as "Again"; once all items are revealed, choose "Hard" or "Good" based on how well you recalled them.',
 			name: 'Click-to-reveal review',
 			desc: 'Choose where tap-by-tap cloze self-checking replaces the normal Show Answer flow.',
 			desktop: 'Desktop only',
 			mobile: 'Mobile only',
 			enabled: 'Enabled',
 			disabled: 'Disabled',
-			hardThresholdName: 'Hard Threshold (%)',
-			hardThresholdDesc: 'Minimum shown-answer percentage for Hard. Lower scores are Again.',
-			goodThresholdName: 'Good Threshold (%)',
-			goodThresholdDesc: 'Minimum shown-answer percentage for Good. Scores below this but at or above Hard are Hard.',
 		},
 		shortcuts: {
 			title: 'Keyboard Shortcuts',

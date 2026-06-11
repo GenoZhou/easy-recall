@@ -6,7 +6,7 @@
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
-import { normalizeClickToRevealThreshold, normalizeReviewBatchSize, ReviewSurface } from './index';
+import { normalizeReviewBatchSize, ReviewSurface } from './index';
 import type { ClickToRevealClozeMode } from './index';
 import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
@@ -176,42 +176,6 @@ export class SettingsTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.clickToRevealCloze)
 					.onChange(async (value) => {
 						await this.plugin.settingsManager.update({ clickToRevealCloze: value as ClickToRevealClozeMode });
-						this.plugin.settings = this.plugin.settingsManager.get();
-					})
-			);
-
-		new Setting(clickToRevealContainer)
-			.setName(lang.settings.clickToRevealCloze.hardThresholdName)
-			.setDesc(lang.settings.clickToRevealCloze.hardThresholdDesc)
-			.addText(text =>
-				text
-					.setPlaceholder(String(normalizeClickToRevealThreshold(undefined, 50)))
-					.setValue(String(this.plugin.settings.clickToRevealHardThreshold))
-					.onChange(async (value) => {
-						const parsedValue = Number.parseInt(value, 10);
-						if (!Number.isFinite(parsedValue)) {
-							return;
-						}
-
-						await this.plugin.settingsManager.update({ clickToRevealHardThreshold: parsedValue });
-						this.plugin.settings = this.plugin.settingsManager.get();
-					})
-			);
-
-		new Setting(clickToRevealContainer)
-			.setName(lang.settings.clickToRevealCloze.goodThresholdName)
-			.setDesc(lang.settings.clickToRevealCloze.goodThresholdDesc)
-			.addText(text =>
-				text
-					.setPlaceholder(String(normalizeClickToRevealThreshold(undefined, 80)))
-					.setValue(String(this.plugin.settings.clickToRevealGoodThreshold))
-					.onChange(async (value) => {
-						const parsedValue = Number.parseInt(value, 10);
-						if (!Number.isFinite(parsedValue)) {
-							return;
-						}
-
-						await this.plugin.settingsManager.update({ clickToRevealGoodThreshold: parsedValue });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);

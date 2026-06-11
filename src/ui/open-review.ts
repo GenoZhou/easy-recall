@@ -11,8 +11,6 @@ export interface OpenReviewOptions {
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 	clickToRevealCloze?: boolean;
-	clickToRevealHardThreshold?: number;
-	clickToRevealGoodThreshold?: number;
 }
 
 export async function openReview(

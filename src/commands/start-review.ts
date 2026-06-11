@@ -23,7 +23,7 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 		const clickToRevealCloze = getActiveClickToRevealCloze(plugin.settings, Platform.isMobile);
 		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
-		}, clickToRevealCloze, plugin.settings.clickToRevealHardThreshold, plugin.settings.clickToRevealGoodThreshold);
+		}, clickToRevealCloze);
 	} catch (err) {
 		console.error('Failed to start review:', err);
 		new Notice(lang.notifications.failedToStart, 3000);

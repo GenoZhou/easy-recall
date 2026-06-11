@@ -576,12 +576,11 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
 		items[1].listeners.click[0]();
-		expect(host.buttonsEl.querySelector('.er-btn-good')?.textContent).toBe('');
+		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-label')?.textContent).toBe('有点难');
 		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-label')?.textContent).toBe('记住了');
-		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
 	});
 
-	it('calculates the click-to-reveal confirmation rating from shown item thresholds', async () => {
+	it('shows Hard and Good buttons when all click-to-reveal items are revealed', async () => {
 		const host = createHost();
 		mockRenderedClozeItems(3);
 
@@ -589,8 +588,6 @@ describe('ReviewSession shortcuts', () => {
 			cards: [createCard({ content: 'Question ==a== ==b== ==c==' })],
 			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
 			clickToRevealCloze: true,
-			clickToRevealHardThreshold: 50,
-			clickToRevealGoodThreshold: 80,
 		}, host as any);
 
 		await session.render();
@@ -600,13 +597,13 @@ describe('ReviewSession shortcuts', () => {
 		items[2].listeners.click[0]();
 		items[2].listeners.click[0]();
 
-		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-label')?.textContent).toBe('有点难');
-		host.buttonsEl.querySelector('.er-btn-hard')?.listeners.click[0]();
+		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
+		host.buttonsEl.querySelector('.er-btn-again')?.listeners.click[0]();
 		await flushPromises();
-		expect(host.complete).toHaveBeenCalledTimes(1);
+		expect(host.complete).not.toHaveBeenCalled();
 	});
 
-	it('calculates Again when all click-to-reveal items are crossed out', async () => {
+	it('shows Again when any click-to-reveal item is crossed out', async () => {
 		const host = createHost();
 		mockRenderedClozeItems(2);
 

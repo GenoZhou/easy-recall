@@ -14,8 +14,6 @@ export interface ReviewOptions {
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 	clickToRevealCloze?: boolean;
-	clickToRevealHardThreshold?: number;
-	clickToRevealGoodThreshold?: number;
 }
 
 export interface ReviewCompletionState {
@@ -141,8 +139,6 @@ export class ReviewSession {
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
 	private clickToRevealCloze: boolean = false;
-	private clickToRevealHardThreshold: number = 50;
-	private clickToRevealGoodThreshold: number = 80;
 	private clozeRevealStatesByCardId: Map<string, ClozeRevealState[]> = new Map();
 	private lastRateEntry: RateHistoryEntry | null = null;
 
@@ -153,8 +149,6 @@ export class ReviewSession {
 		this.sourceCards = options.cards;
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
 		this.clickToRevealCloze = normalizeReviewBoolean(options.clickToRevealCloze);
-		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
-		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -271,9 +265,14 @@ export class ReviewSession {
 	}
 
 	rateAction(rating: Rating): void {
-		const autoRating = this.getCurrentClickRevealRating();
-		if (autoRating !== null && autoRating === rating) {
-			void this.handleRate(rating);
+		const card = this.cards[this.currentIndex];
+		const isClickReveal = this.isClickRevealClozeCard(card);
+
+		if (isClickReveal) {
+			const available = this.getClickRevealAvailableRatings();
+			if (available !== null && available.includes(rating)) {
+				void this.handleRate(rating);
+			}
 			return;
 		}
 
@@ -455,22 +454,50 @@ export class ReviewSession {
 			}
 
 			if (isClickRevealClozeCard) {
-				const autoRating = this.getCurrentClickRevealRating();
-				if (autoRating === null) {
+				const availableRatings = this.getClickRevealAvailableRatings();
+				if (availableRatings === null) {
 					return;
 				}
-				const autoButton = getRatingButtons().find(btn => btn.rating === autoRating);
-				const showBtn = btnContainer.createEl('button', {
-					cls: `er-btn-rating ${autoButton?.cls ?? 'er-btn-show'}`
-				});
-				showBtn.createSpan({
-					text: autoButton?.label ?? lang.review.showAnswer,
-					cls: 'er-btn-label'
-				});
-				if (!Platform.isMobile && shortcutsActive && autoButton) {
-					showBtn.createSpan({ text: autoButton.shortcut, cls: 'er-btn-shortcut' });
+
+				if (availableRatings.length === 1) {
+					const rating = availableRatings[0];
+					const btn = getRatingButtons().find(b => b.rating === rating);
+					const showBtn = btnContainer.createEl('button', {
+						cls: `er-btn-rating ${btn?.cls ?? 'er-btn-show'}`
+					});
+					showBtn.createSpan({
+						text: btn?.label ?? lang.review.showAnswer,
+						cls: 'er-btn-label'
+					});
+					if (!Platform.isMobile && shortcutsActive && btn) {
+						showBtn.createSpan({ text: btn.shortcut, cls: 'er-btn-shortcut' });
+					}
+					showBtn.addEventListener('click', () => { void this.handleRate(rating); });
+					return;
 				}
-				showBtn.addEventListener('click', () => { void this.handleRate(autoRating); });
+
+				// 多个选项时渲染评分按钮
+				const ratingBtnContainer = this.host.buttonsEl.createDiv({ cls: `er-rating-buttons er-rating-${availableRatings.length}` });
+				const currentCard = this.cards[this.currentIndex];
+				const isDesktop = !Platform.isMobile;
+
+				getRatingButtons().forEach(btn => {
+					if (!availableRatings.includes(btn.rating)) {
+						return;
+					}
+					const buttonEl = ratingBtnContainer.createEl('button', {
+						cls: `er-btn-rating ${btn.cls}`
+					});
+					buttonEl.createSpan({ text: btn.label, cls: 'er-btn-label' });
+					if (isDesktop && shortcutsActive) {
+						buttonEl.createSpan({ text: btn.shortcut, cls: 'er-btn-shortcut' });
+					}
+					if (isDesktop && currentCard && btn.rating !== 1) {
+						const timeText = getNextReviewShortText(currentCard.schedule, btn.rating);
+						buttonEl.createSpan({ text: timeText, cls: 'er-btn-time' });
+					}
+					buttonEl.addEventListener('click', () => { void this.handleRate(btn.rating); });
+				});
 				return;
 			}
 
@@ -710,25 +737,37 @@ export class ReviewSession {
 		el.setAttribute('data-cloze-state', state);
 	}
 
-	private getCurrentClickRevealRating(): Rating | null {
+	private getClickRevealAvailableRatings(): Rating[] | null {
 		const card = this.cards[this.currentIndex];
 		if (!this.isClickRevealClozeCard(card)) {
 			return null;
 		}
 
 		const stats = this.getClozeRevealStats(card.id);
-		if (!stats || stats.total === 0 || stats.hidden > 0) {
+		if (!stats || stats.total === 0) {
 			return null;
 		}
 
-		const shownPercent = (stats.shown / stats.total) * 100;
-		if (shownPercent >= this.clickToRevealGoodThreshold) {
-			return 3;
+		if (stats.deleted > 0) {
+			return [1];
 		}
-		if (shownPercent >= this.clickToRevealHardThreshold) {
-			return 2;
+
+		if (stats.hidden > 0) {
+			return null;
 		}
-		return 1;
+
+		return [2, 3];
+	}
+
+	private getCurrentClickRevealRating(): Rating | null {
+		const available = this.getClickRevealAvailableRatings();
+		if (!available) {
+			return null;
+		}
+		if (available.length === 1) {
+			return available[0];
+		}
+		return null;
 	}
 
 	private getClozeRevealStats(cardId: string): ClozeRevealStats | null {

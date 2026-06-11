@@ -71,8 +71,6 @@ describe('commands', () => {
 					mobileReviewSurface: 'modal',
 					desktopReviewSurface: 'modal',
 					clickToRevealCloze: 'disabled',
-					clickToRevealHardThreshold: 50,
-					clickToRevealGoodThreshold: 80,
 				},
 			} as any,
 		});
@@ -84,9 +82,7 @@ describe('commands', () => {
 			20,
 			'easy-recall',
 			expect.any(Function),
-			false,
-			50,
-			80
+			false
 		);
 	});
 
@@ -101,8 +97,6 @@ describe('commands', () => {
 					deckTagPrefix: 'easy-recall',
 					mobileReviewSurface: 'modal',
 					desktopReviewSurface: 'modal',
-					clickToRevealHardThreshold: 50,
-					clickToRevealGoodThreshold: 80,
 				},
 			} as any,
 		};

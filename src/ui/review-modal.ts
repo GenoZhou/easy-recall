@@ -26,8 +26,6 @@ export class ReviewModal extends Modal {
 	private completionState: ReviewCompletionState | null = null;
 	private completionNotified: boolean = false;
 	private clickToRevealCloze: boolean = false;
-	private clickToRevealHardThreshold: number = 50;
-	private clickToRevealGoodThreshold: number = 80;
 
 	constructor(app: App, options: ReviewModalOptions) {
 		super(app);
@@ -37,8 +35,6 @@ export class ReviewModal extends Modal {
 		this.reloadCards = options.reloadCards;
 		this.onComplete = options.onComplete;
 		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
-		this.clickToRevealHardThreshold = options.clickToRevealHardThreshold ?? 50;
-		this.clickToRevealGoodThreshold = options.clickToRevealGoodThreshold ?? 80;
 	}
 
 	onOpen() {
@@ -68,8 +64,6 @@ export class ReviewModal extends Modal {
 			reloadCards: this.reloadCards,
 			onComplete: this.onComplete,
 			clickToRevealCloze: this.clickToRevealCloze,
-			clickToRevealHardThreshold: this.clickToRevealHardThreshold,
-			clickToRevealGoodThreshold: this.clickToRevealGoodThreshold,
 		}, {
 			contentEl: this.cardContentEl,
 			buttonsEl: this.buttonsContainerEl,

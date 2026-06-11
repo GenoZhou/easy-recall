@@ -43,8 +43,6 @@ export class ReviewView extends ItemView {
 		this.session = new ReviewSession(this.app, {
 			...options,
 			clickToRevealCloze: options.clickToRevealCloze,
-			clickToRevealHardThreshold: options.clickToRevealHardThreshold,
-			clickToRevealGoodThreshold: options.clickToRevealGoodThreshold,
 		}, {
 			contentEl: this.cardContentEl!,
 			buttonsEl: this.buttonsContainerEl!,
