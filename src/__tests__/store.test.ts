@@ -30,6 +30,30 @@ describe('store', () => {
       const formatted = formatSchedule(schedule);
       expect(formatted).toBe('<!--SR:2.5,250,2026-02-21T14:19:56.066Z,3-->');
     });
+
+    it('should round interval to 2 decimal places to avoid floating point noise', () => {
+      const schedule: Schedule = {
+        interval: 7.9559999999999995,
+        ease: 250,
+        due: new Date('2026-06-15T13:08:20.255Z'),
+        reps: 4,
+      };
+      
+      const formatted = formatSchedule(schedule);
+      expect(formatted).toBe('<!--SR:7.96,250,2026-06-15T13:08:20.255Z,4-->');
+    });
+
+    it('should keep integer intervals compact', () => {
+      const schedule: Schedule = {
+        interval: 1,
+        ease: 250,
+        due: new Date('2026-02-21T14:19:56.066Z'),
+        reps: 1,
+      };
+      
+      const formatted = formatSchedule(schedule);
+      expect(formatted).toBe('<!--SR:1,250,2026-02-21T14:19:56.066Z,1-->');
+    });
   });
 
   describe('injectSchedule - replacing existing', () => {

@@ -6,7 +6,10 @@ import { Schedule } from './types';
  */
 export function formatSchedule(schedule: Schedule): string {
 	const dueISO = schedule.due.toISOString();
-	return `<!--SR:${schedule.interval},${schedule.ease},${dueISO},${schedule.reps}-->`;
+	// 限制 interval 小数位，避免浮点运算产生 7.9559999999999995 这种长尾数字
+	const interval = Number(schedule.interval.toFixed(2));
+	const ease = Math.round(schedule.ease);
+	return `<!--SR:${interval},${ease},${dueISO},${schedule.reps}-->`;
 }
 
 /**
