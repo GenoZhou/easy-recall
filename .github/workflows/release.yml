@@ -39,7 +39,7 @@ jobs:
         run: npm run check-dist
 
       - name: Generate artifact attestations
-        uses: actions/attest@v4
+        uses: actions/attest-build-provenance@v1
         with:
           subject-path: |
             main.js
