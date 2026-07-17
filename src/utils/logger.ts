@@ -4,7 +4,14 @@
  */
 
 // 调试模式开关（生产环境应设为 false）
-const DEBUG = false;
+let DEBUG = false;
+
+/**
+ * 设置调试模式
+ */
+export function setDebugMode(enabled: boolean): void {
+	DEBUG = enabled;
+}
 
 /**
  * 调试日志 - 仅在 DEBUG 为 true 时输出
@@ -17,10 +24,13 @@ export function debug(...args: unknown[]): void {
 }
 
 /**
- * 信息日志 - 始终输出
+ * 信息日志 - 仅在 DEBUG 为 true 时输出
+ * 避免默认输出不必要的 console 日志
  */
 export function info(...args: unknown[]): void {
-	console.log('[easy-recall]', ...args);
+	if (DEBUG) {
+		console.log('[easy-recall]', ...args);
+	}
 }
 
 /**

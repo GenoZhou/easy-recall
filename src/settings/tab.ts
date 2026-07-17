@@ -158,7 +158,7 @@ export class SettingsTab extends PluginSettingTab {
 		const titleSetting = new Setting(clickToRevealContainer)
 			.setName(lang.settings.clickToRevealCloze.title)
 			.setHeading();
-		titleSetting.nameEl.createEl('span', { text: 'New', cls: 'er-settings-beta-badge' });
+		titleSetting.nameEl.createSpan({ text: 'New', cls: 'er-settings-beta-badge' });
 		clickToRevealContainer.createEl('p', {
 			text: lang.settings.clickToRevealCloze.help,
 			cls: 'er-settings-help'

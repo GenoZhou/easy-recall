@@ -33,14 +33,9 @@ describe('utils', () => {
   });
 
   describe('info', () => {
-    it('should always output with prefix', () => {
+    it('should not output when DEBUG is false', () => {
       info('test message');
-      expect(console.log).toHaveBeenCalledWith('[easy-recall]', 'test message');
-    });
-
-    it('should handle multiple arguments', () => {
-      info('message', 123, { key: 'value' });
-      expect(console.log).toHaveBeenCalledWith('[easy-recall]', 'message', 123, { key: 'value' });
+      expect(console.log).not.toHaveBeenCalled();
     });
   });
 

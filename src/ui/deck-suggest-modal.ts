@@ -184,21 +184,21 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		else if (deck.newCount > 0) icon = '🆕';
 		else icon = '⏳';
 		
-		leftEl.createEl('span', { text: icon, cls: 'er-suggest-icon' });
-		leftEl.createEl('span', { text: deck.tag, cls: 'er-suggest-name' });
+		leftEl.createSpan({ text: icon, cls: 'er-suggest-icon' });
+		leftEl.createSpan({ text: deck.tag, cls: 'er-suggest-name' });
 		
 		// 右侧：统计徽章
 		const rightEl = container.createDiv({ cls: 'er-suggest-right' });
 		
 		if (deck.dueCount > 0) {
-			rightEl.createEl('span', {
+			rightEl.createSpan({
 				text: lang.deckSelector.deckItem.due(deck.dueCount),
 				cls: 'er-badge er-badge-due'
 			});
 		}
 		
 		if (deck.newCount > 0 && deck.tag !== lang.deckSelector.allDeck.name) {
-			rightEl.createEl('span', {
+			rightEl.createSpan({
 				text: lang.deckSelector.deckItem.new(deck.newCount),
 				cls: 'er-badge er-badge-new'
 			});
@@ -207,12 +207,12 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		// 如果无到期，显示下次复习时间或总数量
 		if (deck.dueCount === 0) {
 			if (deck.nextReviewTime) {
-				rightEl.createEl('span', {
+				rightEl.createSpan({
 					text: deck.nextReviewTime,
 					cls: 'er-badge er-badge-later'
 				});
 			} else if (deck.tag !== lang.deckSelector.allDeck.name) {
-				rightEl.createEl('span', {
+				rightEl.createSpan({
 					text: lang.deckSelector.deckItem.total(deck.cards.length),
 					cls: 'er-badge er-badge-total'
 				});
@@ -221,7 +221,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 		
 		// @all 特殊显示
 		if (deck.tag === lang.deckSelector.allDeck.name) {
-			rightEl.createEl('span', {
+			rightEl.createSpan({
 				text: lang.deckSelector.allDeck.total(deck.dueCount),
 				cls: 'er-badge er-badge-all'
 			});
