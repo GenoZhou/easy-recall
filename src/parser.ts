@@ -167,14 +167,10 @@ function extractHintFromBlock(blockLines: string[], searchStart: number): { hint
 	for (let i = searchStart; i < blockLines.length; i++) {
 		if (HINT_CALLOUT_REGEX.test(blockLines[i])) {
 			// 验证从 i 开始到 block 结束的所有行都是 callout 行
-			let valid = true;
-			for (const line of blockLines.slice(i)) {
+			const valid = blockLines.slice(i).every((line: string) => {
 				const trimmed = line.trimStart();
-				if (!(trimmed.startsWith('> ') || trimmed === '>')) {
-					valid = false;
-					break;
-				}
-			}
+				return trimmed.startsWith('> ') || trimmed === '>';
+			});
 			if (valid) {
 				return {
 					hint: blockLines.slice(i).join('\n'),
