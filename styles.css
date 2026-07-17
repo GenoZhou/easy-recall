@@ -258,7 +258,7 @@
 	margin: 0;
 }
 
-/* 评分按钮容器 - 3评分 */
+/* 评分按钮容器 */
 .er-rating-buttons {
 	display: flex;
 	gap: 10px;
@@ -266,10 +266,23 @@
 	justify-content: center;
 }
 
+.er-rating-1,
+.er-rating-2,
 .er-rating-3 {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
 	gap: 10px;
+}
+
+.er-rating-1 {
+	grid-template-columns: 1fr;
+}
+
+.er-rating-2 {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+.er-rating-3 {
+	grid-template-columns: repeat(3, 1fr);
 }
 
 .er-settings-click-reveal {
@@ -313,6 +326,27 @@
 }
 
 @media (max-width: 768px) {
+	.er-buttons {
+		align-items: stretch;
+	}
+
+	.er-buttons-row {
+		width: 100%;
+	}
+
+	.er-buttons-row > * {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	.er-btn-show,
+	.er-btn-show-hint,
+	.er-btn-secondary {
+		width: 100%;
+	}
+
+	.er-rating-1,
+	.er-rating-2,
 	.er-rating-3 {
 		gap: 8px;
 	}
