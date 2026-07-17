@@ -14,23 +14,17 @@ export function setDebugMode(enabled: boolean): void {
 }
 
 /**
- * 调试日志 - 仅在 DEBUG 为 true 时输出
- * 符合最佳实践：避免在生产环境输出过多日志
+ * 调试日志 - 不输出到 console，避免生产环境不必要的日志
  */
 export function debug(...args: unknown[]): void {
-	if (DEBUG) {
-		console.log('[easy-recall]', ...args);
-	}
+	// no-op
 }
 
 /**
- * 信息日志 - 仅在 DEBUG 为 true 时输出
- * 避免默认输出不必要的 console 日志
+ * 信息日志 - 不输出到 console，避免生产环境不必要的日志
  */
 export function info(...args: unknown[]): void {
-	if (DEBUG) {
-		console.log('[easy-recall]', ...args);
-	}
+	// no-op
 }
 
 /**

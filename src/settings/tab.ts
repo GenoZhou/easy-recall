@@ -3,7 +3,7 @@
  * 遵循 Obsidian 最佳实践：使用 PluginSettingTab
  */
 
-import { PluginSettingTab, Setting, App } from 'obsidian';
+import { PluginSettingTab, Setting, App, type SettingDefinitionItem } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { normalizeReviewBatchSize, ReviewSurface } from './index';
@@ -20,6 +20,12 @@ export class SettingsTab extends PluginSettingTab {
 	constructor(app: App, plugin: EasyRecallPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		// 当前保留 imperative display() 以兼容 minAppVersion 1.7.2
+		// 未来 minAppVersion 提升到 1.13.0+ 时可迁移到声明式设置 API
+		return [];
 	}
 
 	display(): void {
