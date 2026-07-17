@@ -5,15 +5,13 @@ on:
     tags:
       - "*"
 
-# 添加权限配置
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
 
     steps:
       - uses: actions/checkout@v6
@@ -39,12 +37,40 @@ jobs:
         run: npm run check-dist
 
       - name: Generate artifact attestations
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
             main.js
             manifest.json
             styles.css
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            main.js
+            manifest.json
+            styles.css
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: .
 
       - name: Generate Stable Release Notes
         if: ${{ !contains(github.ref_name, '-') }}
