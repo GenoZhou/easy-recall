@@ -1,4 +1,3 @@
-import { getLanguage as getObsidianLanguage } from 'obsidian';
 import type { Translations } from './en';
 import { en } from './en';
 import { zh } from './zh';
@@ -35,11 +34,13 @@ export function t(): Translations {
 
 /**
  * 根据 Obsidian 语言自动检测
+ * Uses localStorage / navigator so we stay compatible with minAppVersion 1.7.2
+ * (obsidian.getLanguage requires 1.8.7+).
  */
 export function detectLanguage(): Exclude<Language, 'auto'> {
-	const obsidianLang = typeof getObsidianLanguage === 'function'
-		? getObsidianLanguage()
-		: globalThis.navigator?.language;
+	const stored =
+		typeof localStorage !== 'undefined' ? localStorage.getItem('language') : null;
+	const obsidianLang = stored || globalThis.navigator?.language;
 	if (obsidianLang?.startsWith('zh')) {
 		return 'zh';
 	}
