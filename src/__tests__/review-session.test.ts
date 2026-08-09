@@ -259,7 +259,7 @@ describe('ReviewSession shortcuts', () => {
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.buttonsEl.querySelector('.er-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).not.toBeNull();
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
@@ -282,7 +282,7 @@ describe('ReviewSession shortcuts', () => {
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
 
-		expect(host.buttonsEl.querySelector('.er-btn-good')).not.toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 	});
 
@@ -346,9 +346,9 @@ describe('ReviewSession shortcuts', () => {
 		session.showAnswerAction();
 		await flushPromises();
 
-		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-shortcut')?.textContent).toBe('1');
-		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-shortcut')?.textContent).toBe('2');
-		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-again')?.querySelector('.er-btn-shortcut')?.textContent).toBe('1');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-hard')?.querySelector('.er-btn-shortcut')?.textContent).toBe('2');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
 	});
 
 	it('hides shortcut hints when the review tab is not focused', async () => {
@@ -576,8 +576,8 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
 		items[1].listeners.click[0]();
-		expect(host.buttonsEl.querySelector('.er-btn-hard')?.querySelector('.er-btn-label')?.textContent).toBe('有点难');
-		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-label')?.textContent).toBe('记住了');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-hard')?.querySelector('.er-btn-label')?.textContent).toBe('有点难');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')?.querySelector('.er-btn-label')?.textContent).toBe('记住了');
 	});
 
 	it('shows Hard and Good buttons when all click-to-reveal items are revealed', async () => {
@@ -597,8 +597,8 @@ describe('ReviewSession shortcuts', () => {
 		items[2].listeners.click[0]();
 		items[2].listeners.click[0]();
 
-		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
-		host.buttonsEl.querySelector('.er-btn-again')?.listeners.click[0]();
+		expect(host.buttonsEl.querySelector('.er-btn-rating-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
+		host.buttonsEl.querySelector('.er-btn-rating-again')?.listeners.click[0]();
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 	});
@@ -620,7 +620,7 @@ describe('ReviewSession shortcuts', () => {
 		items[1].listeners.click[0]();
 		items[1].listeners.click[0]();
 
-		expect(host.buttonsEl.querySelector('.er-btn-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-again')?.querySelector('.er-btn-label')?.textContent).toBe('没记住');
 	});
 
 	it('ignores rating shortcuts while click-to-reveal items remain hidden and keeps the hint shortcut', async () => {
@@ -646,7 +646,7 @@ describe('ReviewSession shortcuts', () => {
 
 		handlers.get('Space')!(keyEvent(' '));
 		await flushPromises();
-		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).toBeNull();
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 	});
 
@@ -668,7 +668,7 @@ describe('ReviewSession shortcuts', () => {
 		items[0].listeners.click[0]();
 		items[1].listeners.click[0]();
 
-		expect(host.buttonsEl.querySelector('.er-btn-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')?.querySelector('.er-btn-shortcut')?.textContent).toBe('3');
 
 		const event = keyEvent('3');
 		handlers.get('3')!(event);
@@ -730,7 +730,7 @@ describe('ReviewSession shortcuts', () => {
 		const markdownArg = render.mock.calls.at(-1)?.[1] as string;
 		expect(markdownArg).toContain('er-cloze-reveal-item');
 		expect(markdownArg).toContain('er-cloze-hidden');
-		expect(host.buttonsEl.querySelector('.er-btn-good')).toBeNull();
+		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).toBeNull();
 	});
 
 	it('reviews learned due cards before learning cards with zero reps', async () => {

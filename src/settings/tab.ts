@@ -13,6 +13,13 @@ import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
 import type { DailyReviewCount } from './stats';
 import { error } from '../utils/';
+import {
+	applyClozeRevealState,
+	getClickRevealAvailableRatings,
+	getNextClozeRevealState,
+	type ClozeRevealState,
+} from '../cloze-reveal';
+import { getRatingButtons } from '../config/constants';
 
 export class SettingsTab extends PluginSettingTab {
 	plugin: EasyRecallPlugin;
@@ -130,6 +137,8 @@ export class SettingsTab extends PluginSettingTab {
 					})
 			);
 
+		this.renderClickToRevealSettings(containerEl);
+
 		const statsContainer = containerEl.createDiv({ cls: 'er-settings-stats' });
 		new Setting(containerEl)
 			.setName(lang.settings.stats.name)
@@ -144,7 +153,6 @@ export class SettingsTab extends PluginSettingTab {
 
 		void this.renderStats(statsContainer);
 
-		this.renderClickToRevealSettings(containerEl);
 		this.renderUndoHint(containerEl);
 	}
 
@@ -161,14 +169,6 @@ export class SettingsTab extends PluginSettingTab {
 	private renderClickToRevealSettings(containerEl: HTMLElement): void {
 		const lang = t();
 		const clickToRevealContainer = containerEl.createDiv({ cls: 'er-settings-click-reveal' });
-		const titleSetting = new Setting(clickToRevealContainer)
-			.setName(lang.settings.clickToRevealCloze.title)
-			.setHeading();
-		titleSetting.nameEl.createSpan({ text: 'New', cls: 'er-settings-beta-badge' });
-		clickToRevealContainer.createEl('p', {
-			text: lang.settings.clickToRevealCloze.help,
-			cls: 'er-settings-help'
-		});
 
 		new Setting(clickToRevealContainer)
 			.setName(lang.settings.clickToRevealCloze.name)
@@ -185,6 +185,102 @@ export class SettingsTab extends PluginSettingTab {
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);
+
+		this.renderClickToRevealDemo(clickToRevealContainer);
+	}
+
+	private renderClickToRevealDemo(containerEl: HTMLElement): void {
+		const lang = t();
+		const demo = containerEl.createDiv({ cls: 'er-settings-click-reveal-demo' });
+		demo.createEl('h4', {
+			text: lang.settings.clickToRevealCloze.demoTitle,
+			cls: 'er-settings-click-reveal-demo-title',
+		});
+		demo.createEl('p', {
+			text: lang.settings.clickToRevealCloze.demoDesc,
+			cls: 'er-settings-click-reveal-demo-desc',
+		});
+
+		const card = demo.createDiv({ cls: 'er-settings-click-reveal-demo-card' });
+		const body = card.createDiv({ cls: 'er-card-body er-settings-click-reveal-demo-body' });
+		const answers = [
+			lang.settings.clickToRevealCloze.demoAnswer1,
+			lang.settings.clickToRevealCloze.demoAnswer2,
+		];
+		const states: ClozeRevealState[] = answers.map(() => 'hidden');
+
+		body.appendText(lang.settings.clickToRevealCloze.demoPrefix);
+		const items = answers.map((answer, index) => {
+			const item = body.createSpan({
+				cls: 'er-cloze-hidden er-cloze-reveal-item',
+				text: answer,
+				attr: {
+					role: 'button',
+					tabindex: '0',
+					'data-cloze-state': 'hidden',
+					'data-cloze-index': String(index),
+					'aria-label': lang.settings.clickToRevealCloze.demoRevealAriaLabel,
+				},
+			});
+			if (index === 0) {
+				body.appendText(lang.settings.clickToRevealCloze.demoMiddle);
+			}
+			return item;
+		});
+		body.appendText(lang.settings.clickToRevealCloze.demoSuffix);
+
+		const buttonsEl = card.createDiv({ cls: 'er-settings-click-reveal-demo-buttons' });
+
+		const renderDemoButtons = () => {
+			buttonsEl.empty();
+			const availableRatings = getClickRevealAvailableRatings(states);
+
+			if (availableRatings === null) {
+				buttonsEl.createEl('p', {
+					text: lang.settings.clickToRevealCloze.demoEmptyHint,
+					cls: 'er-settings-click-reveal-demo-hint',
+				});
+				return;
+			}
+
+			const ratingButtons = buttonsEl.createDiv({
+				cls: `er-rating-buttons er-rating-${availableRatings.length}`,
+			});
+
+			for (const rating of availableRatings) {
+				const btn = getRatingButtons().find(option => option.rating === rating);
+				if (!btn) {
+					continue;
+				}
+				const buttonEl = ratingButtons.createEl('button', {
+					cls: `er-btn-rating ${btn.cls}`,
+					attr: {
+						type: 'button',
+						disabled: 'true',
+						'aria-disabled': 'true',
+					},
+				});
+				buttonEl.createSpan({ text: btn.label, cls: 'er-btn-label' });
+			}
+		};
+
+		const cycle = (index: number) => {
+			states[index] = getNextClozeRevealState(states[index]);
+			applyClozeRevealState(items[index], states[index]);
+			renderDemoButtons();
+		};
+
+		items.forEach((item, index) => {
+			item.addEventListener('click', () => cycle(index));
+			item.addEventListener('keydown', (evt: KeyboardEvent) => {
+				if (evt.key === 'Enter' || evt.key === ' ') {
+					evt.preventDefault();
+					cycle(index);
+				}
+			});
+		});
+
+		renderDemoButtons();
 	}
 
 	private async renderStats(containerEl: HTMLElement): Promise<void> {

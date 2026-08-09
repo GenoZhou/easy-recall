@@ -6,6 +6,12 @@ import { injectSchedule, deleteScheduleLine } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
 import { error } from '../utils/';
 import { t } from '../i18n';
+import {
+	applyClozeRevealState,
+	getClickRevealAvailableRatings,
+	getNextClozeRevealState,
+	type ClozeRevealState,
+} from '../cloze-reveal';
 
 export interface ReviewOptions {
 	cards: Card[];
@@ -33,15 +39,6 @@ export interface ReviewSessionHost {
 interface ReviewStatusTag {
 	label: string;
 	cls: string;
-}
-
-type ClozeRevealState = 'hidden' | 'shown' | 'deleted';
-
-interface ClozeRevealStats {
-	total: number;
-	hidden: number;
-	shown: number;
-	deleted: number;
 }
 
 interface RateHistoryEntry {
@@ -691,10 +688,10 @@ export class ReviewSession {
 				return;
 			}
 
-			this.applyClozeRevealState(el, states[index]);
+			applyClozeRevealState(el, states[index]);
 			const cycle = () => {
-				states[index] = this.getNextClozeRevealState(states[index]);
-				this.applyClozeRevealState(el, states[index]);
+				states[index] = getNextClozeRevealState(states[index]);
+				applyClozeRevealState(el, states[index]);
 				this.renderButtons(card);
 			};
 			el.addEventListener('click', cycle);
@@ -723,40 +720,18 @@ export class ReviewSession {
 		return states;
 	}
 
-	private getNextClozeRevealState(state: ClozeRevealState): ClozeRevealState {
-		if (state === 'hidden') return 'shown';
-		if (state === 'shown') return 'deleted';
-		return 'hidden';
-	}
-
-	private applyClozeRevealState(el: HTMLElement, state: ClozeRevealState): void {
-		el.classList.remove('er-cloze-hidden');
-		el.classList.remove('er-cloze-show');
-		el.classList.remove('er-cloze-deleted');
-		el.classList.add(state === 'shown' ? 'er-cloze-show' : `er-cloze-${state}`);
-		el.setAttribute('data-cloze-state', state);
-	}
-
 	private getClickRevealAvailableRatings(): Rating[] | null {
 		const card = this.cards[this.currentIndex];
 		if (!this.isClickRevealClozeCard(card)) {
 			return null;
 		}
 
-		const stats = this.getClozeRevealStats(card.id);
-		if (!stats || stats.total === 0) {
+		const states = this.clozeRevealStatesByCardId.get(card.id);
+		if (!states) {
 			return null;
 		}
 
-		if (stats.deleted > 0) {
-			return [1];
-		}
-
-		if (stats.hidden > 0) {
-			return null;
-		}
-
-		return [2, 3];
+		return getClickRevealAvailableRatings(states);
 	}
 
 	private getCurrentClickRevealRating(): Rating | null {
@@ -768,19 +743,6 @@ export class ReviewSession {
 			return available[0];
 		}
 		return null;
-	}
-
-	private getClozeRevealStats(cardId: string): ClozeRevealStats | null {
-		const states = this.clozeRevealStatesByCardId.get(cardId);
-		if (!states) {
-			return null;
-		}
-
-		return states.reduce<ClozeRevealStats>((stats, state) => {
-			stats.total += 1;
-			stats[state] += 1;
-			return stats;
-		}, { total: 0, hidden: 0, shown: 0, deleted: 0 });
 	}
 
 	private resetRevealState(cardId?: string): void {
