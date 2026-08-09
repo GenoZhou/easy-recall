@@ -25,7 +25,7 @@
 | 准备预发布 | `npm run prerelease` |
 | 发布预发布 | `npm run release:prerelease` |
 | 发布核验 | `npm run verify:release -- <version>` |
-| 生成稳定版发布说明 | `npm run changelog:release -- <version>` |
+| 生成发布说明 | `npm run changelog:release -- <version>` |
 
 ## 工作方式与 token 预算
 
@@ -145,36 +145,21 @@
 
 ## 发布与版本
 
-- 版本号需要保持这些位置一致：
-  - `manifest.json`
-  - `package.json`
-  - README 中静态版本徽章
-  - 如有需要，`package-lock.json` 顶层版本元数据
-- 当前 `npm run version` 脚本只会执行默认 bump；若需要 `minor` / `major`，优先直接调用：
-  - `node scripts/version-bump.mjs minor`
-  - `node scripts/version-bump.mjs major`
-- 预发布版本号以本地和远端 tag 为准，不要只相信当前分支的 `package.json`：
-  - `scripts/prerelease.mjs` 会检查本地 tag、远端 tag 和 GitHub release，自动选择下一个可用 `beta` 版本。
-  - 显式版本可用：`npm run prerelease -- --version 1.2.3-beta.2`，但脚本仍应阻止重复 tag / release。
-- 用户说“提交 prerelease”时：
-  - 运行 `npm run prerelease`。
-  - 确认发布前检查通过后提交生成的版本文件和本次代码改动。
-  - 不推送 tag，也不创建 GitHub release，除非用户同时要求发布。
-- 用户说“发布 prerelease”或“发个 prerelease”时：
-	- 使用 `npm run release:prerelease` 或 `npm run prerelease -- --version <version> --publish`。
-	- 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
-	- 发布脚本会在提交前确认 repo-local git author 是 `Geno <6045730+GenoZhou@users.noreply.github.com>`；如果脚本失败，不要绕过身份检查手动提交。
-	- 发布模式要求工作树在生成版本文件前是干净的；先提交本次功能/修复，再运行发布命令，避免 release commit 混入无关改动。
-	- 成功后运行 `npm run verify:release -- <version>`，确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
-- 用户说“发布正式版本”时：
-	- 使用 `npm run release:stable` 或 `node scripts/release.mjs --publish`。
-	- 同样依赖脚本内置的 git author 检查和发布前检查。
-	- 稳定版 GitHub Release 正文由 `scripts/generate-release-notes.mjs` 基于上一个稳定 tag 之后的提交生成，不要只依赖 GitHub `--generate-notes`。
-	- 成功后运行 `npm run verify:release -- <version>`。
-- GitHub Actions 的 `Release` workflow 由 tag push 触发：
-  - 本地发布脚本负责版本文件、提交、tag 和 push。
-  - GitHub release 由 workflow 创建；不要在本地脚本里重复创建 release。
-  - workflow 应保持使用当前 GitHub Actions 支持的 Node/action 版本。
+详细操作流程以项目技能为准（先读技能再执行）：
+
+- 预发布：`.cursor/skills/prerelease/SKILL.md`
+- 正式发布：`.cursor/skills/stable-release/SKILL.md`
+- 发布后更新 notes：`.cursor/skills/release/release-notes.md`
+
+仓库级约束：
+
+- 版本号需要保持这些位置一致：`manifest.json`、`package.json`、README 静态版本徽章；如有需要同步 `package-lock.json` 顶层版本。
+- 当前 `npm run version` 只会默认 bump；`minor` / `major` 用 `node scripts/version-bump.mjs minor|major`。
+- 预发布版本号以本地/远端 tag 与 GitHub release 为准，不要只信当前分支的 `package.json`。
+- 不要绕过发布脚本的 repo-local git author 检查（`Geno <6045730+GenoZhou@users.noreply.github.com>`）。
+- 发布模式要求生成版本文件前工作树干净；先提交功能/修复，再跑 `release:*`。
+- GitHub release 由 tag push 触发的 `Release` workflow 创建；不要在本地脚本里 `gh release create`。
+- 预发布与正式发布在 `verify:release` 通过后，都必须比对上个版本至今的改动并更新 GitHub Release notes（见 release-notes 技能附件）；不要只依赖 GitHub `--generate-notes`。
 
 ## 不要做的事
 
@@ -188,4 +173,5 @@
 - 用户文档：`README.md` / `README.zh.md`
 - 发布检查：`scripts/check-dist.mjs`
 - 版本脚本：`scripts/version-bump.mjs`
-- 预发布脚本：`scripts/prerelease.mjs`
+- 预发布 / 正式发布脚本：`scripts/prerelease.mjs` / `scripts/release.mjs`
+- Release notes：`scripts/generate-release-notes.mjs`

@@ -72,8 +72,7 @@ jobs:
           name: release-assets
           path: .
 
-      - name: Generate Stable Release Notes
-        if: ${{ !contains(github.ref_name, '-') }}
+      - name: Generate Release Notes
         run: node scripts/generate-release-notes.mjs "$GITHUB_REF_NAME" --output release-notes.md
 
       - name: Create Release
@@ -89,19 +88,14 @@ jobs:
             echo "Detected pre-release version: $tag"
           fi
 
-          notes_args=(--generate-notes)
-          if [[ -f release-notes.md ]]; then
-            notes_args=(--notes-file release-notes.md)
-          fi
-
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag already exists; skipping release creation."
             exit 0
           fi
 
-          # 创建发布
+          # 创建发布（正文来自上一个相关 tag 至今的提交摘要）
           gh release create "$tag" \
             --title="Release $tag" \
-            "${notes_args[@]}" \
+            --notes-file release-notes.md \
             $prerelease_flag \
             main.js manifest.json styles.css
