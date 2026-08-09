@@ -6,8 +6,8 @@
 import { spawnSync } from "child_process";
 
 const version = process.argv[2];
-const repo = readArg("--repo") || "GenoZhou/easy-recall";
 const remote = readArg("--remote") || "origin";
+const repo = readArg("--repo") || detectRepoSlug(remote) || "GenoZhou/easy-recall";
 const workflow = readArg("--workflow") || "Release";
 const timeoutMs = readNumberArg("--timeout-ms", 300000);
 const intervalMs = readNumberArg("--interval-ms", 5000);
@@ -166,6 +166,13 @@ function commandOutput(command, args) {
 
 function shortCommandError(result) {
   return result.stderr || result.stdout || `exited with status ${result.status}`;
+}
+
+function detectRepoSlug(remoteName) {
+  const result = commandOutput("git", ["remote", "get-url", remoteName]);
+  if (result.status !== 0) return null;
+  const match = result.stdout.match(/github\.com[:/](.+?)(?:\.git)?$/);
+  return match ? match[1] : null;
 }
 
 function fail(message) {

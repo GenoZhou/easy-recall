@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * Generate concise stable release notes from commits since the previous stable tag.
+ * Generate concise release notes from commits since the previous relevant tag.
+ *
+ * Stable: commits since the previous stable tag.
+ * Prerelease: commits since the previous tag (prerelease or stable) by semver order.
  */
 
 import { spawnSync } from "child_process";
@@ -14,23 +17,24 @@ if (!version || version === "--help") {
   process.exit(version ? 0 : 1);
 }
 
-validateStableVersion(version);
+validateVersion(version);
 
-const previousTag = getPreviousStableTag(version);
+const previousTag = getPreviousTag(version);
 const targetRef = refExists(version) ? version : "HEAD";
 const range = previousTag ? `${previousTag}..${targetRef}` : targetRef;
 const commits = getCommitSubjects(range)
   .filter((subject) => !/^Release \d+\.\d+\.\d+(?:-.+)?$/.test(subject))
   .map(formatReleaseBullet);
 
+const repoSlug = getRepoSlug();
 const body = [
   "## Changes",
   "",
   ...(commits.length > 0 ? commits : ["- 🔧 Maintenance updates"]),
   "",
   previousTag
-    ? `**Full Changelog**: https://github.com/GenoZhou/easy-recall/compare/${previousTag}...${version}`
-    : `**Full Changelog**: https://github.com/GenoZhou/easy-recall/releases/tag/${version}`,
+    ? `**Full Changelog**: https://github.com/${repoSlug}/compare/${previousTag}...${version}`
+    : `**Full Changelog**: https://github.com/${repoSlug}/releases/tag/${version}`,
   "",
 ].join("\n");
 
@@ -46,27 +50,84 @@ function readArg(name) {
   return process.argv[index + 1] ?? null;
 }
 
-function validateStableVersion(value) {
-  if (!/^\d+\.\d+\.\d+$/.test(value)) {
-    fail(`"${value}" is not a stable semver version.`);
+function validateVersion(value) {
+  if (!parseVersion(value)) {
+    fail(`"${value}" is not a semver version such as 1.2.3 or 1.2.3-beta.1.`);
   }
 }
 
-function getPreviousStableTag(targetVersion) {
-  const tags = commandOutputStrict("git", ["tag", "--list", "[0-9]*.[0-9]*.[0-9]*", "--sort=-version:refname"])
+function getPreviousTag(targetVersion) {
+  const target = parseVersion(targetVersion);
+  const tags = listVersionTags().filter((tag) => tag !== targetVersion);
+
+  if (!target.prerelease) {
+    return (
+      tags
+        .filter((tag) => !parseVersion(tag).prerelease)
+        .find((tag) => compareSemver(tag, targetVersion) < 0) || null
+    );
+  }
+
+  return tags.find((tag) => compareSemver(tag, targetVersion) < 0) || null;
+}
+
+function listVersionTags() {
+  return commandOutputStrict("git", ["tag", "--list", "[0-9]*", "--sort=-version:refname"])
     .split(/\r?\n/)
     .map((tag) => tag.trim())
-    .filter((tag) => tag && /^\d+\.\d+\.\d+$/.test(tag) && tag !== targetVersion);
-
-  return tags.find((tag) => compareVersions(tag, targetVersion) < 0) || null;
+    .filter((tag) => Boolean(parseVersion(tag)))
+    .sort((left, right) => compareSemver(right, left));
 }
 
-function compareVersions(left, right) {
-  const a = left.split(".").map(Number);
-  const b = right.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if (a[i] !== b[i]) return a[i] - b[i];
+function parseVersion(version) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
+  if (!match) return null;
+
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    prerelease: match[4] || null,
+  };
+}
+
+function compareSemver(left, right) {
+  const a = parseVersion(left);
+  const b = parseVersion(right);
+  if (!a || !b) {
+    fail(`Cannot compare versions "${left}" and "${right}".`);
   }
+
+  for (const key of ["major", "minor", "patch"]) {
+    if (a[key] !== b[key]) return a[key] - b[key];
+  }
+
+  if (a.prerelease === b.prerelease) return 0;
+  if (!a.prerelease) return 1;
+  if (!b.prerelease) return -1;
+  return comparePrereleaseIds(a.prerelease, b.prerelease);
+}
+
+function comparePrereleaseIds(left, right) {
+  const a = left.split(".");
+  const b = right.split(".");
+  const length = Math.max(a.length, b.length);
+
+  for (let i = 0; i < length; i++) {
+    if (a[i] === undefined) return -1;
+    if (b[i] === undefined) return 1;
+
+    const aNum = /^\d+$/.test(a[i]);
+    const bNum = /^\d+$/.test(b[i]);
+    if (aNum && bNum) {
+      const diff = Number(a[i]) - Number(b[i]);
+      if (diff !== 0) return diff;
+      continue;
+    }
+    if (aNum !== bNum) return aNum ? -1 : 1;
+    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+  }
+
   return 0;
 }
 
@@ -102,6 +163,20 @@ function pickEmoji(subject) {
   if (/(style|ui|setting|modal|view|button)/.test(text)) return "🎨";
   if (/(add|enable|support|introduce|new)/.test(text)) return "✨";
   return "🔧";
+}
+
+function getRepoSlug() {
+  const remote = commandOutput("git", ["remote", "get-url", "origin"]);
+  const match = remote.match(/github\.com[:/](.+?)(?:\.git)?$/);
+  return match ? match[1] : "GenoZhou/easy-recall";
+}
+
+function commandOutput(command, args) {
+  const result = spawnSync(command, args, {
+    encoding: "utf-8",
+  });
+  if (result.status !== 0) return "";
+  return result.stdout.trim();
 }
 
 function commandOutputStrict(command, args) {

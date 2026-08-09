@@ -72,8 +72,7 @@ jobs:
           name: release-assets
           path: .
 
-      - name: Generate Stable Release Notes
-        if: ${{ !contains(github.ref_name, '-') }}
+      - name: Generate Release Notes
         run: node scripts/generate-release-notes.mjs "$GITHUB_REF_NAME" --output release-notes.md
 
       - name: Create Release
@@ -82,16 +81,10 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
-          # 检查是否为 alpha/beta 预发布版本
           prerelease_flag=""
           if [[ "$tag" =~ -(alpha|beta) ]] || [[ "$tag" =~ (alpha|beta)[0-9] ]]; then
             prerelease_flag="--prerelease"
             echo "Detected pre-release version: $tag"
-          fi
-
-          notes_args=(--generate-notes)
-          if [[ -f release-notes.md ]]; then
-            notes_args=(--notes-file release-notes.md)
           fi
 
           if gh release view "$tag" >/dev/null 2>&1; then
@@ -99,9 +92,8 @@ jobs:
             exit 0
           fi
 
-          # 创建发布
           gh release create "$tag" \
             --title="Release $tag" \
-            "${notes_args[@]}" \
+            --notes-file release-notes.md \
             $prerelease_flag \
             main.js manifest.json styles.css

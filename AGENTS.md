@@ -22,10 +22,7 @@
 | 测试 | `npm test` |
 | 本地验证 | `npm run verify` |
 | 发布前检查 | `npm run prepublish` |
-| 准备预发布 | `npm run prerelease` |
-| 发布预发布 | `npm run release:prerelease` |
-| 发布核验 | `npm run verify:release -- <version>` |
-| 生成稳定版发布说明 | `npm run changelog:release -- <version>` |
+| 发布流程 | 用户技能 `obsidian-plugin-release`（`~/.cursor/skills/obsidian-plugin-release/`） |
 
 ## 工作方式与 token 预算
 
@@ -44,16 +41,12 @@
 - 测试输出要克制：
 	- 开发中可以只保留失败信息或摘要。
 	- 常规实现验证优先用 `npm run verify`。
-	- 如果接下来马上运行 `npm run release:prerelease` / `npm run release:stable`，优先依赖发布命令自带的 `prepublish`，不要在同一轮里重复跑同样的完整检查，除非刚修过失败。
-- GitHub 发布核验要直达当前版本：
-	- 优先运行 `npm run verify:release -- <version>`。
-	- 该命令会等待 GitHub release / workflow 的短暂异步创建；不要先手动查大量历史 workflow。
-	- 手动核验只在核验脚本失败时使用，并且只查当前 tag / release / workflow run。
-	- 不要拉大量历史 workflow，除非当前 run 查不到。
+	- 即将走发布技能的 `release:*` 时，不要先重复跑完整 `verify`/`prepublish`。
 - 命令输出要避开环境噪音：
 	- 如果 shell 初始化持续输出与任务无关的错误，优先使用不会触发登录初始化的命令方式。
 	- 汇报时只保留和任务相关的失败信息或摘要。
 - 使用记忆时只读命中的少量行；不要展开整段历史记录，除非发布中断、状态不明或需要复盘旧失败。
+- 发布相关操作（含 verify / notes）交给 `obsidian-plugin-release` 技能与其子代理摘要，不要在本文件重复展开。
 
 ## 架构约束
 
@@ -145,36 +138,17 @@
 
 ## 发布与版本
 
-- 版本号需要保持这些位置一致：
-  - `manifest.json`
-  - `package.json`
-  - README 中静态版本徽章
-  - 如有需要，`package-lock.json` 顶层版本元数据
-- 当前 `npm run version` 脚本只会执行默认 bump；若需要 `minor` / `major`，优先直接调用：
-  - `node scripts/version-bump.mjs minor`
-  - `node scripts/version-bump.mjs major`
-- 预发布版本号以本地和远端 tag 为准，不要只相信当前分支的 `package.json`：
-  - `scripts/prerelease.mjs` 会检查本地 tag、远端 tag 和 GitHub release，自动选择下一个可用 `beta` 版本。
-  - 显式版本可用：`npm run prerelease -- --version 1.2.3-beta.2`，但脚本仍应阻止重复 tag / release。
-- 用户说“提交 prerelease”时：
-  - 运行 `npm run prerelease`。
-  - 确认发布前检查通过后提交生成的版本文件和本次代码改动。
-  - 不推送 tag，也不创建 GitHub release，除非用户同时要求发布。
-- 用户说“发布 prerelease”或“发个 prerelease”时：
-	- 使用 `npm run release:prerelease` 或 `npm run prerelease -- --version <version> --publish`。
-	- 发布前脚本会重新检查 tag / release 是否已存在；不要再额外要求用户输入版本号确认，命令授权本身就是确认门槛。
-	- 发布脚本会在提交前确认 repo-local git author 是 `Geno <6045730+GenoZhou@users.noreply.github.com>`；如果脚本失败，不要绕过身份检查手动提交。
-	- 发布模式要求工作树在生成版本文件前是干净的；先提交本次功能/修复，再运行发布命令，避免 release commit 混入无关改动。
-	- 成功后运行 `npm run verify:release -- <version>`，确认 GitHub prerelease、tag、分支推送和 release workflow 状态。
-- 用户说“发布正式版本”时：
-	- 使用 `npm run release:stable` 或 `node scripts/release.mjs --publish`。
-	- 同样依赖脚本内置的 git author 检查和发布前检查。
-	- 稳定版 GitHub Release 正文由 `scripts/generate-release-notes.mjs` 基于上一个稳定 tag 之后的提交生成，不要只依赖 GitHub `--generate-notes`。
-	- 成功后运行 `npm run verify:release -- <version>`。
-- GitHub Actions 的 `Release` workflow 由 tag push 触发：
-  - 本地发布脚本负责版本文件、提交、tag 和 push。
-  - GitHub release 由 workflow 创建；不要在本地脚本里重复创建 release。
-  - workflow 应保持使用当前 GitHub Actions 支持的 Node/action 版本。
+发布的操作流程、notes 复核、workflow 初始化见用户技能 `obsidian-plugin-release`，不要在对话里重推一套旁路流程。
+
+本仓库保留的硬约束：
+
+- 版本号一致：`manifest.json`、`package.json`、README 静态版本徽章；需要时同步 `package-lock.json` 顶层版本。
+- `npm run version` 仅默认 bump；`minor` / `major` 用 `node scripts/version-bump.mjs minor|major`。
+- 预发布版本号以本地/远端 tag 与 GitHub release 为准，不只信 `package.json`。
+- 发布脚本会检查 repo-local git author（`Geno <6045730+GenoZhou@users.noreply.github.com>`）；失败时不要绕过。
+- 生成版本文件前工作树必须干净；先提交功能/修复，再 `release:*`。
+- 本地只负责 bump / commit / tag / push；GitHub Release 由 tag 触发的 `Release` workflow 创建，不要本地 `gh release create`。
+- 本仓库脚本入口：`prerelease` / `release:prerelease` / `release:stable` / `changelog:release` / `verify:release`。
 
 ## 不要做的事
 
@@ -182,10 +156,11 @@
 - 不要为了解一个边界 bug，在多个层次同时打补丁。
 - 不要引入新的全局缓存或隐藏状态。
 - 不要把测试数字、目录说明写死得过细，除非它真是约束而不是快照。
+- 不要在 `AGENTS.md` 再展开发布步骤（已迁到 `obsidian-plugin-release`）。
 
 ## 参考
 
 - 用户文档：`README.md` / `README.zh.md`
+- 发布技能：`~/.cursor/skills/obsidian-plugin-release/`
 - 发布检查：`scripts/check-dist.mjs`
-- 版本脚本：`scripts/version-bump.mjs`
-- 预发布脚本：`scripts/prerelease.mjs`
+- 版本 / 预发布 / 正式发布 / notes / 核验：`scripts/version-bump.mjs`、`prerelease.mjs`、`release.mjs`、`generate-release-notes.mjs`、`verify-release.mjs`
