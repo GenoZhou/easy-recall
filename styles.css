@@ -313,7 +313,11 @@
 }
 
 .er-settings-click-reveal-demo-title {
-	margin: 0 0 4px;
+	padding: 0 0 4px;
+	border: none;
+}
+
+.er-settings-click-reveal-demo-title .setting-item-name {
 	color: var(--text-normal);
 	font-size: var(--font-ui-small);
 	font-weight: 600;

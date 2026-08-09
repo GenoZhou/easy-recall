@@ -168,7 +168,7 @@ function extractHintFromBlock(blockLines: string[], searchStart: number): { hint
 		if (HINT_CALLOUT_REGEX.test(blockLines[i])) {
 			// 验证从 i 开始到 block 结束的所有行都是 callout 行
 			const valid = blockLines.slice(i).every((line: string) => {
-				const trimmed = line.trimStart();
+				const trimmed = line.replace(/^\s+/, '');
 				return trimmed.startsWith('> ') || trimmed === '>';
 			});
 			if (valid) {

@@ -36,6 +36,10 @@ export class SettingsTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		this.renderSettings();
+	}
+
+	private renderSettings(): void {
 		const { containerEl } = this;
 		const lang = t();
 
@@ -58,10 +62,8 @@ export class SettingsTab extends PluginSettingTab {
 						const newLang = value as Language;
 						await this.plugin.settingsManager.update({ language: newLang });
 						this.plugin.settings = this.plugin.settingsManager.get();
-						// 立即应用语言变更
 						setLanguage(resolveLanguage(newLang));
-						// 刷新界面显示
-						this.display();
+						this.renderSettings();
 					})
 			);
 
@@ -192,10 +194,10 @@ export class SettingsTab extends PluginSettingTab {
 	private renderClickToRevealDemo(containerEl: HTMLElement): void {
 		const lang = t();
 		const demo = containerEl.createDiv({ cls: 'er-settings-click-reveal-demo' });
-		demo.createEl('h4', {
-			text: lang.settings.clickToRevealCloze.demoTitle,
-			cls: 'er-settings-click-reveal-demo-title',
-		});
+		new Setting(demo)
+			.setName(lang.settings.clickToRevealCloze.demoTitle)
+			.setHeading()
+			.setClass('er-settings-click-reveal-demo-title');
 		demo.createEl('p', {
 			text: lang.settings.clickToRevealCloze.demoDesc,
 			cls: 'er-settings-click-reveal-demo-desc',
