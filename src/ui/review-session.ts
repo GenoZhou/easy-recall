@@ -156,7 +156,7 @@ export class ReviewSession {
 		this.unregisterShortcuts();
 		this.shortcutScope = scope;
 
-		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.REVEAL, (evt: KeyboardEvent) => {
+		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.REVEAL_KEY, (evt: KeyboardEvent) => {
 			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.REVEAL);
 		}));
 

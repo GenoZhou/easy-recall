@@ -219,7 +219,7 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 
 		expect(scope.register).toHaveBeenCalledTimes(5);
-		expect(scope.register.mock.calls.map(call => call[1])).toEqual(['Space', '1', '2', '3', 'Backspace']);
+		expect(scope.register.mock.calls.map(call => call[1])).toEqual([' ', '1', '2', '3', 'Backspace']);
 	});
 
 	it('does not register shortcuts on mobile', () => {
@@ -250,18 +250,18 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.er-btn-show-hint')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')).toBeNull();
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 		expect(host.buttonsEl.querySelector('.er-btn-show-hint')).toBeNull();
 		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).not.toBeNull();
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.complete).not.toHaveBeenCalled();
 	});
@@ -279,7 +279,7 @@ describe('ReviewSession shortcuts', () => {
 
 		expect(host.buttonsEl.querySelector('.er-btn-show')?.querySelector('.er-btn-shortcut')?.textContent).toBe('Space');
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 
 		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).not.toBeNull();
@@ -297,7 +297,7 @@ describe('ReviewSession shortcuts', () => {
 		session.registerShortcuts(scope as any);
 		await session.render();
 
-		handlers.get('Space')!(keyEvent(' ', { repeat: true }));
+		handlers.get(' ')!(keyEvent(' ', { repeat: true }));
 		await flushPromises();
 
 		expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
@@ -640,11 +640,11 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.complete).not.toHaveBeenCalled();
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.er-btn-show-hint')).toBeNull();
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 		expect(host.buttonsEl.querySelector('.er-btn-rating-good')).toBeNull();
 		expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
@@ -808,7 +808,7 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.buttonsEl.querySelector('.er-btn-show')).not.toBeNull();
 		expect(host.complete).not.toHaveBeenCalled();
 
-		handlers.get('Space')!(keyEvent(' '));
+		handlers.get(' ')!(keyEvent(' '));
 		await flushPromises();
 
 		handlers.get(shortcut)!(keyEvent(shortcut));
