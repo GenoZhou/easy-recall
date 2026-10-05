@@ -65,6 +65,9 @@ describe('commands', () => {
 					deckTagPrefix: 'easy-recall',
 					reviewSurface: 'modal',
 					clickToRevealCloze: false,
+					leechLapses: 3,
+					showLeechDeck: true,
+					showNewDeck: false,
 				},
 			} as any,
 		});
@@ -76,6 +79,9 @@ describe('commands', () => {
 			20,
 			'easy-recall',
 			expect.any(Function),
+			false,
+			3,
+			true,
 			false
 		);
 	});
@@ -89,10 +95,15 @@ describe('commands', () => {
 					deckTagPrefix: 'easy-recall',
 					reviewSurface: 'modal',
 					clickToRevealCloze: true,
+					leechLapses: 3,
+					showLeechDeck: false,
+					showNewDeck: true,
 				},
 			} as any,
 		});
 
 		expect((openDeckModal as jest.Mock).mock.calls[0][6]).toBe(true);
+		expect((openDeckModal as jest.Mock).mock.calls[0][8]).toBe(false);
+		expect((openDeckModal as jest.Mock).mock.calls[0][9]).toBe(true);
 	});
 });

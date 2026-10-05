@@ -36,6 +36,9 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.reviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.leechLapses).toBe(3);
+			expect(settings.showLeechDeck).toBe(false);
+			expect(settings.showNewDeck).toBe(false);
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -50,6 +53,9 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.reviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.leechLapses).toBe(3);
+			expect(settings.showLeechDeck).toBe(false);
+			expect(settings.showNewDeck).toBe(false);
 		});
 
 		it('should migrate matching platform-specific review surfaces to a single setting', async () => {
@@ -141,6 +147,9 @@ describe('SettingsManager', () => {
 				reviewBatchSize: 20,
 				reviewSurface: 'modal',
 				clickToRevealCloze: false,
+				leechLapses: 3,
+				showLeechDeck: false,
+				showNewDeck: false,
 			});
 			expect((settings as EasyRecallSettings & { defaultEase?: number; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
 			expect((settings as EasyRecallSettings & { hideReviewPathHiddenWords?: boolean }).hideReviewPathHiddenWords).toBeUndefined();
@@ -181,6 +190,9 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.reviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.leechLapses).toBe(3);
+			expect(settings.showLeechDeck).toBe(false);
+			expect(settings.showNewDeck).toBe(false);
 		});
 
 		it('should update review batch size', async () => {
@@ -191,6 +203,29 @@ describe('SettingsManager', () => {
 
 			const settings = manager.get();
 			expect(settings.reviewBatchSize).toBe(12);
+		});
+
+		it('should normalize invalid leech threshold', async () => {
+			mockLoadData.mockResolvedValue({ leechLapses: 0 });
+			await manager.load();
+			expect(manager.get().leechLapses).toBe(3);
+
+			await manager.update({ leechLapses: 5 });
+			expect(manager.get().leechLapses).toBe(5);
+
+			await manager.update({ leechLapses: 0 });
+			expect(manager.get().leechLapses).toBe(3);
+		});
+
+		it('should persist virtual deck visibility toggles', async () => {
+			mockLoadData.mockResolvedValue({ showLeechDeck: false, showNewDeck: false });
+			await manager.load();
+			expect(manager.get().showLeechDeck).toBe(false);
+			expect(manager.get().showNewDeck).toBe(false);
+
+			await manager.update({ showLeechDeck: true, showNewDeck: false });
+			expect(manager.get().showLeechDeck).toBe(true);
+			expect(manager.get().showNewDeck).toBe(false);
 		});
 
 		it('should update and normalize deck tag prefix', async () => {
@@ -290,5 +325,8 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
 		expect(DEFAULT_SETTINGS.reviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe(false);
+		expect(DEFAULT_SETTINGS.leechLapses).toBe(3);
+		expect(DEFAULT_SETTINGS.showLeechDeck).toBe(false);
+		expect(DEFAULT_SETTINGS.showNewDeck).toBe(false);
 	});
 });

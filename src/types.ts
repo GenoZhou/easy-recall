@@ -14,6 +14,7 @@ export interface Schedule {
 	ease: number;      // 初始 250，范围 130-350
 	due: Date;         // 到期时间
 	reps: number;      // 连续记住次数
+	lapses?: number;   // 易错分：合格 Again +1，Good -1，Hard 不变
 }
 
 /**
@@ -40,10 +41,13 @@ export interface Card {
 	headingPath?: string[]; // 卡片所在位置的标题路径（不含文件名）
 }
 
+export type DeckId = 'all' | 'leech' | 'new';
+
 /**
  * 牌组数据结构
  */
 export interface Deck {
 	tag: string;
 	cards: Card[];
+	id?: DeckId;
 }

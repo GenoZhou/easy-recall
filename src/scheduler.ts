@@ -47,7 +47,23 @@ export function createInitialSchedule(): Schedule {
 		ease: INITIAL_EASE,
 		due: now,
 		reps: 0,
+		lapses: 0,
 	};
+}
+
+function nextLapses(current: Schedule | null, rating: Rating): number {
+	const currentLapses = current?.lapses ?? 0;
+	if (rating === 2) {
+		return currentLapses;
+	}
+	if (rating === 3) {
+		return Math.max(0, currentLapses - 1);
+	}
+	// 新卡或从未 Good 过的学习态（reps === 0）不记入易错分
+	if (!current || current.reps === 0) {
+		return currentLapses;
+	}
+	return currentLapses + 1;
 }
 
 /**
@@ -111,16 +127,20 @@ function calcExistingCardSchedule(current: Schedule, rating: Rating): Schedule {
  * @param rating 评分等级 1-3
  */
 export function calcSchedule(current: Schedule | null, rating: Rating): Schedule {
+	const lapses = nextLapses(current, rating);
+	let schedule: Schedule;
+
 	if (!current || current.reps === 0) {
 		// 新卡片或已被打回学习阶段的卡片
-		return calcNewCardSchedule(rating, current?.ease, rating !== 1);
+		schedule = calcNewCardSchedule(rating, current?.ease, rating !== 1);
+	} else if (rating === 1 && current.reps < MATURE_REPS) {
+		// 学习中卡片没记住: 重新进入学习
+		schedule = calcNewCardSchedule(rating, current?.ease);
+	} else {
+		schedule = calcExistingCardSchedule(current, rating);
 	}
 
-	if (rating === 1 && current.reps < MATURE_REPS) {
-		// 学习中卡片没记住: 重新进入学习
-		return calcNewCardSchedule(rating, current?.ease);
-	}
-	return calcExistingCardSchedule(current, rating);
+	return { ...schedule, lapses };
 }
 
 /**
@@ -176,6 +196,10 @@ export function getNextReviewShortText(schedule: Schedule | null | undefined, ra
 export function isDue(schedule: Schedule | undefined): boolean {
 	if (!schedule) return true;
 	return schedule.due <= new Date();
+}
+
+export function isNewCard(card: { schedule?: Schedule }): boolean {
+	return !card.schedule || card.schedule.reps === 0;
 }
 
 /**

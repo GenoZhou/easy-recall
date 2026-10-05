@@ -26,6 +26,7 @@ describe('scheduler', () => {
       expect(schedule.interval).toBe(0);
       expect(schedule.ease).toBe(250);
       expect(schedule.reps).toBe(0);
+      expect(schedule.lapses).toBe(0);
       expect(schedule.due).toEqual(mockNow);
     });
   });
@@ -427,6 +428,54 @@ describe('scheduler', () => {
       };
       const text = getNextReviewText(schedule, 3);
       expect(text).toBe('5 天后');
+    });
+  });
+
+  describe('calcSchedule - lapses', () => {
+    it('does not increment lapses on a new-card Again', () => {
+      const schedule = calcSchedule(null, 1);
+      expect(schedule.lapses).toBe(0);
+    });
+
+    it('does not increment lapses on repeated Again before first success', () => {
+      let schedule = calcSchedule(null, 1);
+      schedule = calcSchedule(schedule, 1);
+      expect(schedule.lapses).toBe(0);
+      expect(schedule.reps).toBe(0);
+    });
+
+    it('increments lapses on Again after a successful review', () => {
+      const current: Schedule = {
+        interval: 1,
+        ease: 250,
+        due: mockNow,
+        reps: 1,
+        lapses: 0,
+      };
+      expect(calcSchedule(current, 1).lapses).toBe(1);
+    });
+
+    it('decrements lapses on Good and never goes below 0', () => {
+      const current: Schedule = {
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        lapses: 3,
+      };
+      expect(calcSchedule(current, 3).lapses).toBe(2);
+      expect(calcSchedule({ ...current, lapses: 0 }, 3).lapses).toBe(0);
+    });
+
+    it('leaves lapses unchanged on Hard', () => {
+      const current: Schedule = {
+        interval: 2,
+        ease: 250,
+        due: mockNow,
+        reps: 2,
+        lapses: 3,
+      };
+      expect(calcSchedule(current, 2).lapses).toBe(3);
     });
   });
 });

@@ -2,14 +2,15 @@ import { Schedule } from './types';
 
 /**
  * 格式化调度信息为 SR 注释
- * <!--SR:interval,ease,due,reps-->
+ * <!--SR:interval,ease,due,reps,lapses-->
  */
 export function formatSchedule(schedule: Schedule): string {
 	const dueISO = schedule.due.toISOString();
 	// 限制 interval 小数位，避免浮点运算产生 7.9559999999999995 这种长尾数字
 	const interval = Number(schedule.interval.toFixed(2));
 	const ease = Math.round(schedule.ease);
-	return `<!--SR:${interval},${ease},${dueISO},${schedule.reps}-->`;
+	const lapses = Math.max(0, Math.round(schedule.lapses ?? 0));
+	return `<!--SR:${interval},${ease},${dueISO},${schedule.reps},${lapses}-->`;
 }
 
 /**
@@ -66,6 +67,6 @@ export function deleteScheduleLine(text: string, lineIndex: number): string {
  * 从文本中移除 SR 注释（用于重置卡片）
  */
 export function removeSchedule(text: string): string {
-	const SR_COMMENT_REGEX = /<!--SR:[\d.]+,\d+,[^,]+,\d+-->\n?/g;
+	const SR_COMMENT_REGEX = /<!--SR:[\d.]+,\d+,[^,]+,\d+(?:,\d+)?-->\n?/g;
 	return text.replace(SR_COMMENT_REGEX, '');
 }

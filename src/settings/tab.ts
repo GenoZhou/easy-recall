@@ -6,7 +6,7 @@
 import { PluginSettingTab, Setting, App, Platform, ButtonComponent, type SettingDefinitionItem } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
-import { normalizeReviewBatchSize, ReviewSurface } from './index';
+import { DEFAULT_LEECH_LAPSES, normalizeReviewBatchSize, ReviewSurface } from './index';
 import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
@@ -112,9 +112,52 @@ export class SettingsTab extends PluginSettingTab {
 			this.renderShortcutHint(containerEl);
 		}
 
-		new Setting(containerEl).setName(lang.settings.sections.advanced).setHeading();
-
 		this.renderClickToRevealSettings(containerEl);
+
+		new Setting(containerEl)
+			.setName(lang.settings.showLeechDeck.name)
+			.setDesc(lang.settings.showLeechDeck.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.showLeechDeck)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ showLeechDeck: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+						this.renderSettings();
+					})
+			);
+
+		if (this.plugin.settings.showLeechDeck) {
+			new Setting(containerEl)
+				.setName(lang.settings.leechLapses.name)
+				.setDesc(lang.settings.leechLapses.desc)
+				.addText(text =>
+					text
+						.setPlaceholder(String(DEFAULT_LEECH_LAPSES))
+						.setValue(String(this.plugin.settings.leechLapses))
+						.onChange(async (value) => {
+							const parsedValue = Number.parseInt(value, 10);
+							if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+								return;
+							}
+
+							await this.plugin.settingsManager.update({ leechLapses: parsedValue });
+							this.plugin.settings = this.plugin.settingsManager.get();
+						})
+				);
+		}
+
+		new Setting(containerEl)
+			.setName(lang.settings.showNewDeck.name)
+			.setDesc(lang.settings.showNewDeck.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.showNewDeck)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ showNewDeck: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName(lang.settings.debug.name)
@@ -163,6 +206,7 @@ export class SettingsTab extends PluginSettingTab {
 		new Setting(clickToRevealContainer)
 			.setName(lang.settings.clickToRevealCloze.name)
 			.setDesc(lang.settings.clickToRevealCloze.desc)
+			.setClass('er-settings-click-reveal-toggle')
 			.addToggle(toggle =>
 				toggle
 					.setValue(this.plugin.settings.clickToRevealCloze)
@@ -178,15 +222,6 @@ export class SettingsTab extends PluginSettingTab {
 	private renderClickToRevealDemo(containerEl: HTMLElement): void {
 		const lang = t();
 		const demo = containerEl.createDiv({ cls: 'er-settings-click-reveal-demo' });
-		new Setting(demo)
-			.setName(lang.settings.clickToRevealCloze.demoTitle)
-			.setHeading()
-			.setClass('er-settings-click-reveal-demo-title');
-		demo.createEl('p', {
-			text: lang.settings.clickToRevealCloze.demoDesc,
-			cls: 'er-settings-click-reveal-demo-desc',
-		});
-
 		const card = demo.createDiv({ cls: 'er-settings-click-reveal-demo-card' });
 		const body = card.createDiv({ cls: 'er-card-body er-settings-click-reveal-demo-body' });
 		const answers = [

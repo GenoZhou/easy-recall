@@ -4,8 +4,8 @@ import { DEFAULT_DECK_TAG_PREFIX, getDeckTagRegex, getYamlDeckTagRegex } from '.
 // 挖空检测：==内容==
 const CLOZE_REGEX = /==([^=]+)==/g;
 
-// SR 注释格式：<!--SR:interval,ease,due,reps-->
-const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)-->/;
+// SR 注释格式：<!--SR:interval,ease,due,reps--> 或 <!--SR:interval,ease,due,reps,lapses-->
+const SR_COMMENT_REGEX = /<!--SR:(\d+\.?\d*),(\d+),([^,]+),(\d+)(?:,(\d+))?-->/;
 
 // Hint callout 检测：> [!hint]
 const HINT_CALLOUT_REGEX = /^> \[!hint\]/i;
@@ -26,6 +26,7 @@ export function extractSchedule(text: string): Schedule | null {
 	const ease = parseInt(match[2], 10);
 	const due = new Date(match[3]);
 	const reps = parseInt(match[4], 10);
+	const lapses = match[5] === undefined ? 0 : parseInt(match[5], 10);
 
 	// 验证日期有效性（符合最佳实践：防御性编程）
 	if (isNaN(due.getTime())) {
@@ -34,12 +35,12 @@ export function extractSchedule(text: string): Schedule | null {
 	}
 
 	// 验证数值范围
-	if (isNaN(interval) || isNaN(ease) || isNaN(reps)) {
+	if (isNaN(interval) || isNaN(ease) || isNaN(reps) || isNaN(lapses)) {
 		console.warn('[easy-recall] Invalid numeric values in SR comment');
 		return null;
 	}
 
-	return { interval, ease, due, reps };
+	return { interval, ease, due, reps, lapses };
 }
 
 /**

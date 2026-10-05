@@ -22,11 +22,18 @@ export interface EasyRecallSettings {
 	reviewSurface: ReviewSurface;
 	/** 是否启用点击逐个显示 Cloze 答案 */
 	clickToRevealCloze: boolean;
+	/** 易错分达到该次数后进入易错复习 */
+	leechLapses: number;
+	/** 选组列表是否显示易错加练 */
+	showLeechDeck: boolean;
+	/** 选组列表是否显示新卡到期 */
+	showNewDeck: boolean;
 }
 
 export type ReviewSurface = 'modal' | 'tab';
 
 export const DEFAULT_REVIEW_BATCH_SIZE = 20;
+export const DEFAULT_LEECH_LAPSES = 3;
 
 /**
  * 默认设置
@@ -38,12 +45,24 @@ export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	reviewSurface: 'modal',
 	clickToRevealCloze: false,
+	leechLapses: DEFAULT_LEECH_LAPSES,
+	showLeechDeck: false,
+	showNewDeck: false,
 };
 
 export function normalizeReviewBatchSize(value: unknown): number {
 	const numericValue = typeof value === 'number' ? value : Number(value);
 	if (!Number.isFinite(numericValue) || numericValue < 1) {
 		return DEFAULT_REVIEW_BATCH_SIZE;
+	}
+
+	return Math.floor(numericValue);
+}
+
+export function normalizeLeechLapses(value: unknown): number {
+	const numericValue = typeof value === 'number' ? value : Number(value);
+	if (!Number.isFinite(numericValue) || numericValue < 1) {
+		return DEFAULT_LEECH_LAPSES;
 	}
 
 	return Math.floor(numericValue);
@@ -108,6 +127,9 @@ export class SettingsManager {
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				reviewSurface: resolveLoadedReviewSurface(loaded),
 				clickToRevealCloze: normalizeClickToRevealCloze(loaded.clickToRevealCloze),
+				leechLapses: normalizeLeechLapses(loaded.leechLapses ?? DEFAULT_SETTINGS.leechLapses),
+				showLeechDeck: typeof loaded.showLeechDeck === 'boolean' ? loaded.showLeechDeck : DEFAULT_SETTINGS.showLeechDeck,
+				showNewDeck: typeof loaded.showNewDeck === 'boolean' ? loaded.showNewDeck : DEFAULT_SETTINGS.showNewDeck,
 			};
 		}
 	}
@@ -133,6 +155,9 @@ export class SettingsManager {
 		this.settings = { ...this.settings, ...updates };
 		if (updates.reviewBatchSize !== undefined) {
 			this.settings.reviewBatchSize = normalizeReviewBatchSize(updates.reviewBatchSize);
+		}
+		if (updates.leechLapses !== undefined) {
+			this.settings.leechLapses = normalizeLeechLapses(updates.leechLapses);
 		}
 		if (updates.deckTagPrefix !== undefined) {
 			this.settings.deckTagPrefix = normalizeDeckTagPrefix(updates.deckTagPrefix);

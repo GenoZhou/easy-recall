@@ -20,6 +20,7 @@ describe('parser', () => {
       expect(schedule!.interval).toBe(1);
       expect(schedule!.ease).toBe(250);
       expect(schedule!.reps).toBe(1);
+      expect(schedule!.lapses).toBe(0);
       expect(schedule!.due).toEqual(new Date('2026-02-19T14:19:56.066Z'));
     });
 
@@ -33,6 +34,12 @@ describe('parser', () => {
       const text = '<!--SR:2.5,250,2026-02-19T14:19:56.066Z,3-->';
       const schedule = extractSchedule(text);
       expect(schedule!.interval).toBe(2.5);
+    });
+
+    it('should read optional lapses from 5-part comments', () => {
+      const schedule = extractSchedule('<!--SR:2.5,180,2026-02-19T14:19:56.066Z,3,4-->');
+      expect(schedule!.lapses).toBe(4);
+      expect(schedule!.ease).toBe(180);
     });
   });
 
@@ -296,7 +303,7 @@ tags:
 tags:
   - easy-recall/test
 ---
-<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->
+<!--SR:1,250,2026-02-19T14:19:56.066Z,1,0-->
 第一行==答案==内容。`);
     });
   });

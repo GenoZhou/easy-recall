@@ -446,6 +446,71 @@ describe('ReviewSession shortcuts', () => {
 		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
 	});
 
+	it('drops not-due cards from a normal review queue', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({
+					id: 'leech-later',
+					schedule: {
+						interval: 4,
+						ease: 180,
+						due: new Date('2026-06-01T00:00:00Z'),
+						reps: 3,
+						lapses: 3,
+					},
+				}),
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+		}, host as any);
+
+		await session.render();
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 0 });
+	});
+
+	it('keeps not-due extra-practice cards when includeNotDue is set', async () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [
+				createCard({
+					id: 'leech-later',
+					content: 'Leech ==later==',
+					schedule: {
+						interval: 4,
+						ease: 180,
+						due: new Date('2026-06-01T00:00:00Z'),
+						reps: 3,
+						lapses: 3,
+					},
+				}),
+				createCard({
+					id: 'leech-later-2',
+					content: 'Leech ==later two==',
+					schedule: {
+						interval: 4,
+						ease: 180,
+						due: new Date('2026-07-01T00:00:00Z'),
+						reps: 3,
+						lapses: 4,
+					},
+				}),
+			],
+			vault: { getAbstractFileByPath: jest.fn().mockReturnValue(null) } as any,
+			maxCardsPerReview: 1,
+			includeNotDue: true,
+		}, host as any);
+
+		await session.render();
+		expect(host.complete).not.toHaveBeenCalled();
+		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/1)');
+
+		session.showAnswerAction();
+		await flushPromises();
+		session.rateAction(3);
+		await flushPromises();
+		expect(host.complete).toHaveBeenCalledWith({ remainingDueCount: 1 });
+	});
+
 	it('does not adjust cards outside the current review batch', async () => {
 		const host = createHost();
 		const nextCard = createCard({ id: 'card-2', lineStart: 20, lineEnd: 20 });

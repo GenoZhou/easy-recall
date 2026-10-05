@@ -31,7 +31,7 @@ export const zh: Translations = {
 
 	// 卡组选择器
 	deckSelector: {
-		placeholder: '搜索卡组... (输入 @all 复习全部)',
+		placeholder: '搜索卡组',
 		loading: '正在扫描卡片...',
 		loadFailed: '加载失败，请重试',
 		emptyState: '没有找到匹配的卡组',
@@ -44,13 +44,26 @@ export const zh: Translations = {
 			scheduled: '张已调度',
 		},
 		allDeck: {
-			name: '@all',
-			total: (count: number) => `共 ${count} 张`,
+			name: '全部到期',
+			hint: '复习所有标签里到期的卡片',
+			aliases: ['@all', 'all', '全部'],
 		},
+		virtualDecks: {
+			leech: {
+				name: '易错加练',
+				hint: '常错的卡，即使还没到期',
+				aliases: ['@leech', 'leech', '易错', '易错题'],
+			},
+			new: {
+				name: '新卡到期',
+				hint: '只学到期新卡，先不还旧账',
+				aliases: ['@new', 'new', '新卡'],
+			},
+		},
+		taggedHint: '只复习这个标签里的到期卡',
+		dueDeck: (tag: string) => `${tag}到期`,
 		deckItem: {
-			due: (count: number) => `${count} 到期`,
-			new: (count: number) => `${count} 新`,
-			total: (count: number) => `${count} 张`,
+			count: (count: number) => `${count} 张`,
 		},
 		instructions: {
 			navigate: '导航',
@@ -81,7 +94,6 @@ export const zh: Translations = {
 
 	settings: {
 		sections: {
-			advanced: '进阶',
 			stats: '统计',
 		},
 		language: {
@@ -111,9 +123,7 @@ export const zh: Translations = {
 		},
 		clickToRevealCloze: {
 			name: '点击逐项复习',
-			desc: '开启后，用逐项点按自测替代普通的显示答案流程。',
-			demoTitle: '测试点击逐项复习',
-			demoDesc: '每个挖空项点按后会按隐藏、显示、删除线循环。只要有一个挖空项标记为删除线，就视为「没记住」；全部挖空项都显示后，再根据自己的感觉选择「有点难」或「记住了」。',
+			desc: '点按挖空会在隐藏、显示、删除线之间循环。有划掉视为「没记住」；全部显示后可选「有点难」或「记住了」。',
 			demoPrefix: '地球绕着 ',
 			demoAnswer1: '太阳',
 			demoMiddle: ' 转，月球绕着 ',
@@ -121,6 +131,18 @@ export const zh: Translations = {
 			demoSuffix: ' 转。',
 			demoEmptyHint: '全部挖空项显示或划掉后，会出现评分按钮。',
 			demoRevealAriaLabel: '切换挖空状态',
+		},
+		leechLapses: {
+			name: '易错卡组阈值',
+			desc: '「没记住」达到此次数后进入易错加练，连续记住后会离开。',
+		},
+		showLeechDeck: {
+			name: '易错加练卡组',
+			desc: '选组时列出经常没记住的卡，即使尚未到期。连续记住后会自动离开。',
+		},
+		showNewDeck: {
+			name: '新卡到期卡组',
+			desc: '选组时单独列出到期新卡，便于欠账多时只学新卡。',
 		},
 		shortcuts: {
 			title: '快捷键',

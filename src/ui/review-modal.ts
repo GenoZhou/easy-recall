@@ -26,6 +26,7 @@ export class ReviewModal extends Modal {
 	private completionState: ReviewCompletionState | null = null;
 	private completionNotified: boolean = false;
 	private clickToRevealCloze: boolean = false;
+	private includeNotDue: boolean = false;
 
 	constructor(app: App, options: ReviewModalOptions) {
 		super(app);
@@ -35,6 +36,7 @@ export class ReviewModal extends Modal {
 		this.reloadCards = options.reloadCards;
 		this.onComplete = options.onComplete;
 		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
+		this.includeNotDue = options.includeNotDue ?? false;
 	}
 
 	onOpen() {
@@ -64,6 +66,7 @@ export class ReviewModal extends Modal {
 			reloadCards: this.reloadCards,
 			onComplete: this.onComplete,
 			clickToRevealCloze: this.clickToRevealCloze,
+			includeNotDue: this.includeNotDue,
 		}, {
 			contentEl: this.cardContentEl,
 			buttonsEl: this.buttonsContainerEl,

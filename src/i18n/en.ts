@@ -29,7 +29,7 @@ export const en = {
 
 	// Deck selector
 	deckSelector: {
-		placeholder: 'Search decks... (type @all to review all)',
+		placeholder: 'Search decks',
 		loading: 'Loading cards...',
 		loadFailed: 'Failed to load, please retry',
 		emptyState: 'No matching decks found',
@@ -42,13 +42,26 @@ export const en = {
 			scheduled: 'scheduled',
 		},
 		allDeck: {
-			name: '@all',
-			total: (count: number) => `${count} total`,
+			name: 'All due',
+			hint: 'Due cards from every tag',
+			aliases: ['@all', 'all'],
 		},
+		virtualDecks: {
+			leech: {
+				name: 'Extra practice',
+				hint: 'Often-missed cards, even if not due',
+				aliases: ['@leech', 'leech', 'leeches'],
+			},
+			new: {
+				name: 'New due',
+				hint: 'Due new cards only, skip the backlog',
+				aliases: ['@new', 'new'],
+			},
+		},
+		taggedHint: 'Due cards in this tag only',
+		dueDeck: (tag: string) => `${tag} due`,
 		deckItem: {
-			due: (count: number) => `${count} due`,
-			new: (count: number) => `${count} new`,
-			total: (count: number) => `${count} cards`,
+			count: (count: number) => `${count}`,
 		},
 		instructions: {
 			navigate: 'navigate',
@@ -79,7 +92,6 @@ export const en = {
 
 	settings: {
 		sections: {
-			advanced: 'Advanced',
 			stats: 'Stats',
 		},
 		language: {
@@ -109,9 +121,7 @@ export const en = {
 		},
 		clickToRevealCloze: {
 			name: 'Click-to-reveal review',
-			desc: 'When enabled, tap-by-tap cloze self-checking replaces the normal Show Answer flow.',
-			demoTitle: 'Try click-to-reveal review',
-			demoDesc: 'Each cloze item cycles through hidden, shown, and crossed out as you tap it. As long as any item is crossed out, it is counted as "Again"; once all items are revealed, choose "Hard" or "Good" based on how well you recalled them.',
+			desc: 'Tap a cloze to cycle hidden, shown, and crossed out. Any crossed-out item counts as Again; after all are shown, choose Hard or Good.',
 			demoPrefix: 'Earth orbits the ',
 			demoAnswer1: 'Sun',
 			demoMiddle: ', and the Moon orbits ',
@@ -119,6 +129,18 @@ export const en = {
 			demoSuffix: '.',
 			demoEmptyHint: 'Reveal every cloze item to see the rating buttons.',
 			demoRevealAriaLabel: 'Reveal answer',
+		},
+		leechLapses: {
+			name: 'Extra practice deck threshold',
+			desc: 'Cards join Extra practice after this many Again ratings, and leave after enough Good ratings.',
+		},
+		showLeechDeck: {
+			name: 'Extra practice deck',
+			desc: 'List often-missed cards in the deck picker, even if they are not due yet. They leave after enough Good ratings.',
+		},
+		showNewDeck: {
+			name: 'New due deck',
+			desc: 'List due new cards on their own in the deck picker, so you can learn new cards when the backlog is large.',
 		},
 		shortcuts: {
 			title: 'Keyboard Shortcuts',

@@ -13,6 +13,7 @@ A minimalist spaced repetition plugin focused on core memorization features—ze
 - **Zero Configuration** - Start reviewing immediately after installation, no complex setup needed
 - **Native Markdown Syntax** - Create cards with `==highlight==` and `?question` syntax, supports full-width question mark `？`
 - **File-level Tags** - Define decks with `#easy-recall/xxx`, supports Chinese tags
+- **Smart review lists** - Optionally review extra-practice leeches or new cards from the deck picker (off by default; turn them on in settings)
 - **Three-state Rating** - Again/Hard/Good, simplify decision fatigue
 - **Instant Feedback** - "Again" cards go back to queue tail immediately, continue reviewing in current session
 - **Multi-language Support** - Auto-adapts to Obsidian language settings (English/Chinese)
@@ -106,12 +107,12 @@ Card content...
 ### Start Reviewing
 
 1. Click the review icon 📚 in the left sidebar, or use command palette to execute "Start Review"
-2. Search and select a deck in SuggestModal, or press Enter to review all due cards
+2. Search and select a deck in SuggestModal, or press Enter to review **All due**. If you turn them on in settings, the list can also show **Extra practice** and **New due**. Extra practice can include cards that are not due yet; after you keep rating them Good, they leave that list on their own.
 3. View the card, press Space on desktop to reveal the hint or answer, or click/tap "Show Hint" / "Show Answer"
 4. Select rating:
-   - **1 - Again** (🔴): Put back to queue tail immediately, continue reviewing in current session
-   - **2 - Hard** (🟠): Interval ×1.2, ease -15
-   - **3 - Good** (🔵): Standard interval, ease unchanged
+   - **1 - Again** (🔴): This card goes to the end of the current batch, so you will see it again soon.
+   - **2 - Hard** (🟠): You will see it again sooner than if you had remembered it well.
+   - **3 - Good** (🔵): You will see it again later.
 
 > 💡 **Rating guide for multi-cloze cards**: Rate based on the *worst* cloze, not the average. If even one cloze is completely blank → **Again**. If all clozes are recallable but some feel slow or uncertain → **Hard**. Only choose **Good** when every cloze is recalled smoothly.
 
@@ -152,21 +153,22 @@ Desktop shortcuts work in both the modal window and the reusable Obsidian tab. S
 Review data is stored as HTML comments **before** the card:
 
 ```markdown
-<!--SR:1,250,2026-02-18T10:00:00Z,1-->
+<!--SR:1,250,2026-02-18T10:00:00Z,1,0-->
 Traditional Chinese Medicine studies ==human life movement==.
 ```
 
-Format: `<!--SR:interval,ease,due,reps-->`
+The plugin writes this progress comment above the card. Older 4-part comments still work.
 
 **Your notes always belong to you**, data does not depend on any external service.
 
-## Algorithm
+## How review timing works
 
-Simplified SM-2 algorithm:
+You only choose how the card felt. Easy Recall decides when to show it again.
 
-- **Interval Days**: Dynamically calculated based on rating, maximum 365 days
-- **Ease**: 130-350 range, affects interval growth speed
-- **Consecutive Success Count**: Affects when new cards enter formal review
+- New cards come back quickly. After you remember them a few times in a row, the gap gets longer.
+- **Again** puts the card at the end of this batch, so you see it again before you finish.
+- If you turn on **Extra practice**, cards you often miss show up there even if they are not due yet. Remember them a few times in a row and they leave that list.
+- The longest wait is about a year.
 
 ## Development
 

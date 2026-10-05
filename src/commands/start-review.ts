@@ -20,7 +20,7 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 	try {
 		await openDeckModal(app, app.vault, plugin.settings.reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
-		}, plugin.settings.clickToRevealCloze);
+		}, plugin.settings.clickToRevealCloze, plugin.settings.leechLapses, plugin.settings.showLeechDeck, plugin.settings.showNewDeck);
 	} catch (err) {
 		console.error('Failed to start review:', err);
 		new Notice(lang.notifications.failedToStart, 3000);

@@ -16,7 +16,7 @@ describe('store', () => {
       };
       
       const formatted = formatSchedule(schedule);
-      expect(formatted).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->');
+      expect(formatted).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1,0-->');
     });
 
     it('should handle float intervals', () => {
@@ -28,7 +28,7 @@ describe('store', () => {
       };
       
       const formatted = formatSchedule(schedule);
-      expect(formatted).toBe('<!--SR:2.5,250,2026-02-21T14:19:56.066Z,3-->');
+      expect(formatted).toBe('<!--SR:2.5,250,2026-02-21T14:19:56.066Z,3,0-->');
     });
 
     it('should round interval to 2 decimal places to avoid floating point noise', () => {
@@ -40,7 +40,7 @@ describe('store', () => {
       };
       
       const formatted = formatSchedule(schedule);
-      expect(formatted).toBe('<!--SR:7.96,250,2026-06-15T13:08:20.255Z,4-->');
+      expect(formatted).toBe('<!--SR:7.96,250,2026-06-15T13:08:20.255Z,4,0-->');
     });
 
     it('should keep integer intervals compact', () => {
@@ -52,7 +52,19 @@ describe('store', () => {
       };
       
       const formatted = formatSchedule(schedule);
-      expect(formatted).toBe('<!--SR:1,250,2026-02-21T14:19:56.066Z,1-->');
+      expect(formatted).toBe('<!--SR:1,250,2026-02-21T14:19:56.066Z,1,0-->');
+    });
+
+    it('should write lapses as the fifth field', () => {
+      const schedule: Schedule = {
+        interval: 1,
+        ease: 250,
+        due: new Date('2026-02-21T14:19:56.066Z'),
+        reps: 2,
+        lapses: 4,
+      };
+
+      expect(formatSchedule(schedule)).toBe('<!--SR:1,250,2026-02-21T14:19:56.066Z,2,4-->');
     });
   });
 
@@ -72,7 +84,7 @@ describe('store', () => {
       // lineStart=1, scheduleLine=0 (SR comment before card)
       const result = injectSchedule(text, newSchedule, 1, 0);
       
-      expect(result).toContain('<!--SR:2,250,2026-02-20T14:19:56.066Z,2-->');
+      expect(result).toContain('<!--SR:2,250,2026-02-20T14:19:56.066Z,2,0-->');
       expect(result).not.toContain('<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->');
     });
 
@@ -91,7 +103,7 @@ describe('store', () => {
       // lineStart=1, check line 0 for existing SR comment
       const result = injectSchedule(text, newSchedule, 1, undefined);
       
-      expect(result).toContain('<!--SR:3,240,2026-02-22T14:19:56.066Z,3-->');
+      expect(result).toContain('<!--SR:3,240,2026-02-22T14:19:56.066Z,3,0-->');
       expect(result).not.toContain('<!--SR:1,250');
     });
   });
@@ -113,7 +125,7 @@ describe('store', () => {
       
       const lines = result.split('\n');
       expect(lines).toHaveLength(3);
-      expect(lines[0]).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->');
+      expect(lines[0]).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1,0-->');
       expect(lines[1]).toBe('问题');
       expect(lines[2]).toBe('答案');
     });
@@ -133,7 +145,7 @@ describe('store', () => {
       
       const lines = result.split('\n');
       expect(lines).toHaveLength(2);
-      expect(lines[0]).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1-->');
+      expect(lines[0]).toBe('<!--SR:1,250,2026-02-19T14:19:56.066Z,1,0-->');
       expect(lines[1]).toBe('中医学是研究==人体生命运动==的科学。');
     });
   });
@@ -191,6 +203,18 @@ describe('store', () => {
       expect(result).toContain('问题');
       expect(result).toContain('答案');
       expect(result).toContain('其他内容');
+    });
+
+    it('should remove 5-part SR comments', () => {
+      const text = `问题
+<!--SR:1,250,2026-02-19T14:19:56.066Z,1,4-->
+答案`;
+
+      const result = removeSchedule(text);
+
+      expect(result).not.toContain('<!--SR:');
+      expect(result).toContain('问题');
+      expect(result).toContain('答案');
     });
 
     it('should remove multiple SR comments', () => {

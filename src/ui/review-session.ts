@@ -1,6 +1,6 @@
 import { App, MarkdownRenderer, TFile, Vault, Component, Notice, Platform, MarkdownView, Scope, KeymapEventHandler } from 'obsidian';
 import { Card, Rating, Schedule } from '../types';
-import { calcSchedule, getNextReviewShortText } from '../scheduler';
+import { calcSchedule, getNextReviewShortText, isDue, isNewCard } from '../scheduler';
 import { getRatingButtons, KEYBOARD_SHORTCUTS } from '../config/constants';
 import { injectSchedule, deleteScheduleLine } from '../store';
 import { renderClozeContent, renderQAContent } from '../parser';
@@ -20,6 +20,8 @@ export interface ReviewOptions {
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 	clickToRevealCloze?: boolean;
+	/** Extra practice can include cards that are not due yet. */
+	includeNotDue?: boolean;
 }
 
 export interface ReviewCompletionState {
@@ -57,10 +59,6 @@ interface RateHistoryEntry {
 	}>;
 }
 
-function isNewReviewCard(card: Card): boolean {
-	return !card.schedule || card.schedule.reps === 0;
-}
-
 export function normalizeReviewBoolean(value: unknown): boolean {
 	return value === true;
 }
@@ -79,7 +77,7 @@ export function getReviewStatusTags(card: Card): ReviewStatusTag[] {
 	const lang = t();
 	const statusTags: ReviewStatusTag[] = [];
 
-	if (isNewReviewCard(card)) {
+	if (isNewCard(card)) {
 		statusTags.push({
 			label: lang.review.statusTags.newCard,
 			cls: 'er-status-tag-new',
@@ -136,6 +134,7 @@ export class ReviewSession {
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
 	private clickToRevealCloze: boolean = false;
+	private includeNotDue: boolean = false;
 	private clozeRevealStatesByCardId: Map<string, ClozeRevealState[]> = new Map();
 	private lastRateEntry: RateHistoryEntry | null = null;
 
@@ -144,6 +143,7 @@ export class ReviewSession {
 		this.vault = options.vault;
 		this.host = host;
 		this.sourceCards = options.cards;
+		this.includeNotDue = normalizeReviewBoolean(options.includeNotDue);
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
 		this.clickToRevealCloze = normalizeReviewBoolean(options.clickToRevealCloze);
 	}
@@ -361,12 +361,11 @@ export class ReviewSession {
 	}
 
 	private getDueSortedCards(cards: Card[], maxCardsPerReview?: number): Card[] {
-		const now = new Date();
 		const dueCards = cards
-			.filter(card => !card.schedule || card.schedule.due <= now)
+			.filter(card => this.includeNotDue || isDue(card.schedule))
 			.sort((a, b) => {
-				const isNewA = isNewReviewCard(a);
-				const isNewB = isNewReviewCard(b);
+				const isNewA = isNewCard(a);
+				const isNewB = isNewCard(b);
 				if (isNewA && isNewB) return 0;
 				if (isNewA) return 1;
 				if (isNewB) return -1;
