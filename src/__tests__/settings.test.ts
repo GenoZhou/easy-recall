@@ -2,7 +2,7 @@
  * Tests for settings module
  */
 
-import { SettingsManager, DEFAULT_SETTINGS, EasyRecallSettings, getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
+import { SettingsManager, DEFAULT_SETTINGS, EasyRecallSettings } from '../settings';
 
 // Mock Obsidian's Plugin class
 const mockLoadData = jest.fn();
@@ -34,9 +34,8 @@ describe('SettingsManager', () => {
 			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(false);
 			expect(settings.reviewBatchSize).toBe(20);
-			expect(settings.desktopReviewSurface).toBe('modal');
-			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe('disabled');
+			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.clickToRevealCloze).toBe(false);
 		});
 
 		it('should merge loaded settings with defaults', async () => {
@@ -49,42 +48,79 @@ describe('SettingsManager', () => {
 			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(true);
 			expect(settings.reviewBatchSize).toBe(20);
-			expect(settings.desktopReviewSurface).toBe('modal');
-			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe('disabled');
+			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.clickToRevealCloze).toBe(false);
 		});
 
-		it('should load separate desktop and mobile review surfaces', async () => {
+		it('should migrate matching platform-specific review surfaces to a single setting', async () => {
 			mockLoadData.mockResolvedValue({
 				language: 'en',
 				debugMode: true,
+				desktopReviewSurface: 'tab',
+				mobileReviewSurface: 'tab',
+			});
+
+			await manager.load();
+
+			expect(manager.get().reviewSurface).toBe('tab');
+		});
+
+		it('should fall back to the default review surface when platform settings conflict', async () => {
+			mockLoadData.mockResolvedValue({
 				desktopReviewSurface: 'tab',
 				mobileReviewSurface: 'modal',
 			});
 
 			await manager.load();
 
-			const settings = manager.get();
-			expect(settings.desktopReviewSurface).toBe('tab');
-			expect(settings.mobileReviewSurface).toBe('modal');
+			expect(manager.get().reviewSurface).toBe('modal');
 		});
 
-		it('should migrate legacy review surface to both platform settings', async () => {
+		it('should migrate a mobile-only review surface when desktop is missing', async () => {
+			mockLoadData.mockResolvedValue({
+				mobileReviewSurface: 'tab',
+			});
+
+			await manager.load();
+
+			expect(manager.get().reviewSurface).toBe('tab');
+		});
+
+		it('should migrate a desktop-only review surface when mobile is missing', async () => {
+			mockLoadData.mockResolvedValue({
+				desktopReviewSurface: 'tab',
+			});
+
+			await manager.load();
+
+			expect(manager.get().reviewSurface).toBe('tab');
+		});
+
+		it('should keep a unified review surface from saved data', async () => {
 			mockLoadData.mockResolvedValue({ language: 'en', debugMode: true, reviewSurface: 'tab' });
 
 			await manager.load();
 
 			const settings = manager.get();
-			expect(settings.desktopReviewSurface).toBe('tab');
-			expect(settings.mobileReviewSurface).toBe('tab');
+			expect(settings.reviewSurface).toBe('tab');
 		});
 
-		it('should migrate legacy boolean click-to-reveal setting', async () => {
+		it('should migrate legacy boolean and platform click-to-reveal settings', async () => {
 			mockLoadData.mockResolvedValue({ clickToRevealCloze: true });
-
 			await manager.load();
+			expect(manager.get().clickToRevealCloze).toBe(true);
 
-			expect(manager.get().clickToRevealCloze).toBe('enabled');
+			mockLoadData.mockResolvedValue({ clickToRevealCloze: 'desktop' });
+			await manager.load();
+			expect(manager.get().clickToRevealCloze).toBe(false);
+
+			mockLoadData.mockResolvedValue({ clickToRevealCloze: 'mobile' });
+			await manager.load();
+			expect(manager.get().clickToRevealCloze).toBe(false);
+
+			mockLoadData.mockResolvedValue({ clickToRevealCloze: 'disabled' });
+			await manager.load();
+			expect(manager.get().clickToRevealCloze).toBe(false);
 		});
 
 		it('should ignore removed legacy settings fields', async () => {
@@ -103,12 +139,10 @@ describe('SettingsManager', () => {
 				deckTagPrefix: 'easy-recall',
 				debugMode: true,
 				reviewBatchSize: 20,
-				desktopReviewSurface: 'modal',
-				mobileReviewSurface: 'modal',
-				clickToRevealCloze: 'disabled',
+				reviewSurface: 'modal',
+				clickToRevealCloze: false,
 			});
-			expect((settings as EasyRecallSettings & { defaultEase?: number; reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
-			expect((settings as EasyRecallSettings & { reviewSurface?: string; hideReviewPathHiddenWords?: boolean }).reviewSurface).toBeUndefined();
+			expect((settings as EasyRecallSettings & { defaultEase?: number; hideReviewPathHiddenWords?: boolean }).defaultEase).toBeUndefined();
 			expect((settings as EasyRecallSettings & { hideReviewPathHiddenWords?: boolean }).hideReviewPathHiddenWords).toBeUndefined();
 		});
 
@@ -145,9 +179,8 @@ describe('SettingsManager', () => {
 			expect(settings.deckTagPrefix).toBe('easy-recall');
 			expect(settings.debugMode).toBe(false); // unchanged
 			expect(settings.reviewBatchSize).toBe(20);
-			expect(settings.desktopReviewSurface).toBe('modal');
-			expect(settings.mobileReviewSurface).toBe('modal');
-			expect(settings.clickToRevealCloze).toBe('disabled');
+			expect(settings.reviewSurface).toBe('modal');
+			expect(settings.clickToRevealCloze).toBe(false);
 		});
 
 		it('should update review batch size', async () => {
@@ -185,24 +218,22 @@ describe('SettingsManager', () => {
 			expect(manager.get().reviewBatchSize).toBe(20);
 		});
 
-		it('should update platform review surfaces', async () => {
+		it('should update review surface', async () => {
 			mockLoadData.mockResolvedValue(null);
 			await manager.load();
 
-			await manager.update({ desktopReviewSurface: 'tab', mobileReviewSurface: 'modal' });
+			await manager.update({ reviewSurface: 'tab' });
 
-			const settings = manager.get();
-			expect(settings.desktopReviewSurface).toBe('tab');
-			expect(settings.mobileReviewSurface).toBe('modal');
+			expect(manager.get().reviewSurface).toBe('tab');
 		});
 
-		it('should update clickToRevealCloze mode', async () => {
+		it('should update clickToRevealCloze', async () => {
 			mockLoadData.mockResolvedValue(null);
 			await manager.load();
 
-			await manager.update({ clickToRevealCloze: 'mobile' });
+			await manager.update({ clickToRevealCloze: true });
 
-			expect(manager.get().clickToRevealCloze).toBe('mobile');
+			expect(manager.get().clickToRevealCloze).toBe(true);
 		});
 
 
@@ -257,46 +288,7 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.deckTagPrefix).toBe('easy-recall');
 		expect(DEFAULT_SETTINGS.debugMode).toBe(false);
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
-		expect(DEFAULT_SETTINGS.desktopReviewSurface).toBe('modal');
-		expect(DEFAULT_SETTINGS.mobileReviewSurface).toBe('modal');
-		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe('disabled');
-	});
-});
-
-describe('getActiveReviewSurface', () => {
-	it('should return desktop surface for desktop platform', () => {
-		const settings: EasyRecallSettings = {
-			...DEFAULT_SETTINGS,
-			desktopReviewSurface: 'tab',
-			mobileReviewSurface: 'modal',
-		};
-
-		expect(getActiveReviewSurface(settings, false)).toBe('tab');
-	});
-
-	it('should return mobile surface for mobile platform', () => {
-		const settings: EasyRecallSettings = {
-			...DEFAULT_SETTINGS,
-			desktopReviewSurface: 'tab',
-			mobileReviewSurface: 'modal',
-		};
-
-		expect(getActiveReviewSurface(settings, true)).toBe('modal');
-	});
-});
-
-describe('getActiveClickToRevealCloze', () => {
-	it('should resolve enabled and disabled modes', () => {
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'enabled' }, false)).toBe(true);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'enabled' }, true)).toBe(true);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'disabled' }, false)).toBe(false);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'disabled' }, true)).toBe(false);
-	});
-
-	it('should resolve platform-specific modes', () => {
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'desktop' }, false)).toBe(true);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'desktop' }, true)).toBe(false);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'mobile' }, false)).toBe(false);
-		expect(getActiveClickToRevealCloze({ ...DEFAULT_SETTINGS, clickToRevealCloze: 'mobile' }, true)).toBe(true);
+		expect(DEFAULT_SETTINGS.reviewSurface).toBe('modal');
+		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe(false);
 	});
 });

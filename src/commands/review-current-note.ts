@@ -2,13 +2,12 @@
  * 复习当前笔记内到期卡片命令
  */
 
-import { TFile, Notice, Platform } from 'obsidian';
+import { TFile, Notice } from 'obsidian';
 import { getDueCardsFromFile } from '../deck';
 import { t } from '../i18n';
 import { info } from '../utils/';
 import type { CommandContext } from './types';
 import { openReview } from '../ui/open-review';
-import { getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
 
 /**
  * 执行当前笔记内到期卡片复习
@@ -30,8 +29,6 @@ export async function executeReviewCurrentNote(
 			return;
 		}
 
-		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
-		const clickToRevealCloze = getActiveClickToRevealCloze(plugin.settings, Platform.isMobile);
 		await openReview(app, {
 			cards: dueCards,
 			vault: app.vault,
@@ -40,8 +37,8 @@ export async function executeReviewCurrentNote(
 			onComplete: () => {
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
-			clickToRevealCloze,
-		}, reviewSurface);
+			clickToRevealCloze: plugin.settings.clickToRevealCloze,
+		}, plugin.settings.reviewSurface);
 
 	} catch (err) {
 		console.error('Failed to start file review:', err);

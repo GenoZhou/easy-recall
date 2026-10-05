@@ -1,4 +1,3 @@
-import { Platform } from 'obsidian';
 import { executeStartReview } from '../commands/start-review';
 import { getReviewCurrentNoteCommand, reviewCurrentNoteCheckCallback } from '../commands/review-current-note';
 import { setLanguage } from '../i18n';
@@ -6,7 +5,6 @@ import { openDeckModal } from '../ui/deck-suggest-modal';
 
 jest.mock('obsidian', () => ({
 	Notice: jest.fn(),
-	Platform: { isMobile: false },
 }), { virtual: true });
 
 jest.mock('../deck', () => ({
@@ -23,7 +21,6 @@ jest.mock('../ui/deck-suggest-modal', () => ({
 
 describe('commands', () => {
 	afterEach(() => {
-		(Platform as any).isMobile = false;
 		setLanguage('zh');
 		jest.clearAllMocks();
 	});
@@ -59,18 +56,15 @@ describe('commands', () => {
 		expect(reviewCurrentNoteCheckCallback(context, true)).toBe(true);
 	});
 
-	it('passes disabled click-to-reveal as false on mobile global review', async () => {
-		(Platform as any).isMobile = true;
-
+	it('passes disabled click-to-reveal as false on global review', async () => {
 		await executeStartReview({
 			app: { vault: {} } as any,
 			plugin: {
 				settings: {
 					reviewBatchSize: 20,
 					deckTagPrefix: 'easy-recall',
-					mobileReviewSurface: 'modal',
-					desktopReviewSurface: 'modal',
-					clickToRevealCloze: 'disabled',
+					reviewSurface: 'modal',
+					clickToRevealCloze: false,
 				},
 			} as any,
 		});
@@ -86,33 +80,19 @@ describe('commands', () => {
 		);
 	});
 
-	it('resolves click-to-reveal modes for mobile global review', async () => {
-		(Platform as any).isMobile = true;
-
-		const baseContext = {
+	it('passes enabled click-to-reveal as true on global review', async () => {
+		await executeStartReview({
 			app: { vault: {} } as any,
 			plugin: {
 				settings: {
 					reviewBatchSize: 20,
 					deckTagPrefix: 'easy-recall',
-					mobileReviewSurface: 'modal',
-					desktopReviewSurface: 'modal',
+					reviewSurface: 'modal',
+					clickToRevealCloze: true,
 				},
 			} as any,
-		};
+		});
 
-		for (const [mode, expected] of [
-			['desktop', false],
-			['mobile', true],
-			['enabled', true],
-			['disabled', false],
-		] as const) {
-			(openDeckModal as jest.Mock).mockClear();
-			baseContext.plugin.settings.clickToRevealCloze = mode;
-
-			await executeStartReview(baseContext);
-
-			expect((openDeckModal as jest.Mock).mock.calls[0][6]).toBe(expected);
-		}
+		expect((openDeckModal as jest.Mock).mock.calls[0][6]).toBe(true);
 	});
 });

@@ -68,7 +68,6 @@ export const zh: Translations = {
 		openSource: '打开原文',
 		hint: '提示',
 		shortcutsInactive: '点击这里以启用快捷键',
-		undo: '按 Backspace 撤回上一次评分',
 		statusTags: {
 			newCard: '新卡片',
 		},
@@ -81,7 +80,10 @@ export const zh: Translations = {
 	},
 
 	settings: {
-		title: 'Easy Recall 设置',
+		sections: {
+			advanced: '进阶',
+			stats: '统计',
+		},
 		language: {
 			name: '界面语言',
 			desc: '界面语言。自动模式会跟随 Obsidian 设置。',
@@ -102,20 +104,14 @@ export const zh: Translations = {
 			desc: '每次复习会话最多放入队列的到期卡片数量。',
 		},
 		reviewSurface: {
-			desktopName: '桌面端复习界面',
-			desktopDesc: '选择桌面端复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
-			mobileName: '手机端复习界面',
-			mobileDesc: '选择手机端复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
+			name: '复习界面',
+			desc: '选择复习卡片时使用模态窗口，还是复用一个 Obsidian 标签页。',
 			modal: '模态窗口',
 			tab: '标签页',
 		},
 		clickToRevealCloze: {
 			name: '点击逐项复习',
-			desc: '选择在哪些设备上使用逐项点按自测替代普通的显示答案流程。',
-			desktop: '仅桌面端',
-			mobile: '仅移动端',
-			enabled: '均启用',
-			disabled: '均关闭',
+			desc: '开启后，用逐项点按自测替代普通的显示答案流程。',
 			demoTitle: '测试点击逐项复习',
 			demoDesc: '每个挖空项点按后会按隐藏、显示、删除线循环。只要有一个挖空项标记为删除线，就视为「没记住」；全部挖空项都显示后，再根据自己的感觉选择「有点难」或「记住了」。',
 			demoPrefix: '地球绕着 ',
@@ -128,15 +124,16 @@ export const zh: Translations = {
 		},
 		shortcuts: {
 			title: '快捷键',
+			undoBefore: '按 ',
+			undoAfterMac: ' 撤回上一次评分',
+			undoAfterWindows: '（退格）撤回上一次评分',
 		},
 		stats: {
-			name: '复习统计',
 			desc: '查看复习摘要和接下来几个复习窗口。',
 			refresh: '刷新',
 			loading: '正在加载复习统计...',
 			loadFailed: '加载复习统计失败。',
 			empty: '还没有找到复习卡片。',
-			upcoming: '后续复习窗口',
 			total: '总卡片数',
 			totalDecks: '总卡组数',
 			matureCards: '成熟卡',

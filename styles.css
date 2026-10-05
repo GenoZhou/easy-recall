@@ -297,11 +297,16 @@
 	padding: 4px 0 0;
 }
 
-.er-settings-help {
-	margin: 0 0 12px;
-	color: var(--text-muted);
-	font-size: var(--font-ui-small);
-	line-height: 1.5;
+.er-kbd {
+	display: inline-block;
+	margin: 0 0.15em;
+	padding: 0.05em 0.4em;
+	border: 1px solid var(--background-modifier-border);
+	border-bottom-width: 2px;
+	border-radius: 4px;
+	background-color: var(--background-modifier-form-field);
+	font-size: 0.95em;
+	line-height: 1.4;
 }
 
 .er-settings-click-reveal-demo {
@@ -899,8 +904,34 @@
 
 /* ==================== 设置页统计 ==================== */
 
+.er-settings-stats-heading.setting-item-heading {
+	align-items: center;
+}
+
+.er-settings-stats-heading.setting-item-heading .setting-item-control {
+	display: flex;
+	align-items: center;
+	padding: 0;
+}
+
 .er-settings-stats {
+	position: relative;
 	margin: 12px 0 24px;
+}
+
+.er-settings-stats-status {
+	margin: 0;
+	color: var(--text-muted);
+}
+
+.er-settings-stats-refreshing::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: 10px;
+	background-color: var(--background-primary);
+	opacity: 0.55;
+	pointer-events: none;
 }
 
 .er-settings-stats-grid {

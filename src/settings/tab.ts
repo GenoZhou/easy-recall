@@ -3,11 +3,10 @@
  * 遵循 Obsidian 最佳实践：使用 PluginSettingTab
  */
 
-import { PluginSettingTab, Setting, App, type SettingDefinitionItem } from 'obsidian';
+import { PluginSettingTab, Setting, App, Platform, ButtonComponent, type SettingDefinitionItem } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { normalizeReviewBatchSize, ReviewSurface } from './index';
-import type { ClickToRevealClozeMode } from './index';
 import { normalizeDeckTagPrefix } from '../tag-prefix';
 import { scanVault } from '../deck';
 import { calculateReviewStats } from './stats';
@@ -23,6 +22,7 @@ import { getRatingButtons } from '../config/constants';
 
 export class SettingsTab extends PluginSettingTab {
 	plugin: EasyRecallPlugin;
+	private statsLoadToken = 0;
 
 	constructor(app: App, plugin: EasyRecallPlugin) {
 		super(app, plugin);
@@ -45,10 +45,6 @@ export class SettingsTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		// 标题
-		new Setting(containerEl).setName(lang.settings.title).setHeading();
-
-		// 语言设置
 		new Setting(containerEl)
 			.setName(lang.settings.language.name)
 			.setDesc(lang.settings.language.desc)
@@ -64,19 +60,6 @@ export class SettingsTab extends PluginSettingTab {
 						this.plugin.settings = this.plugin.settingsManager.get();
 						setLanguage(resolveLanguage(newLang));
 						this.renderSettings();
-					})
-			);
-
-		// 调试模式
-		new Setting(containerEl)
-			.setName(lang.settings.debug.name)
-			.setDesc(lang.settings.debug.desc)
-			.addToggle(toggle =>
-				toggle
-					.setValue(this.plugin.settings.debugMode)
-					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ debugMode: value });
-						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);
 
@@ -112,60 +95,65 @@ export class SettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName(lang.settings.reviewSurface.desktopName)
-			.setDesc(lang.settings.reviewSurface.desktopDesc)
+			.setName(lang.settings.reviewSurface.name)
+			.setDesc(lang.settings.reviewSurface.desc)
 			.addDropdown(dropdown =>
 				dropdown
 					.addOption('modal', lang.settings.reviewSurface.modal)
 					.addOption('tab', lang.settings.reviewSurface.tab)
-					.setValue(this.plugin.settings.desktopReviewSurface)
+					.setValue(this.plugin.settings.reviewSurface)
 					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ desktopReviewSurface: value as ReviewSurface });
+						await this.plugin.settingsManager.update({ reviewSurface: value as ReviewSurface });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);
 
-		new Setting(containerEl)
-			.setName(lang.settings.reviewSurface.mobileName)
-			.setDesc(lang.settings.reviewSurface.mobileDesc)
-			.addDropdown(dropdown =>
-				dropdown
-					.addOption('modal', lang.settings.reviewSurface.modal)
-					.addOption('tab', lang.settings.reviewSurface.tab)
-					.setValue(this.plugin.settings.mobileReviewSurface)
-					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ mobileReviewSurface: value as ReviewSurface });
-						this.plugin.settings = this.plugin.settingsManager.get();
-					})
-			);
+		if (!Platform.isMobile) {
+			this.renderShortcutHint(containerEl);
+		}
+
+		new Setting(containerEl).setName(lang.settings.sections.advanced).setHeading();
 
 		this.renderClickToRevealSettings(containerEl);
 
-		const statsContainer = containerEl.createDiv({ cls: 'er-settings-stats' });
 		new Setting(containerEl)
-			.setName(lang.settings.stats.name)
+			.setName(lang.settings.debug.name)
+			.setDesc(lang.settings.debug.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.debugMode)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ debugMode: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName(lang.settings.sections.stats)
 			.setDesc(lang.settings.stats.desc)
+			.setHeading()
+			.setClass('er-settings-stats-heading')
 			.addButton(button =>
 				button
 					.setButtonText(lang.settings.stats.refresh)
 					.onClick(async () => {
-						await this.renderStats(statsContainer);
+						await this.renderStats(statsContainer, button);
 					})
 			);
 
+		const statsContainer = containerEl.createDiv({ cls: 'er-settings-stats' });
 		void this.renderStats(statsContainer);
-
-		this.renderUndoHint(containerEl);
 	}
 
-	private renderUndoHint(containerEl: HTMLElement): void {
+	private renderShortcutHint(containerEl: HTMLElement): void {
 		const lang = t();
-		const undoContainer = containerEl.createDiv({ cls: 'er-settings-undo' });
-		new Setting(undoContainer).setName(lang.settings.shortcuts.title).setHeading();
-		undoContainer.createEl('p', {
-			text: lang.review.undo,
-			cls: 'er-settings-help',
-		});
+		const setting = new Setting(containerEl).setName(lang.settings.shortcuts.title);
+		setting.descEl.empty();
+		setting.descEl.appendText(lang.settings.shortcuts.undoBefore);
+		setting.descEl.createSpan({ text: '⌫', cls: 'er-kbd' });
+		setting.descEl.appendText(
+			Platform.isMacOS ? lang.settings.shortcuts.undoAfterMac : lang.settings.shortcuts.undoAfterWindows
+		);
 	}
 
 	private renderClickToRevealSettings(containerEl: HTMLElement): void {
@@ -175,15 +163,11 @@ export class SettingsTab extends PluginSettingTab {
 		new Setting(clickToRevealContainer)
 			.setName(lang.settings.clickToRevealCloze.name)
 			.setDesc(lang.settings.clickToRevealCloze.desc)
-			.addDropdown(dropdown =>
-				dropdown
-					.addOption('desktop', lang.settings.clickToRevealCloze.desktop)
-					.addOption('mobile', lang.settings.clickToRevealCloze.mobile)
-					.addOption('enabled', lang.settings.clickToRevealCloze.enabled)
-					.addOption('disabled', lang.settings.clickToRevealCloze.disabled)
+			.addToggle(toggle =>
+				toggle
 					.setValue(this.plugin.settings.clickToRevealCloze)
 					.onChange(async (value) => {
-						await this.plugin.settingsManager.update({ clickToRevealCloze: value as ClickToRevealClozeMode });
+						await this.plugin.settingsManager.update({ clickToRevealCloze: value });
 						this.plugin.settings = this.plugin.settingsManager.get();
 					})
 			);
@@ -285,18 +269,30 @@ export class SettingsTab extends PluginSettingTab {
 		renderDemoButtons();
 	}
 
-	private async renderStats(containerEl: HTMLElement): Promise<void> {
+	private async renderStats(containerEl: HTMLElement, refreshButton?: ButtonComponent): Promise<void> {
 		const lang = t();
-		containerEl.empty();
-		containerEl.createEl('p', { text: lang.settings.stats.loading });
+		const token = ++this.statsLoadToken;
+		const keepExisting = containerEl.hasClass('er-settings-stats-ready');
+
+		refreshButton?.setDisabled(true);
+		if (keepExisting) {
+			containerEl.addClass('er-settings-stats-refreshing');
+		} else {
+			containerEl.empty();
+			containerEl.createEl('p', { text: lang.settings.stats.loading, cls: 'er-settings-stats-status' });
+		}
 
 		try {
 			const cards = await scanVault(this.plugin.app.vault, this.plugin.app, this.plugin.settings.deckTagPrefix);
 			const stats = calculateReviewStats(cards);
+			if (token !== this.statsLoadToken) {
+				return;
+			}
 
 			containerEl.empty();
 			if (stats.total === 0) {
-				containerEl.createEl('p', { text: lang.settings.stats.empty });
+				containerEl.createEl('p', { text: lang.settings.stats.empty, cls: 'er-settings-stats-status' });
+				containerEl.removeClass('er-settings-stats-ready');
 				return;
 			}
 
@@ -306,12 +302,21 @@ export class SettingsTab extends PluginSettingTab {
 				[lang.settings.stats.matureCards, stats.matureCards, this.formatPercent(stats.matureCards, stats.total)],
 			]);
 
-			new Setting(containerEl).setName(lang.settings.stats.upcoming).setHeading();
 			this.renderUpcomingChart(containerEl, stats.upcomingDaily);
+			containerEl.addClass('er-settings-stats-ready');
 		} catch (err) {
+			if (token !== this.statsLoadToken) {
+				return;
+			}
 			containerEl.empty();
-			containerEl.createEl('p', { text: lang.settings.stats.loadFailed });
+			containerEl.createEl('p', { text: lang.settings.stats.loadFailed, cls: 'er-settings-stats-status' });
+			containerEl.removeClass('er-settings-stats-ready');
 			error('Failed to render settings stats:', err);
+		} finally {
+			if (token === this.statsLoadToken) {
+				refreshButton?.setDisabled(false);
+				containerEl.removeClass('er-settings-stats-refreshing');
+			}
 		}
 	}
 

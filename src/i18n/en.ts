@@ -66,7 +66,6 @@ export const en = {
 		openSource: 'Open source',
 		hint: 'Hint',
 		shortcutsInactive: 'Click here to enable shortcuts',
-		undo: 'Press Backspace to undo the last rating',
 		statusTags: {
 			newCard: 'New card',
 		},
@@ -79,7 +78,10 @@ export const en = {
 	},
 
 	settings: {
-		title: 'Easy Recall Settings',
+		sections: {
+			advanced: 'Advanced',
+			stats: 'Stats',
+		},
 		language: {
 			name: 'Language',
 			desc: 'Interface language. Auto will follow Obsidian settings.',
@@ -100,20 +102,14 @@ export const en = {
 			desc: 'Maximum number of due cards to include in one review session.',
 		},
 		reviewSurface: {
-			desktopName: 'Desktop Review Interface',
-			desktopDesc: 'Choose whether desktop reviews open in a modal window or a reusable Obsidian tab.',
-			mobileName: 'Mobile Review Interface',
-			mobileDesc: 'Choose whether mobile reviews open in a modal window or a reusable Obsidian tab.',
+			name: 'Review Interface',
+			desc: 'Choose whether reviews open in a modal window or a reusable Obsidian tab.',
 			modal: 'Modal',
 			tab: 'Tab',
 		},
 		clickToRevealCloze: {
 			name: 'Click-to-reveal review',
-			desc: 'Choose where tap-by-tap cloze self-checking replaces the normal Show Answer flow.',
-			desktop: 'Desktop only',
-			mobile: 'Mobile only',
-			enabled: 'Enabled on all',
-			disabled: 'Disabled on all',
+			desc: 'When enabled, tap-by-tap cloze self-checking replaces the normal Show Answer flow.',
 			demoTitle: 'Try click-to-reveal review',
 			demoDesc: 'Each cloze item cycles through hidden, shown, and crossed out as you tap it. As long as any item is crossed out, it is counted as "Again"; once all items are revealed, choose "Hard" or "Good" based on how well you recalled them.',
 			demoPrefix: 'Earth orbits the ',
@@ -126,15 +122,16 @@ export const en = {
 		},
 		shortcuts: {
 			title: 'Keyboard Shortcuts',
+			undoBefore: 'Press ',
+			undoAfterMac: ' to undo the last rating',
+			undoAfterWindows: ' (Backspace) to undo the last rating',
 		},
 		stats: {
-			name: 'Review Stats',
 			desc: 'Summary of review counts and upcoming review windows.',
 			refresh: 'Refresh',
 			loading: 'Loading review stats...',
 			loadFailed: 'Failed to load review stats.',
 			empty: 'No review cards found yet.',
-			upcoming: 'Upcoming Review Windows',
 			total: 'Total cards',
 			totalDecks: 'Decks',
 			matureCards: 'Mature',

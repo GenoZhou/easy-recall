@@ -18,16 +18,13 @@ export interface EasyRecallSettings {
 	debugMode: boolean;
 	/** 单次复习最多进入队列的卡片数量 */
 	reviewBatchSize: number;
-	/** 桌面端复习界面展示方式 */
-	desktopReviewSurface: ReviewSurface;
-	/** 手机端复习界面展示方式 */
-	mobileReviewSurface: ReviewSurface;
-	/** 点击逐个显示 Cloze 答案的启用范围 */
-	clickToRevealCloze: ClickToRevealClozeMode;
+	/** 复习界面展示方式 */
+	reviewSurface: ReviewSurface;
+	/** 是否启用点击逐个显示 Cloze 答案 */
+	clickToRevealCloze: boolean;
 }
 
 export type ReviewSurface = 'modal' | 'tab';
-export type ClickToRevealClozeMode = 'desktop' | 'mobile' | 'enabled' | 'disabled';
 
 export const DEFAULT_REVIEW_BATCH_SIZE = 20;
 
@@ -39,9 +36,8 @@ export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	deckTagPrefix: DEFAULT_DECK_TAG_PREFIX,
 	debugMode: false,
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
-	desktopReviewSurface: 'modal',
-	mobileReviewSurface: 'modal',
-	clickToRevealCloze: 'disabled',
+	reviewSurface: 'modal',
+	clickToRevealCloze: false,
 };
 
 export function normalizeReviewBatchSize(value: unknown): number {
@@ -53,18 +49,35 @@ export function normalizeReviewBatchSize(value: unknown): number {
 	return Math.floor(numericValue);
 }
 
-export function normalizeClickToRevealClozeMode(value: unknown): ClickToRevealClozeMode {
-	if (value === true) {
-		return 'enabled';
-	}
-	if (value === false) {
-		return 'disabled';
-	}
-	if (value === 'desktop' || value === 'mobile' || value === 'enabled' || value === 'disabled') {
+export function normalizeReviewSurface(value: unknown): ReviewSurface | undefined {
+	if (value === 'modal' || value === 'tab') {
 		return value;
 	}
 
-	return DEFAULT_SETTINGS.clickToRevealCloze;
+	return undefined;
+}
+
+function resolveLoadedReviewSurface(loaded: {
+	reviewSurface?: unknown;
+	desktopReviewSurface?: unknown;
+	mobileReviewSurface?: unknown;
+}): ReviewSurface {
+	const unified = normalizeReviewSurface(loaded.reviewSurface);
+	if (unified) {
+		return unified;
+	}
+
+	const desktop = normalizeReviewSurface(loaded.desktopReviewSurface);
+	const mobile = normalizeReviewSurface(loaded.mobileReviewSurface);
+	if (desktop && mobile && desktop !== mobile) {
+		return DEFAULT_SETTINGS.reviewSurface;
+	}
+
+	return desktop ?? mobile ?? DEFAULT_SETTINGS.reviewSurface;
+}
+
+export function normalizeClickToRevealCloze(value: unknown): boolean {
+	return value === true || value === 'enabled';
 }
 
 /**
@@ -83,17 +96,18 @@ export class SettingsManager {
 	 * 加载设置
 	 */
 	async load(): Promise<void> {
-		const loaded = await this.plugin.loadData() as Partial<EasyRecallSettings & { reviewSurface?: ReviewSurface }> | null;
+		const loaded = await this.plugin.loadData() as Partial<EasyRecallSettings & {
+			desktopReviewSurface?: ReviewSurface;
+			mobileReviewSurface?: ReviewSurface;
+		}> | null;
 		if (loaded) {
-			const legacyReviewSurface = loaded.reviewSurface;
 			this.settings = {
 				language: loaded.language ?? DEFAULT_SETTINGS.language,
 				deckTagPrefix: normalizeDeckTagPrefix(loaded.deckTagPrefix ?? DEFAULT_SETTINGS.deckTagPrefix),
 				debugMode: loaded.debugMode ?? DEFAULT_SETTINGS.debugMode,
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
-				desktopReviewSurface: loaded.desktopReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.desktopReviewSurface,
-				mobileReviewSurface: loaded.mobileReviewSurface ?? legacyReviewSurface ?? DEFAULT_SETTINGS.mobileReviewSurface,
-				clickToRevealCloze: normalizeClickToRevealClozeMode(loaded.clickToRevealCloze),
+				reviewSurface: resolveLoadedReviewSurface(loaded),
+				clickToRevealCloze: normalizeClickToRevealCloze(loaded.clickToRevealCloze),
 			};
 		}
 	}
@@ -123,8 +137,8 @@ export class SettingsManager {
 		if (updates.deckTagPrefix !== undefined) {
 			this.settings.deckTagPrefix = normalizeDeckTagPrefix(updates.deckTagPrefix);
 		}
-		if (updates.clickToRevealCloze !== undefined) {
-			this.settings.clickToRevealCloze = normalizeClickToRevealClozeMode(updates.clickToRevealCloze);
+		if (updates.reviewSurface !== undefined) {
+			this.settings.reviewSurface = normalizeReviewSurface(updates.reviewSurface) ?? DEFAULT_SETTINGS.reviewSurface;
 		}
 		await this.save();
 	}
@@ -143,24 +157,6 @@ export class SettingsManager {
  */
 export function createSettingsManager(plugin: Plugin): SettingsManager {
 	return new SettingsManager(plugin);
-}
-
-export function getActiveReviewSurface(settings: EasyRecallSettings, isMobile: boolean): ReviewSurface {
-	return isMobile ? settings.mobileReviewSurface : settings.desktopReviewSurface;
-}
-
-export function getActiveClickToRevealCloze(settings: EasyRecallSettings, isMobile: boolean): boolean {
-	switch (settings.clickToRevealCloze) {
-		case 'enabled':
-			return true;
-		case 'desktop':
-			return !isMobile;
-		case 'mobile':
-			return isMobile;
-		case 'disabled':
-		default:
-			return false;
-	}
 }
 
 // 设置面板单独导出（避免测试时加载 Obsidian UI 依赖）

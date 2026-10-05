@@ -2,11 +2,10 @@
  * 开始全局复习命令
  */
 
-import { Notice, Platform } from 'obsidian';
+import { Notice } from 'obsidian';
 import { openDeckModal } from '../ui/deck-suggest-modal';
 import { t } from '../i18n';
 import { info } from '../utils/';
-import { getActiveClickToRevealCloze, getActiveReviewSurface } from '../settings';
 import type { CommandContext } from './types';
 
 /**
@@ -19,11 +18,9 @@ export async function executeStartReview(context: CommandContext): Promise<void>
 	info('Starting global review');
 	
 	try {
-		const reviewSurface = getActiveReviewSurface(plugin.settings, Platform.isMobile);
-		const clickToRevealCloze = getActiveClickToRevealCloze(plugin.settings, Platform.isMobile);
-		await openDeckModal(app, app.vault, reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
+		await openDeckModal(app, app.vault, plugin.settings.reviewSurface, plugin.settings.reviewBatchSize, plugin.settings.deckTagPrefix, () => {
 			new Notice(lang.notifications.reviewComplete, 2000);
-		}, clickToRevealCloze);
+		}, plugin.settings.clickToRevealCloze);
 	} catch (err) {
 		console.error('Failed to start review:', err);
 		new Notice(lang.notifications.failedToStart, 3000);
