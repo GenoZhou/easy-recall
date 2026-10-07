@@ -77,6 +77,8 @@ export const en = {
 		showAnswer: 'Show Answer',
 		showHint: 'Show Hint',
 		openSource: 'Open source',
+		undoLast: 'Undo last',
+		undoLastAria: 'Undo the last rating',
 		hint: 'Hint',
 		shortcutsInactive: 'Click here to enable shortcuts',
 		statusTags: {
@@ -130,6 +132,10 @@ export const en = {
 			demoEmptyHint: 'Reveal every cloze item to see the rating buttons.',
 			demoRevealAriaLabel: 'Reveal answer',
 		},
+		enableUndo: {
+			name: 'Undo last rating',
+			desc: 'Show Undo last in the review header. On desktop, Backspace also undoes. Off by default.',
+		},
 		leechLapses: {
 			name: 'Extra practice deck threshold',
 			desc: 'Cards join Extra practice after this many Again ratings, and leave after enough Good ratings.',
@@ -141,12 +147,6 @@ export const en = {
 		showNewDeck: {
 			name: 'New due deck',
 			desc: 'List due new cards on their own in the deck picker, so you can learn new cards when the backlog is large.',
-		},
-		shortcuts: {
-			title: 'Keyboard Shortcuts',
-			undoBefore: 'Press ',
-			undoAfterMac: ' to undo the last rating',
-			undoAfterWindows: ' (Backspace) to undo the last rating',
 		},
 		stats: {
 			desc: 'Summary of review counts and upcoming review windows.',

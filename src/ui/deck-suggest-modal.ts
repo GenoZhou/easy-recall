@@ -18,6 +18,19 @@ interface DeckWithStats extends Deck {
 	nextReviewTime: string | null;
 }
 
+export interface OpenDeckModalOptions {
+	vault: Vault;
+	reviewSurface: ReviewSurface;
+	maxCardsPerReview: number;
+	deckTagPrefix: string;
+	onComplete?: () => void;
+	clickToRevealCloze?: boolean;
+	leechLapses?: number;
+	showLeechDeck?: boolean;
+	showNewDeck?: boolean;
+	enableUndo?: boolean;
+}
+
 export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private vault: Vault;
 	private decks: DeckWithStats[] = [];
@@ -29,32 +42,23 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	private maxCardsPerReview: number;
 	private deckTagPrefix: string;
 	private clickToRevealCloze: boolean;
+	private enableUndo: boolean;
 	private leechLapses: number;
 	private showLeechDeck: boolean;
 	private showNewDeck: boolean;
 
-	constructor(
-		app: App,
-		vault: Vault,
-		reviewSurface: ReviewSurface,
-		maxCardsPerReview: number,
-		deckTagPrefix: string,
-		onReviewComplete?: () => void,
-		clickToRevealCloze?: boolean,
-		leechLapses?: number,
-		showLeechDeck?: boolean,
-		showNewDeck?: boolean
-	) {
+	constructor(app: App, options: OpenDeckModalOptions) {
 		super(app);
-		this.vault = vault;
-		this.reviewSurface = reviewSurface;
-		this.maxCardsPerReview = maxCardsPerReview;
-		this.deckTagPrefix = deckTagPrefix;
-		this.onReviewComplete = onReviewComplete;
-		this.clickToRevealCloze = clickToRevealCloze ?? false;
-		this.leechLapses = leechLapses ?? DEFAULT_LEECH_LAPSES;
-		this.showLeechDeck = showLeechDeck ?? DEFAULT_SETTINGS.showLeechDeck;
-		this.showNewDeck = showNewDeck ?? DEFAULT_SETTINGS.showNewDeck;
+		this.vault = options.vault;
+		this.reviewSurface = options.reviewSurface;
+		this.maxCardsPerReview = options.maxCardsPerReview;
+		this.deckTagPrefix = options.deckTagPrefix;
+		this.onReviewComplete = options.onComplete;
+		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
+		this.enableUndo = options.enableUndo ?? false;
+		this.leechLapses = options.leechLapses ?? DEFAULT_LEECH_LAPSES;
+		this.showLeechDeck = options.showLeechDeck ?? DEFAULT_SETTINGS.showLeechDeck;
+		this.showNewDeck = options.showNewDeck ?? DEFAULT_SETTINGS.showNewDeck;
 
 		const lang = t();
 		this.emptyStateText = lang.deckSelector.emptyState;
@@ -253,6 +257,7 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 					}
 				},
 				clickToRevealCloze: this.clickToRevealCloze,
+				enableUndo: this.enableUndo,
 				includeNotDue: deck.id === 'leech',
 			}, this.reviewSurface);
 		}, 100);
@@ -288,28 +293,6 @@ export class DeckSuggestModal extends SuggestModal<DeckWithStats> {
 	}
 }
 
-export async function openDeckModal(
-	app: App,
-	vault: Vault,
-	reviewSurface: ReviewSurface,
-	maxCardsPerReview: number,
-	deckTagPrefix: string,
-	onComplete?: () => void,
-	clickToRevealCloze?: boolean,
-	leechLapses?: number,
-	showLeechDeck?: boolean,
-	showNewDeck?: boolean
-): Promise<void> {
-	new DeckSuggestModal(
-		app,
-		vault,
-		reviewSurface,
-		maxCardsPerReview,
-		deckTagPrefix,
-		onComplete,
-		clickToRevealCloze,
-		leechLapses,
-		showLeechDeck,
-		showNewDeck
-	).open();
+export async function openDeckModal(app: App, options: OpenDeckModalOptions): Promise<void> {
+	new DeckSuggestModal(app, options).open();
 }

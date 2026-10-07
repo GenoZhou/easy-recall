@@ -3,7 +3,7 @@
  * 遵循 Obsidian 最佳实践：使用 PluginSettingTab
  */
 
-import { PluginSettingTab, Setting, App, Platform, ButtonComponent, type SettingDefinitionItem } from 'obsidian';
+import { PluginSettingTab, Setting, App, ButtonComponent, type SettingDefinitionItem } from 'obsidian';
 import EasyRecallPlugin from '../main';
 import { t, setLanguage, Language, resolveLanguage } from '../i18n';
 import { DEFAULT_LEECH_LAPSES, normalizeReviewBatchSize, ReviewSurface } from './index';
@@ -108,11 +108,19 @@ export class SettingsTab extends PluginSettingTab {
 					})
 			);
 
-		if (!Platform.isMobile) {
-			this.renderShortcutHint(containerEl);
-		}
-
 		this.renderClickToRevealSettings(containerEl);
+
+		new Setting(containerEl)
+			.setName(lang.settings.enableUndo.name)
+			.setDesc(lang.settings.enableUndo.desc)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.enableUndo)
+					.onChange(async (value) => {
+						await this.plugin.settingsManager.update({ enableUndo: value });
+						this.plugin.settings = this.plugin.settingsManager.get();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName(lang.settings.showLeechDeck.name)
@@ -186,17 +194,6 @@ export class SettingsTab extends PluginSettingTab {
 
 		const statsContainer = containerEl.createDiv({ cls: 'er-settings-stats' });
 		void this.renderStats(statsContainer);
-	}
-
-	private renderShortcutHint(containerEl: HTMLElement): void {
-		const lang = t();
-		const setting = new Setting(containerEl).setName(lang.settings.shortcuts.title);
-		setting.descEl.empty();
-		setting.descEl.appendText(lang.settings.shortcuts.undoBefore);
-		setting.descEl.createSpan({ text: '⌫', cls: 'er-kbd' });
-		setting.descEl.appendText(
-			Platform.isMacOS ? lang.settings.shortcuts.undoAfterMac : lang.settings.shortcuts.undoAfterWindows
-		);
 	}
 
 	private renderClickToRevealSettings(containerEl: HTMLElement): void {

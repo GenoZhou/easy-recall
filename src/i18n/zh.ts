@@ -79,6 +79,8 @@ export const zh: Translations = {
 		showAnswer: '显示答案',
 		showHint: '显示提示',
 		openSource: '打开原文',
+		undoLast: '撤回上个',
+		undoLastAria: '撤回上一次评分',
 		hint: '提示',
 		shortcutsInactive: '点击这里以启用快捷键',
 		statusTags: {
@@ -132,6 +134,10 @@ export const zh: Translations = {
 			demoEmptyHint: '全部挖空项显示或划掉后，会出现评分按钮。',
 			demoRevealAriaLabel: '切换挖空状态',
 		},
+		enableUndo: {
+			name: '撤回上个评分',
+			desc: '在复习标题栏显示「撤回上个」。桌面端也可用 ⌫。默认关闭。',
+		},
 		leechLapses: {
 			name: '易错卡组阈值',
 			desc: '「没记住」达到此次数后进入易错加练，连续记住后会离开。',
@@ -143,12 +149,6 @@ export const zh: Translations = {
 		showNewDeck: {
 			name: '新卡到期卡组',
 			desc: '选组时单独列出到期新卡，便于欠账多时只学新卡。',
-		},
-		shortcuts: {
-			title: '快捷键',
-			undoBefore: '按 ',
-			undoAfterMac: ' 撤回上一次评分',
-			undoAfterWindows: '（退格）撤回上一次评分',
 		},
 		stats: {
 			desc: '查看复习摘要和接下来几个复习窗口。',

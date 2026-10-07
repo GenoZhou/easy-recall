@@ -36,6 +36,7 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.reviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.enableUndo).toBe(false);
 			expect(settings.leechLapses).toBe(3);
 			expect(settings.showLeechDeck).toBe(false);
 			expect(settings.showNewDeck).toBe(false);
@@ -53,6 +54,7 @@ describe('SettingsManager', () => {
 			expect(settings.reviewBatchSize).toBe(20);
 			expect(settings.reviewSurface).toBe('modal');
 			expect(settings.clickToRevealCloze).toBe(false);
+			expect(settings.enableUndo).toBe(false);
 			expect(settings.leechLapses).toBe(3);
 			expect(settings.showLeechDeck).toBe(false);
 			expect(settings.showNewDeck).toBe(false);
@@ -147,6 +149,7 @@ describe('SettingsManager', () => {
 				reviewBatchSize: 20,
 				reviewSurface: 'modal',
 				clickToRevealCloze: false,
+				enableUndo: false,
 				leechLapses: 3,
 				showLeechDeck: false,
 				showNewDeck: false,
@@ -271,6 +274,14 @@ describe('SettingsManager', () => {
 			expect(manager.get().clickToRevealCloze).toBe(true);
 		});
 
+		it('should update enableUndo', async () => {
+			mockLoadData.mockResolvedValue(null);
+			await manager.load();
+
+			await manager.update({ enableUndo: true });
+
+			expect(manager.get().enableUndo).toBe(true);
+		});
 
 		it('should save after update', async () => {
 			mockLoadData.mockResolvedValue(null);
@@ -325,6 +336,7 @@ describe('DEFAULT_SETTINGS', () => {
 		expect(DEFAULT_SETTINGS.reviewBatchSize).toBe(20);
 		expect(DEFAULT_SETTINGS.reviewSurface).toBe('modal');
 		expect(DEFAULT_SETTINGS.clickToRevealCloze).toBe(false);
+		expect(DEFAULT_SETTINGS.enableUndo).toBe(false);
 		expect(DEFAULT_SETTINGS.leechLapses).toBe(3);
 		expect(DEFAULT_SETTINGS.showLeechDeck).toBe(false);
 		expect(DEFAULT_SETTINGS.showNewDeck).toBe(false);

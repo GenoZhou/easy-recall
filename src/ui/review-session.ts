@@ -20,6 +20,8 @@ export interface ReviewOptions {
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 	clickToRevealCloze?: boolean;
+	/** When true, show undo control and allow Backspace undo on desktop. */
+	enableUndo?: boolean;
 	/** Extra practice can include cards that are not due yet. */
 	includeNotDue?: boolean;
 }
@@ -28,14 +30,21 @@ export interface ReviewCompletionState {
 	remainingDueCount: number;
 }
 
+export interface ReviewHeaderState {
+	title: string;
+	canUndo: boolean;
+}
+
 export interface ReviewSessionHost {
 	contentEl: HTMLElement;
 	buttonsEl: HTMLElement;
-	setTitle(title: string): void;
+	setHeader(state: ReviewHeaderState): void;
 	complete(state: ReviewCompletionState): void;
 	openSource(card: Card): Promise<boolean>;
 	areShortcutsActive?(): boolean;
 	handleCompleteSpace?(): void;
+	/** Called after a successful undo leaves the completion screen. */
+	onUndoFromComplete?(): void;
 }
 
 interface ReviewStatusTag {
@@ -134,6 +143,7 @@ export class ReviewSession {
 	private shortcutScope: Scope | null = null;
 	private shortcutHandlers: KeymapEventHandler[] = [];
 	private clickToRevealCloze: boolean = false;
+	private enableUndo: boolean = false;
 	private includeNotDue: boolean = false;
 	private clozeRevealStatesByCardId: Map<string, ClozeRevealState[]> = new Map();
 	private lastRateEntry: RateHistoryEntry | null = null;
@@ -146,6 +156,7 @@ export class ReviewSession {
 		this.includeNotDue = normalizeReviewBoolean(options.includeNotDue);
 		this.cards = this.getDueSortedCards(options.cards, options.maxCardsPerReview);
 		this.clickToRevealCloze = normalizeReviewBoolean(options.clickToRevealCloze);
+		this.enableUndo = normalizeReviewBoolean(options.enableUndo);
 	}
 
 	registerShortcuts(scope: Scope): void {
@@ -166,9 +177,11 @@ export class ReviewSession {
 			}));
 		});
 
-		this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.UNDO, (evt: KeyboardEvent) => {
-			return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.UNDO);
-		}));
+		if (this.enableUndo) {
+			this.shortcutHandlers.push(scope.register([], KEYBOARD_SHORTCUTS.UNDO, (evt: KeyboardEvent) => {
+				return this.handleShortcutEvent(evt, KEYBOARD_SHORTCUTS.UNDO);
+			}));
+		}
 	}
 
 	handleShortcutEvent(evt: KeyboardEvent, fallbackKey?: string): boolean {
@@ -222,7 +235,7 @@ export class ReviewSession {
 			return false;
 		}
 
-		if (key === KEYBOARD_SHORTCUTS.UNDO) {
+		if (this.enableUndo && key === KEYBOARD_SHORTCUTS.UNDO) {
 			evt.preventDefault();
 			void this.undo();
 			return false;
@@ -304,7 +317,7 @@ export class ReviewSession {
 		}
 
 		const card = this.cards[this.currentIndex];
-		this.host.setTitle(lang.review.progress(this.currentIndex + 1, this.cards.length));
+		this.syncHeader();
 
 		this.host.contentEl.empty();
 		this.host.buttonsEl.empty();
@@ -552,24 +565,25 @@ export class ReviewSession {
 				const lineShift = isNewScheduleLine ? 1 : 0;
 				const originalLineStart = card.lineStart;
 
-				// 保存 undo 快照（在修改任何 session 状态之前）
-				this.lastRateEntry = {
-					cardId: card.id,
-					cardIndex: this.currentIndex,
-					wasAgain: rating === 1,
-					originalSchedule: card.schedule ? { ...card.schedule } : undefined,
-					originalScheduleLine: card.scheduleLine,
-					originalLineStart: card.lineStart,
-					originalLineEnd: card.lineEnd,
-					affectedCards: this.cards
-						.filter(queueCard => queueCard.id !== card.id && queueCard.filePath === card.filePath && queueCard.lineStart >= originalLineStart)
-						.map(queueCard => ({
-							cardId: queueCard.id,
-							lineStart: queueCard.lineStart,
-							lineEnd: queueCard.lineEnd,
-							scheduleLine: queueCard.scheduleLine,
-						})),
-				};
+				this.lastRateEntry = this.enableUndo
+					? {
+						cardId: card.id,
+						cardIndex: this.currentIndex,
+						wasAgain: rating === 1,
+						originalSchedule: card.schedule ? { ...card.schedule } : undefined,
+						originalScheduleLine: card.scheduleLine,
+						originalLineStart: card.lineStart,
+						originalLineEnd: card.lineEnd,
+						affectedCards: this.cards
+							.filter(queueCard => queueCard.id !== card.id && queueCard.filePath === card.filePath && queueCard.lineStart >= originalLineStart)
+							.map(queueCard => ({
+								cardId: queueCard.id,
+								lineStart: queueCard.lineStart,
+								lineEnd: queueCard.lineEnd,
+								scheduleLine: queueCard.scheduleLine,
+							})),
+					}
+					: null;
 
 				card.schedule = newSchedule;
 				if (isNewScheduleLine) {
@@ -612,20 +626,29 @@ export class ReviewSession {
 			this.currentIndex++;
 			void this.render();
 		} catch (err) {
-			this.lastRateEntry = null;
+			// Keep any previous undo snapshot; the failed write never committed a new one.
 			error('Failed to update schedule:', err);
 			new Notice(t().notifications.failedToSave, 3000);
+			this.syncHeader();
 		}
 	}
 
-	async undo(): Promise<void> {
-		if (!this.lastRateEntry) return;
+	canUndo(): boolean {
+		return this.enableUndo && this.lastRateEntry !== null;
+	}
 
+	async undo(): Promise<void> {
 		const entry = this.lastRateEntry;
+		if (!this.enableUndo || !entry) return;
+
 		this.lastRateEntry = null;
+		const wasComplete = this.isComplete;
 
 		const card = this.cards.find(c => c.id === entry.cardId);
-		if (!card) return;
+		if (!card) {
+			this.syncHeader();
+			return;
+		}
 
 		try {
 			const file = this.vault.getAbstractFileByPath(card.filePath);
@@ -666,12 +689,36 @@ export class ReviewSession {
 			}
 
 			this.currentIndex = entry.cardIndex;
+			this.isComplete = false;
 			this.resetRevealState(card.id);
+			if (wasComplete) {
+				this.host.onUndoFromComplete?.();
+			}
 			void this.render();
 		} catch (err) {
+			this.lastRateEntry = entry;
 			error('Failed to undo rating:', err);
 			new Notice(t().notifications.undoFailed, 3000);
+			this.syncHeader();
 		}
+	}
+
+	private syncHeader(): void {
+		const lang = t();
+		if (this.isComplete) {
+			this.host.setHeader({
+				title: lang.review.complete.title,
+				canUndo: this.canUndo(),
+			});
+			return;
+		}
+
+		const total = this.cards.length;
+		const current = total === 0 ? 0 : Math.min(this.currentIndex + 1, total);
+		this.host.setHeader({
+			title: lang.review.progress(current, total),
+			canUndo: this.canUndo(),
+		});
 	}
 
 	private attachClozeRevealListeners(cardBody: HTMLElement): void {

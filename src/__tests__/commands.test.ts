@@ -57,8 +57,9 @@ describe('commands', () => {
 	});
 
 	it('passes disabled click-to-reveal as false on global review', async () => {
+		const vault = {};
 		await executeStartReview({
-			app: { vault: {} } as any,
+			app: { vault } as any,
 			plugin: {
 				settings: {
 					reviewBatchSize: 20,
@@ -68,22 +69,23 @@ describe('commands', () => {
 					leechLapses: 3,
 					showLeechDeck: true,
 					showNewDeck: false,
+					enableUndo: false,
 				},
 			} as any,
 		});
 
-		expect(openDeckModal).toHaveBeenCalledWith(
-			expect.anything(),
-			expect.anything(),
-			'modal',
-			20,
-			'easy-recall',
-			expect.any(Function),
-			false,
-			3,
-			true,
-			false
-		);
+		expect(openDeckModal).toHaveBeenCalledWith(expect.anything(), {
+			vault,
+			reviewSurface: 'modal',
+			maxCardsPerReview: 20,
+			deckTagPrefix: 'easy-recall',
+			onComplete: expect.any(Function),
+			clickToRevealCloze: false,
+			leechLapses: 3,
+			showLeechDeck: true,
+			showNewDeck: false,
+			enableUndo: false,
+		});
 	});
 
 	it('passes enabled click-to-reveal as true on global review', async () => {
@@ -98,12 +100,15 @@ describe('commands', () => {
 					leechLapses: 3,
 					showLeechDeck: false,
 					showNewDeck: true,
+					enableUndo: true,
 				},
 			} as any,
 		});
 
-		expect((openDeckModal as jest.Mock).mock.calls[0][6]).toBe(true);
-		expect((openDeckModal as jest.Mock).mock.calls[0][8]).toBe(false);
-		expect((openDeckModal as jest.Mock).mock.calls[0][9]).toBe(true);
+		const options = (openDeckModal as jest.Mock).mock.calls[0][1];
+		expect(options.clickToRevealCloze).toBe(true);
+		expect(options.showLeechDeck).toBe(false);
+		expect(options.showNewDeck).toBe(true);
+		expect(options.enableUndo).toBe(true);
 	});
 });

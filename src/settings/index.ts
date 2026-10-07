@@ -22,6 +22,8 @@ export interface EasyRecallSettings {
 	reviewSurface: ReviewSurface;
 	/** 是否启用点击逐个显示 Cloze 答案 */
 	clickToRevealCloze: boolean;
+	/** 是否启用撤回上个评分 */
+	enableUndo: boolean;
 	/** 易错分达到该次数后进入易错复习 */
 	leechLapses: number;
 	/** 选组列表是否显示易错加练 */
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: EasyRecallSettings = {
 	reviewBatchSize: DEFAULT_REVIEW_BATCH_SIZE,
 	reviewSurface: 'modal',
 	clickToRevealCloze: false,
+	enableUndo: false,
 	leechLapses: DEFAULT_LEECH_LAPSES,
 	showLeechDeck: false,
 	showNewDeck: false,
@@ -127,6 +130,7 @@ export class SettingsManager {
 				reviewBatchSize: normalizeReviewBatchSize(loaded.reviewBatchSize ?? DEFAULT_SETTINGS.reviewBatchSize),
 				reviewSurface: resolveLoadedReviewSurface(loaded),
 				clickToRevealCloze: normalizeClickToRevealCloze(loaded.clickToRevealCloze),
+				enableUndo: loaded.enableUndo === true,
 				leechLapses: normalizeLeechLapses(loaded.leechLapses ?? DEFAULT_SETTINGS.leechLapses),
 				showLeechDeck: typeof loaded.showLeechDeck === 'boolean' ? loaded.showLeechDeck : DEFAULT_SETTINGS.showLeechDeck,
 				showNewDeck: typeof loaded.showNewDeck === 'boolean' ? loaded.showNewDeck : DEFAULT_SETTINGS.showNewDeck,
@@ -164,6 +168,9 @@ export class SettingsManager {
 		}
 		if (updates.reviewSurface !== undefined) {
 			this.settings.reviewSurface = normalizeReviewSurface(updates.reviewSurface) ?? DEFAULT_SETTINGS.reviewSurface;
+		}
+		if (updates.enableUndo !== undefined) {
+			this.settings.enableUndo = updates.enableUndo === true;
 		}
 		await this.save();
 	}

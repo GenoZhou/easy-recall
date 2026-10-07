@@ -1,5 +1,6 @@
 import { ItemView, WorkspaceLeaf, Notice } from 'obsidian';
 import { t } from '../i18n';
+import { mountReviewHeader, ReviewHeaderControls } from './review-header';
 import { ReviewCompletionState, ReviewOptions, ReviewSession, openCardSource } from './review-session';
 
 export const REVIEW_VIEW_TYPE = 'easy-recall-review';
@@ -7,7 +8,8 @@ export const REVIEW_VIEW_TYPE = 'easy-recall-review';
 export class ReviewView extends ItemView {
 	private cardContentEl: HTMLElement | null = null;
 	private buttonsContainerEl: HTMLElement | null = null;
-	private titleEl: HTMLElement | null = null;
+	private headerEl: HTMLElement | null = null;
+	private header: ReviewHeaderControls | null = null;
 	private session: ReviewSession | null = null;
 	private reviewOptions: ReviewOptions | null = null;
 	private onComplete?: () => void;
@@ -32,7 +34,7 @@ export class ReviewView extends ItemView {
 	}
 
 	async setReview(options: ReviewOptions): Promise<void> {
-		if (!this.cardContentEl || !this.buttonsContainerEl) {
+		if (!this.cardContentEl || !this.buttonsContainerEl || !this.headerEl) {
 			this.renderShell();
 		}
 
@@ -40,13 +42,16 @@ export class ReviewView extends ItemView {
 		this.reviewOptions = options;
 		this.completionState = null;
 		this.session?.dispose();
-		this.session = new ReviewSession(this.app, {
-			...options,
-			clickToRevealCloze: options.clickToRevealCloze,
-		}, {
+		this.header = mountReviewHeader(this.headerEl!, {
+			enableUndo: options.enableUndo === true,
+			onUndo: () => {
+				void this.session?.undo();
+			},
+		});
+		this.session = new ReviewSession(this.app, options, {
 			contentEl: this.cardContentEl!,
 			buttonsEl: this.buttonsContainerEl!,
-			setTitle: (title) => this.setReviewTitle(title),
+			setHeader: (state) => this.header?.setHeader(state),
 			complete: (state) => this.completeReview(state),
 			openSource: (card) => openCardSource(this.app, options.vault, card, true),
 			areShortcutsActive: () => this.shortcutsActive,
@@ -56,6 +61,9 @@ export class ReviewView extends ItemView {
 				} else {
 					this.finishReview();
 				}
+			},
+			onUndoFromComplete: () => {
+				this.completionState = null;
 			},
 		});
 		await this.session.render();
@@ -67,10 +75,11 @@ export class ReviewView extends ItemView {
 		this.session?.dispose();
 		this.session = null;
 		this.reviewOptions = null;
+		this.header = null;
+		this.headerEl = null;
 	}
 
 	private renderShell(): void {
-		const lang = t();
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('er-review-view');
@@ -97,16 +106,10 @@ export class ReviewView extends ItemView {
 			this.domShortcutsRegistered = true;
 		}
 
-		this.titleEl = contentEl.createEl('h2', {
-			text: lang.review.title,
-			cls: 'er-review-view-title'
-		});
+		this.headerEl = contentEl.createDiv({ cls: 'er-review-view-header' });
+		this.header = null;
 		this.cardContentEl = contentEl.createDiv({ cls: 'er-card-content' });
 		this.buttonsContainerEl = contentEl.createDiv({ cls: 'er-buttons' });
-	}
-
-	private setReviewTitle(title: string): void {
-		this.titleEl?.setText(title);
 	}
 
 	private setShortcutsActive(active: boolean): void {
@@ -121,33 +124,43 @@ export class ReviewView extends ItemView {
 	private completeReview(state: ReviewCompletionState): void {
 		this.completionState = state;
 		const lang = t();
+		const canUndo = this.session?.canUndo() ?? false;
+		const keepCompleteScreen = state.remainingDueCount > 0 || canUndo;
+
 		this.cardContentEl?.empty();
 		this.buttonsContainerEl?.empty();
-		this.setReviewTitle(lang.review.complete.title);
+		this.header?.setHeader({
+			title: lang.review.complete.title,
+			canUndo,
+		});
 		this.cardContentEl?.createEl('p', { text: lang.notifications.reviewComplete });
+
+		if (!keepCompleteScreen) {
+			this.finishReview();
+			return;
+		}
 
 		if (state.remainingDueCount > 0) {
 			this.cardContentEl?.createEl('p', {
 				text: lang.review.complete.remaining(state.remainingDueCount),
 				cls: 'er-review-complete-remaining',
 			});
+		}
 
-			const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'er-buttons-row' });
+		const buttonRow = this.buttonsContainerEl?.createDiv({ cls: 'er-buttons-row' });
+		if (state.remainingDueCount > 0) {
 			const continueButton = buttonRow?.createEl('button', {
 				text: lang.review.complete.continueButton,
 				cls: 'er-btn-show mod-cta',
 			});
 			continueButton?.addEventListener('click', () => this.continueReview());
-
-			const doneButton = buttonRow?.createEl('button', {
-				text: lang.review.complete.button,
-				cls: 'er-btn-secondary',
-			});
-			doneButton?.addEventListener('click', () => this.finishReview());
-			return;
 		}
 
-		this.finishReview();
+		const doneButton = buttonRow?.createEl('button', {
+			text: lang.review.complete.button,
+			cls: state.remainingDueCount > 0 ? 'er-btn-secondary' : 'er-btn-show mod-cta',
+		});
+		doneButton?.addEventListener('click', () => this.finishReview());
 	}
 
 	private continueReview(): void {

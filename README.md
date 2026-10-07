@@ -147,6 +147,7 @@ Desktop shortcuts work in both the modal window and the reusable Obsidian tab. S
 | 1 | Again |
 | 2 | Hard |
 | 3 | Good |
+| Backspace | Undo last rating (when **Undo last rating** is enabled in settings) |
 
 ## Data Storage
 

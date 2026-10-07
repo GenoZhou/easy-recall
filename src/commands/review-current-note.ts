@@ -38,6 +38,7 @@ export async function executeReviewCurrentNote(
 				new Notice(lang.notifications.reviewComplete, 2000);
 			},
 			clickToRevealCloze: plugin.settings.clickToRevealCloze,
+			enableUndo: plugin.settings.enableUndo,
 		}, plugin.settings.reviewSurface);
 
 	} catch (err) {

@@ -11,6 +11,7 @@ export interface OpenReviewOptions {
 	reloadCards?: () => Promise<Card[]>;
 	onComplete?: () => void;
 	clickToRevealCloze?: boolean;
+	enableUndo?: boolean;
 	includeNotDue?: boolean;
 }
 

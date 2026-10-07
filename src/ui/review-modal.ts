@@ -1,6 +1,7 @@
 import { App, Modal, Vault } from 'obsidian';
 import { Card } from '../types';
 import { t } from '../i18n';
+import { mountReviewHeader, ReviewHeaderControls } from './review-header';
 import {
 	ReviewCompletionState,
 	ReviewOptions,
@@ -21,11 +22,13 @@ export class ReviewModal extends Modal {
 	private onComplete?: () => void;
 	private cardContentEl: HTMLElement | null = null;
 	private buttonsContainerEl: HTMLElement | null = null;
+	private header: ReviewHeaderControls | null = null;
 	private session: ReviewSession | null = null;
 	private shouldTriggerComplete: boolean = true;
 	private completionState: ReviewCompletionState | null = null;
 	private completionNotified: boolean = false;
 	private clickToRevealCloze: boolean = false;
+	private enableUndo: boolean = false;
 	private includeNotDue: boolean = false;
 
 	constructor(app: App, options: ReviewModalOptions) {
@@ -36,16 +39,17 @@ export class ReviewModal extends Modal {
 		this.reloadCards = options.reloadCards;
 		this.onComplete = options.onComplete;
 		this.clickToRevealCloze = options.clickToRevealCloze ?? false;
+		this.enableUndo = options.enableUndo ?? false;
 		this.includeNotDue = options.includeNotDue ?? false;
 	}
 
 	onOpen() {
-		const lang = t();
-		const { contentEl, titleEl } = this;
+		const { contentEl, modalEl } = this;
 
+		// Host class is on modalEl so header/title rules can reach titleEl
+		// (titleEl is a sibling of contentEl, not a descendant).
+		modalEl.addClass('er-review-modal-host');
 		contentEl.addClass('er-review-modal');
-		titleEl.setText(lang.review.title);
-
 		this.cardContentEl = contentEl.createDiv({ cls: 'er-card-content' });
 		this.buttonsContainerEl = contentEl.createDiv({ cls: 'er-buttons' });
 
@@ -59,6 +63,12 @@ export class ReviewModal extends Modal {
 
 		this.completionState = null;
 		this.session?.dispose();
+		this.header = mountReviewHeader(this.titleEl, {
+			enableUndo: this.enableUndo,
+			onUndo: () => {
+				void this.session?.undo();
+			},
+		});
 		this.session = new ReviewSession(this.app, {
 			cards: this.cards,
 			vault: this.vault,
@@ -66,11 +76,12 @@ export class ReviewModal extends Modal {
 			reloadCards: this.reloadCards,
 			onComplete: this.onComplete,
 			clickToRevealCloze: this.clickToRevealCloze,
+			enableUndo: this.enableUndo,
 			includeNotDue: this.includeNotDue,
 		}, {
 			contentEl: this.cardContentEl,
 			buttonsEl: this.buttonsContainerEl,
-			setTitle: (title) => this.titleEl.setText(title),
+			setHeader: (state) => this.header?.setHeader(state),
 			complete: (state) => this.renderComplete(state),
 			openSource: async (card) => {
 				const opened = await openCardSource(this.app, this.vault, card);
@@ -88,6 +99,9 @@ export class ReviewModal extends Modal {
 					this.close();
 				}
 			},
+			onUndoFromComplete: () => {
+				this.completionState = null;
+			},
 		});
 		// Modals own keyboard focus in Obsidian, so Scope is reliable here.
 		this.session.registerShortcuts(this.scope);
@@ -99,7 +113,10 @@ export class ReviewModal extends Modal {
 		this.completionState = state;
 		this.cardContentEl?.empty();
 		this.buttonsContainerEl?.empty();
-		this.titleEl.setText(lang.review.complete.title);
+		this.header?.setHeader({
+			title: lang.review.complete.title,
+			canUndo: this.session?.canUndo() ?? false,
+		});
 		this.cardContentEl?.createEl('p', { text: lang.notifications.reviewComplete });
 
 		if (state.remainingDueCount > 0) {
@@ -135,6 +152,7 @@ export class ReviewModal extends Modal {
 		contentEl.empty();
 		this.session?.dispose();
 		this.session = null;
+		this.header = null;
 		if (this.shouldTriggerComplete && this.completionState?.remainingDueCount === 0) {
 			this.notifyComplete();
 		}

@@ -144,10 +144,16 @@ function createHost() {
 	return {
 		contentEl: new TestElement(),
 		buttonsEl: new TestElement(),
-		setTitle: jest.fn(),
+		setHeader: jest.fn(),
 		complete: jest.fn(),
 		openSource: jest.fn().mockResolvedValue(true),
+		onUndoFromComplete: jest.fn(),
+		handleCompleteSpace: jest.fn(),
 	};
+}
+
+function lastHeader(host: ReturnType<typeof createHost>) {
+	return host.setHeader.mock.calls.at(-1)?.[0] as { title: string; canUndo: boolean };
 }
 
 function createScope() {
@@ -208,11 +214,26 @@ describe('ReviewSession shortcuts', () => {
 		jest.clearAllMocks();
 	});
 
-	it('registers desktop shortcuts', () => {
+	it('registers desktop shortcuts without undo by default', () => {
 		const host = createHost();
 		const session = new ReviewSession({} as any, {
 			cards: [createCard()],
 			vault: { getAbstractFileByPath: jest.fn() } as any,
+		}, host as any);
+		const { scope } = createScope();
+
+		session.registerShortcuts(scope as any);
+
+		expect(scope.register).toHaveBeenCalledTimes(4);
+		expect(scope.register.mock.calls.map(call => call[1])).toEqual([' ', '1', '2', '3']);
+	});
+
+	it('registers Backspace when enableUndo is on', () => {
+		const host = createHost();
+		const session = new ReviewSession({} as any, {
+			cards: [createCard()],
+			vault: { getAbstractFileByPath: jest.fn() } as any,
+			enableUndo: true,
 		}, host as any);
 		const { scope } = createScope();
 
@@ -430,13 +451,13 @@ describe('ReviewSession shortcuts', () => {
 		}, host as any);
 
 		await session.render();
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+		expect(lastHeader(host).title).toContain('(1/2)');
 
 		session.showAnswerAction();
 		await flushPromises();
 		session.rateAction(3);
 		await flushPromises();
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
+		expect(lastHeader(host).title).toContain('(2/2)');
 
 		session.showAnswerAction();
 		await flushPromises();
@@ -502,7 +523,7 @@ describe('ReviewSession shortcuts', () => {
 
 		await session.render();
 		expect(host.complete).not.toHaveBeenCalled();
-		expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/1)');
+		expect(lastHeader(host).title).toContain('(1/1)');
 
 		session.showAnswerAction();
 		await flushPromises();
@@ -888,7 +909,49 @@ describe('ReviewSession shortcuts', () => {
 	});
 
 	describe('undo', () => {
-		it('undoes a non-again rating and returns to the previous card', async () => {
+		it('keeps undo available after completing the last card and leaves completion mode', async () => {
+			const host = createHost();
+			const file = new TFile();
+			(file as any).path = 'cards.md';
+			const vault = {
+				getAbstractFileByPath: jest.fn().mockReturnValue(file),
+				process: jest.fn().mockImplementation((_f, fn) => Promise.resolve(fn('content'))),
+			};
+			const session = new ReviewSession({} as any, {
+				cards: [createCard({ id: 'card-1', lineStart: 0, lineEnd: 0 })],
+				vault: vault as any,
+				enableUndo: true,
+			}, host as any);
+			const { scope, handlers } = createScope();
+
+			session.registerShortcuts(scope as any);
+			await session.render();
+
+			session.showAnswerAction();
+			await flushPromises();
+			session.rateAction(3);
+			await flushPromises();
+
+			expect(host.complete).toHaveBeenCalledTimes(1);
+			expect(session.canUndo()).toBe(true);
+
+			handlers.get('Backspace')!(keyEvent('Backspace'));
+			await flushPromises();
+
+			expect(host.onUndoFromComplete).toHaveBeenCalledTimes(1);
+			expect(lastHeader(host).title).toContain('(1/1)');
+			expect(session.canUndo()).toBe(false);
+			expect(vault.process).toHaveBeenCalledTimes(2);
+
+			// After leaving completion, Space reveals again instead of finishing.
+			handlers.get(' ')!(keyEvent(' '));
+			await flushPromises();
+			expect(host.handleCompleteSpace).not.toHaveBeenCalled();
+			expect(host.buttonsEl.querySelector('.er-btn-show')).toBeNull();
+			expect(host.buttonsEl.querySelector('.er-btn-rating-good')).not.toBeNull();
+		});
+
+		it('does not expose undo when enableUndo is off', async () => {
 			const host = createHost();
 			const file = new TFile();
 			(file as any).path = 'cards.md';
@@ -908,19 +971,55 @@ describe('ReviewSession shortcuts', () => {
 			session.registerShortcuts(scope as any);
 			await session.render();
 
+			session.showAnswerAction();
+			await flushPromises();
+			session.rateAction(3);
+			await flushPromises();
+
+			expect(lastHeader(host).canUndo).toBe(false);
+			expect(handlers.has('Backspace')).toBe(false);
+
+			await session.undo();
+			await flushPromises();
+			expect(vault.process).toHaveBeenCalledTimes(1);
+		});
+
+		it('undoes a non-again rating and returns to the previous card', async () => {
+			const host = createHost();
+			const file = new TFile();
+			(file as any).path = 'cards.md';
+			const vault = {
+				getAbstractFileByPath: jest.fn().mockReturnValue(file),
+				process: jest.fn().mockImplementation((_f, fn) => Promise.resolve(fn('content'))),
+			};
+			const session = new ReviewSession({} as any, {
+				cards: [
+					createCard({ id: 'card-1', lineStart: 0, lineEnd: 0 }),
+					createCard({ id: 'card-2', lineStart: 2, lineEnd: 2 }),
+				],
+				vault: vault as any,
+				enableUndo: true,
+			}, host as any);
+			const { scope, handlers } = createScope();
+
+			session.registerShortcuts(scope as any);
+			await session.render();
+
 			// Show answer and rate card-1 as Good
 			session.showAnswerAction();
 			await flushPromises();
 			session.rateAction(3);
 			await flushPromises();
 
-			expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(2/2)');
+			expect(lastHeader(host).title).toContain('(2/2)');
+			expect(lastHeader(host).canUndo).toBe(true);
 
 			// Undo
 			handlers.get('Backspace')!(keyEvent('Backspace'));
 			await flushPromises();
 
-			expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+			expect(lastHeader(host).title).toContain('(1/2)');
+			expect(lastHeader(host).canUndo).toBe(false);
 			expect(vault.process).toHaveBeenCalledTimes(2); // rate + undo
 		});
 
@@ -938,6 +1037,7 @@ describe('ReviewSession shortcuts', () => {
 					createCard({ id: 'card-2', lineStart: 2, lineEnd: 2 }),
 				],
 				vault: vault as any,
+				enableUndo: true,
 			}, host as any);
 			const { scope, handlers } = createScope();
 
@@ -951,14 +1051,16 @@ describe('ReviewSession shortcuts', () => {
 			await flushPromises();
 
 			// After Again, card-1 moves to end; current shows card-2
-			expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+			expect(lastHeader(host).title).toContain('(1/2)');
+			expect(lastHeader(host).canUndo).toBe(true);
 
 			// Undo
 			handlers.get('Backspace')!(keyEvent('Backspace'));
 			await flushPromises();
 
 			// Back to card-1 at original position
-			expect(host.setTitle.mock.calls.at(-1)?.[0]).toContain('(1/2)');
+			expect(lastHeader(host).title).toContain('(1/2)');
+			expect(lastHeader(host).canUndo).toBe(false);
 			expect(vault.process).toHaveBeenCalledTimes(2);
 		});
 
@@ -975,6 +1077,7 @@ describe('ReviewSession shortcuts', () => {
 			const session = new ReviewSession({} as any, {
 				cards: [card1, card2],
 				vault: vault as any,
+				enableUndo: true,
 			}, host as any);
 
 			await session.render();
@@ -1009,6 +1112,7 @@ describe('ReviewSession shortcuts', () => {
 					createCard({ id: 'card-2', lineStart: 2, lineEnd: 2 }),
 				],
 				vault: vault as any,
+				enableUndo: true,
 			}, host as any);
 			const { scope, handlers } = createScope();
 
@@ -1034,7 +1138,7 @@ describe('ReviewSession shortcuts', () => {
 			expect(vault.process).toHaveBeenCalledTimes(2);
 		});
 
-		it('does not leave undo history when vault.process fails', async () => {
+		it('does not create undo history when the first rate write fails', async () => {
 			const host = createHost();
 			const file = new TFile();
 			(file as any).path = 'cards.md';
@@ -1045,6 +1149,7 @@ describe('ReviewSession shortcuts', () => {
 			const session = new ReviewSession({} as any, {
 				cards: [createCard({ id: 'card-1', lineStart: 0, lineEnd: 0 })],
 				vault: vault as any,
+				enableUndo: true,
 			}, host as any);
 			const { scope, handlers } = createScope();
 
@@ -1056,11 +1161,84 @@ describe('ReviewSession shortcuts', () => {
 			session.rateAction(3);
 			await flushPromises();
 
-			// Undo should do nothing because lastRateEntry was cleared on failure
+			expect(lastHeader(host).canUndo).toBe(false);
+			expect(session.canUndo()).toBe(false);
 			handlers.get('Backspace')!(keyEvent('Backspace'));
 			await flushPromises();
 
 			expect(vault.process).toHaveBeenCalledTimes(1);
+		});
+
+		it('keeps the previous undo snapshot when a later rate write fails', async () => {
+			const host = createHost();
+			const file = new TFile();
+			(file as any).path = 'cards.md';
+			const vault = {
+				getAbstractFileByPath: jest.fn().mockReturnValue(file),
+				process: jest.fn()
+					.mockImplementationOnce((_f, fn) => Promise.resolve(fn('content')))
+					.mockRejectedValueOnce(new Error('disk full')),
+			};
+			const session = new ReviewSession({} as any, {
+				cards: [
+					createCard({ id: 'card-1', lineStart: 0, lineEnd: 0 }),
+					createCard({ id: 'card-2', lineStart: 2, lineEnd: 2 }),
+				],
+				vault: vault as any,
+				enableUndo: true,
+			}, host as any);
+
+			await session.render();
+			session.showAnswerAction();
+			await flushPromises();
+			session.rateAction(3);
+			await flushPromises();
+
+			expect(lastHeader(host).canUndo).toBe(true);
+
+			session.showAnswerAction();
+			await flushPromises();
+			session.rateAction(3);
+			await flushPromises();
+
+			expect(lastHeader(host).canUndo).toBe(true);
+			expect(session.canUndo()).toBe(true);
+			expect(lastHeader(host).title).toContain('(2/2)');
+		});
+
+		it('restores undo availability when undo write fails', async () => {
+			const host = createHost();
+			const file = new TFile();
+			(file as any).path = 'cards.md';
+			const vault = {
+				getAbstractFileByPath: jest.fn().mockReturnValue(file),
+				process: jest.fn()
+					.mockImplementationOnce((_f, fn) => Promise.resolve(fn('content')))
+					.mockRejectedValueOnce(new Error('disk full')),
+			};
+			const session = new ReviewSession({} as any, {
+				cards: [
+					createCard({ id: 'card-1', lineStart: 0, lineEnd: 0 }),
+					createCard({ id: 'card-2', lineStart: 2, lineEnd: 2 }),
+				],
+				vault: vault as any,
+				enableUndo: true,
+			}, host as any);
+
+			await session.render();
+			session.showAnswerAction();
+			await flushPromises();
+			session.rateAction(3);
+			await flushPromises();
+
+			expect(lastHeader(host).canUndo).toBe(true);
+
+			await session.undo();
+			await flushPromises();
+
+			expect(session.canUndo()).toBe(true);
+			expect(lastHeader(host).canUndo).toBe(true);
+			expect(vault.process).toHaveBeenCalledTimes(2);
 		});
 	});
 });
