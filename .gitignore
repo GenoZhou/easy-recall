@@ -33,3 +33,6 @@ npm-debug.log*
 # Temporary files
 *.tmp
 .cache/
+
+# Local agent workflow artifacts
+.dev-workflow/
