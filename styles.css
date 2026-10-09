@@ -69,6 +69,18 @@
 	outline-offset: 2px;
 }
 
+/* Mobile icon-only undo: square hit target, no text width */
+.er-btn-undo-icon {
+	padding: 6px;
+	line-height: 0;
+}
+
+.er-btn-undo-icon svg {
+	width: 1.1em;
+	height: 1.1em;
+	display: block;
+}
+
 .er-review-view .er-card-content {
 	flex: 1;
 	overflow-y: auto;

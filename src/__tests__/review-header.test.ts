@@ -1,7 +1,14 @@
 const obsidianPlatform = { isMobile: false };
+const setIconCalls: Array<{ el: unknown; iconId: string }> = [];
 
 jest.mock('obsidian', () => ({
 	Platform: obsidianPlatform,
+	setIcon(el: { createEl?: Function; querySelector?: Function }, iconId: string): void {
+		setIconCalls.push({ el, iconId });
+		if (typeof el?.createEl === 'function' && !el.querySelector?.('svg')) {
+			el.createEl('svg', { cls: `lucide lucide-${iconId}` });
+		}
+	},
 }), { virtual: true });
 
 import { mountReviewHeader } from '../ui/review-header';
@@ -43,6 +50,9 @@ class TestElement {
 	}
 
 	querySelector(selector: string): TestElement | null {
+		if (selector === 'svg') {
+			return this.children.find(child => child.tag === 'svg') ?? null;
+		}
 		const className = selector.startsWith('.') ? selector.slice(1) : selector;
 		return this.findByClass(className);
 	}
@@ -87,6 +97,7 @@ class TestElement {
 describe('mountReviewHeader', () => {
 	afterEach(() => {
 		obsidianPlatform.isMobile = false;
+		setIconCalls.length = 0;
 	});
 
 	it('hides the undo control when enableUndo is off', () => {
@@ -106,6 +117,8 @@ describe('mountReviewHeader', () => {
 
 		expect(undoButton.disabled).toBe(true);
 		expect(undoButton.textContent).toBe('撤回上个 ⌫');
+		expect(undoButton.className).not.toContain('er-btn-undo-icon');
+		expect(setIconCalls).toHaveLength(0);
 
 		header.setHeader({ title: '复习卡片 (1/2)', canUndo: true });
 		expect(container.querySelector('.er-review-header-title')?.textContent).toBe('复习卡片 (1/2)');
@@ -118,11 +131,22 @@ describe('mountReviewHeader', () => {
 		expect(undoButton.disabled).toBe(true);
 	});
 
-	it('omits ⌫ from the mobile label', () => {
+	it('renders icon-only undo on mobile without visible label text', () => {
 		obsidianPlatform.isMobile = true;
 		const container = new TestElement();
 		mountReviewHeader(container as any, { enableUndo: true });
 		const undoButton = container.querySelector('.er-btn-undo') as TestElement;
-		expect(undoButton.textContent).toBe('撤回上个');
+
+		expect(undoButton.textContent).toBe('');
+		expect(undoButton.textContent).not.toContain('撤回上个');
+		expect(undoButton.className.split(/\s+/)).toEqual(
+			expect.arrayContaining(['er-btn-undo', 'er-btn-undo-icon'])
+		);
+		expect(undoButton.attributes['aria-label']).toBe('撤回上一次评分');
+		expect(setIconCalls.length).toBeGreaterThanOrEqual(1);
+		expect(setIconCalls[0]).toEqual(
+			expect.objectContaining({ el: undoButton, iconId: 'undo-2' })
+		);
+		expect(undoButton.querySelector('svg')).not.toBeNull();
 	});
 });

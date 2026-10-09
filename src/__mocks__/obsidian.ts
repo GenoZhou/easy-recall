@@ -19,4 +19,14 @@ export function getLanguage(): string {
 }
 
 export function addIcon(): void {}
-export function setIcon(): void {}
+
+/** Records setIcon calls for unit tests. */
+export const setIconCalls: Array<{ el: unknown; iconId: string }> = [];
+
+export function setIcon(el: HTMLElement, iconId: string): void {
+  setIconCalls.push({ el, iconId });
+}
+
+export function clearSetIconCalls(): void {
+  setIconCalls.length = 0;
+}

@@ -1,4 +1,4 @@
-import { Platform } from 'obsidian';
+import { Platform, setIcon } from 'obsidian';
 import { t } from '../i18n';
 import type { ReviewHeaderState } from './review-session';
 
@@ -9,6 +9,14 @@ export interface ReviewHeaderOptions {
 
 export interface ReviewHeaderControls {
 	setHeader(state: ReviewHeaderState): void;
+}
+
+/** Prefer Lucide `undo-2`; fall back to `undo` if the SVG did not mount. */
+function mountUndoIcon(button: HTMLElement): void {
+	setIcon(button, 'undo-2');
+	if (!button.querySelector('svg')) {
+		setIcon(button, 'undo');
+	}
 }
 
 /** Empties `containerEl` and mounts title + optional undo control. */
@@ -28,17 +36,18 @@ export function mountReviewHeader(
 
 	let undoButton: HTMLButtonElement | null = null;
 	if (enableUndo) {
-		const undoLabel = Platform.isMobile
-			? lang.review.undoLast
-			: `${lang.review.undoLast} ⌫`;
+		const useIconOnly = Platform.isMobile;
 		undoButton = containerEl.createEl('button', {
-			cls: 'er-btn-undo',
-			text: undoLabel,
+			cls: useIconOnly ? 'er-btn-undo er-btn-undo-icon' : 'er-btn-undo',
+			text: useIconOnly ? undefined : `${lang.review.undoLast} ⌫`,
 			attr: {
 				type: 'button',
 				'aria-label': lang.review.undoLastAria,
 			},
 		});
+		if (useIconOnly) {
+			mountUndoIcon(undoButton);
+		}
 		undoButton.disabled = true;
 		undoButton.addEventListener('click', () => {
 			options.onUndo?.();
