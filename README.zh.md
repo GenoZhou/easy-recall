@@ -190,7 +190,7 @@ npm test
 npm run test:coverage
 ```
 
-仓库规范、模块职责和实现边界见 `AGENTS.md`。
+仓库规范、模块职责、实现边界和 `skills/` 下的 agent 技能见 `AGENTS.md`。
 
 ## 许可证
 
