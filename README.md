@@ -190,7 +190,7 @@ npm test
 npm run test:coverage
 ```
 
-For repository conventions and implementation boundaries, see `AGENTS.md`.
+For repository conventions, implementation boundaries, and agent skills under `skills/`, see `AGENTS.md`.
 
 ## License
 

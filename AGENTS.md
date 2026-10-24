@@ -23,6 +23,7 @@
 | 本地验证 | `npm run verify` |
 | 发布前检查 | `npm run prepublish` |
 | 发布流程 | 用户技能 `obsidian-plugin-release`（`~/.cursor/skills/obsidian-plugin-release/`） |
+| Agent skills | 本仓库技能在 `skills/<name>/SKILL.md`。`create-flashcards` 把学习材料做成 easy-recall cloze / Q&A 卡片。 |
 
 ## 工作方式与 token 预算
 
@@ -135,6 +136,8 @@
   - 在 `src/i18n/` 增加翻译文件并在 `src/i18n/index.ts` 注册
 - 新 UI：
   - 优先放在 `src/ui/`，不要把交互逻辑塞回 `main.ts`
+- 新 Cursor/agent 技能：
+  - 放在 `skills/<name>/SKILL.md`；`create-flashcards` 负责把学习材料转成 easy-recall 卡片
 
 ## 发布与版本
 
@@ -161,6 +164,7 @@
 ## 参考
 
 - 用户文档：`README.md` / `README.zh.md`
+- 本仓库 agent skills：`skills/<name>/SKILL.md`（卡片生成：`skills/create-flashcards/`）
 - 发布技能：`~/.cursor/skills/obsidian-plugin-release/`
 - 发布检查：`scripts/check-dist.mjs`
 - 版本 / 预发布 / 正式发布 / notes / 核验：`scripts/version-bump.mjs`、`prerelease.mjs`、`release.mjs`、`generate-release-notes.mjs`、`verify-release.mjs`
