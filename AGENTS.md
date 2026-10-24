@@ -23,7 +23,7 @@
 | 本地验证 | `npm run verify` |
 | 发布前检查 | `npm run prepublish` |
 | 发布流程 | 用户技能 `obsidian-plugin-release`（`~/.cursor/skills/obsidian-plugin-release/`） |
-| Agent skills | 本仓库技能在 `skills/<name>/SKILL.md`。`create-flashcards` 把学习材料做成 easy-recall cloze / Q&A 卡片。 |
+| Agent skills | 本仓库技能在 `skills/<name>/SKILL.md`。`create-flashcards` 把学习材料做成 easy-recall cloze 卡片。 |
 
 ## 工作方式与 token 预算
 

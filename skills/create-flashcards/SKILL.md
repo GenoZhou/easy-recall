@@ -2,291 +2,87 @@
 name: create-flashcards
 version: 1.0.1
 description: >-
-  Turn study material, notes, or articles into easy-recall cloze and Q&A
-  flashcards. Use when the user wants to convert highlights, handwritten notes,
-  screenshots, or prose into Easy Recall cards (`==cloze==`, `?` Q&A, hint
-  callouts, `#easy-recall/` deck tags) for spaced repetition in Obsidian.
+  Create or append easy-recall Obsidian flashcards (cloze with ==…==, optional
+  [!hint] mnemonics) from study notes, PDFs, or handwritten images. Use when
+  the user asks for flashcards, 闪卡, easy-recall cards, or to add cloze cards
+  to a flashcard note.
 ---
 
-# create-flashcards
+# Create Flashcards
 
-Create well-structured flashcards for the [easy-recall](https://github.com/GenoZhou/easy-recall) Obsidian plugin.
-
-User-facing card syntax lives in `README.md` / `README.zh.md`. Follow that syntax; do not invent markup.
-
-## Optional vault skills
-
-When writing into an Obsidian vault, prefer these if they are available:
-
-1. **obsidian-cli** — read, create, append, or search notes (`obsidian create` / `read` / `append` / `search`)
-2. **obsidian-markdown** — YAML frontmatter, `[[wikilinks]]`, `> [!hint]` callouts, and other Obsidian Flavored Markdown
-
-If those skills are missing, write valid easy-recall Markdown directly (vault file or snippet). Do not block on them.
-
----
-
-## Quick Reference
-
-| Card Type | Syntax |
-|-----------|--------|
-| Cloze | `==hidden text==` |
-| Multi-line cloze | Adjacent cloze lines in one block merge into one card |
-| Separate cards | Blank line between blocks |
-| Q&A (inline) | `Question?\nAnswer` |
-| Q&A (separate) | `Question\n?\nAnswer` (full-width `？` also works) |
-| Hint | `> [!hint] content` after the answer |
-| Deck tag | `#easy-recall/deck-name` or YAML `tags: [easy-recall/deck-name]` |
-
-A card is a continuous non-empty text block. Blank lines separate cards.
-
----
+Turn study material into markdown cloze cards for the easy-recall plugin.
 
 ## Workflow
 
-### 1. Identify content and destination
+1. **Target** — Prefer the note open in Obsidian. Otherwise use/create `flashcards/<subject>/<topic>.md` (e.g. `flashcards/中药学/理气药.md`). Append unless asked to rewrite.
+2. **Source** — Typed text: extract facts. PDF/scan: rasterize pages → read images (OCR optional) → transcribe. Flag illegible characters. 口诀以识别字迹为准不瞎编。
+3. **Cloze** — Wrap only what should be recalled (see below). Preserve source wording, numbering, and parentheticals.
+4. **Write** — Re-read the target note before each Edit/Write if the user may be editing it in Obsidian concurrently. Match the entry layout: one contiguous block per herb, `> [!hint]` at the end, no blank lines around headings, and only one existing `<!--SR:…-->` comment per block. Do not invent `<!--SR:…-->` (plugin owns scheduling).
 
-Ask the user (or infer from context):
+## Note structure
 
-- Deck name (for example `math`, `history`, `cs`)
-- Write into an Obsidian vault, or return a Markdown snippet?
-- Prefer cloze (definitions, key terms) or Q&A (why / how / procedures)?
-- Is the source handwritten notes or an image? If yes, use **exact transcription mode** below.
-
-If writing to a vault with obsidian-cli:
-
-```bash
-obsidian create name="Biology Flashcards" content="..." silent
-obsidian read file="Biology Flashcards"
-obsidian append file="Biology Flashcards" content="..."
-obsidian search query="easy-recall"
-```
-
-### 2. Choose card type
-
-Use **cloze** for:
-
-- Definitions and fill-in-the-blank facts
-- Formulas with a hidden term
-- Key terms inside a sentence
-
-Use **Q&A** for:
-
-- Concept explanations
-- "Why" and "how" questions
-- Multi-step procedures
-
-Use **hints** sparingly for:
-
-- Cards that often fail
-- Complex formulas or derivations
-- Context that helps without leaking the answer
-
-### 3. Generate cards
-
-One idea per card. Follow these rules:
-
-- **One idea per card**: do not pack two questions into one block
-- **Cloze stays in context**: keep enough surrounding text that the blank is answerable alone
-- **Adjacent cloze lines merge**: put a blank line between blocks when they should be separate cards
-- **Q&A answers stay short**: 1–3 lines
-- **Always include a deck tag** at file level (frontmatter or `#easy-recall/...`)
-- **Do not add `<!--SR:...-->` comments**: easy-recall writes those after review
-
-Example:
-
-```markdown
+```yaml
 ---
 tags:
-  - easy-recall/biology
+  - easy-recall/中药   # or easy-recall/中医基础理论, etc.
 ---
-
-# Biology Flashcards
-
-The ==mitochondria== is the ==powerhouse== of the cell.
-
-What is the primary function of ribosomes?
-?
-Protein synthesis
-> [!hint] Think about where amino acids are assembled
 ```
 
-Notes:
+- Do **not** put the filename/topic as a body heading (no `# 理气药` inside `理气药.md`).
+- Match the note's existing heading style. If the note is new or empty, choose one pattern and keep it consistent:
+  - One herb per top-level heading: `# 陈皮`, `# 大黄`.
+  - Category group with nested herbs: `# 清热泻火药 <!--easy-recall-hide-->`, then `## 知母`.
+  - Note with an overview / 概述 section: `# 概述`, then category headings at the same level as the overview (`# 温化寒痰药`), and herbs nested under categories (`## 半夏`).
+- Do not leave blank lines immediately before or after headings.
 
-- Prefer YAML `tags` such as `easy-recall/biology`
-- Use `> [!hint]` callouts for optional hints
-- Use `[[wikilinks]]` when linking other vault notes
+## Cloze rules
 
-### 4. Write the note
+- Syntax: `==答案==`. Each pair is one recall prompt.
+- **No punctuation inside cloze** — `，` `、` `；` `。` `：` `（）` and similar stay **outside** `==…==`. Split coordinated phrases so each blank is a contiguous answer chunk (review UI shows roughly how many characters).  
+  - Wrong: `==凉血止血，清热利尿==`  
+  - Right: `==凉血止血==，==清热利尿==`  
+  - Wrong: `==大蓟、小蓟、茜草==` → Right: `==大蓟==、==小蓟==、==茜草==`
+- **Handwritten with yellow highlight** → cloze **only** highlighted spans (still split on punctuation as above). Never wrap a whole 应用 list just to make one card.
+- **No highlights** (typed notes / unmarked text) → cloze the recall targets: 功效 phrases, distinctive labels (要药、归经重点等), key 应用 fragments—mirror nearby flashcard notes in the same subject.
+- Under a herb heading, do **not** restate the herb name in the card body (`性味归经：…` not `陈皮的性味归经是：…`).
 
-After generating content, write the vault file or return the snippet. With obsidian-cli:
+## Entry layout
 
-```bash
-obsidian create name="Flashcards" content="---
-tags:
-  - easy-recall/math
----
-
-What is 2+2?
-?
-4
-" silent
-```
-
-### 5. Review before delivery
-
-- Every card file has a valid deck tag
-- Cloze uses `==...==` with exact intended boundaries
-- Multi-line blocks that should be separate cards are split by blank lines
-- Q&A questions are clear and answers are short
-- Hints help without revealing the answer
-- Markdown is valid Obsidian Flavored Markdown
-- If using obsidian-cli, confirm the command succeeded
-
----
-
-## Exact transcription (handwritten notes or images)
-
-When the user provides handwritten notes, photos, or screenshots (especially highlighted text as cloze):
-
-### Step 1: Extract all text
-
-Transcribe every visible character, punctuation, and word order. Do not summarize, paraphrase, or swap synonyms. Keep headings, numbering (`1、` vs `1.`), indentation, and paragraph breaks.
-
-### Step 2: Identify highlights
-
-Find highlighter marks, underlines, bold, or other emphasis. Only the text actually highlighted becomes a cloze.
-
-### Step 3: Create flashcards
-
-Wrap highlighted text with `==…==`. Keep surrounding context so each card stands alone. Do not expand or shrink highlight boundaries.
-
-### Step 4: Check completeness
-
-Compare each line to the source. No items, clozes, or characters missing. Every highlight is a cloze.
-
-### Step 5: Write
-
-Write the vault note or return the Markdown snippet. With obsidian-cli:
-
-```bash
-obsidian create name="Transcribed Flashcards" content="..." silent
-```
-
----
-
-## Full examples
-
-### New flashcard note
+Typical 中药 entry (omit missing fields; keep source label `应用：` vs `主治病证：`):
 
 ```markdown
----
-tags:
-  - easy-recall/biology
----
-
-# Biology Flashcards
-
-The ==mitochondria== is the ==powerhouse== of the cell.
-
-What is the primary function of ribosomes?
-?
-Protein synthesis
-> [!hint] Think about where amino acids are assembled
-
-DNA replication occurs in the ==nucleus== of eukaryotic cells.
-
-What is the difference between mitosis and meiosis?
-Mitosis produces two identical diploid cells; meiosis produces four genetically unique haploid cells.
+# 陈皮
+<!--SR:...-->   <!-- keep only the first SR comment if the plugin already generated one; do not invent new ones -->
+性味归经：辛、苦，温；归 ==脾==、==肺== 经。
+功效：==理气健脾==、==燥湿化痰==。
+应用：
+① 脾胃气滞证（==平胃散==、==保和丸==）
+② 呕吐、呃逆（调畅==中焦==，使之==升降有序==）
+③ ==湿痰==、==寒痰==咳嗽，为==治痰要药==（==二陈汤==）
+④ 胸痹
+> [!hint] 陈皮李琦建澡堂
 ```
 
-### Multi-line cloze (one card)
+Formatting rules:
 
-Adjacent cloze lines in the same block merge:
+- One contiguous block per herb. Do **not** split 性味归经 / 功效 / 应用 / 用法用量 / 注意事项 with blank lines.
+- `> [!hint] …` goes at the **end** of the herb block, after all content.
+- If the note already has `<!--SR:…-->` scheduling comments, keep only the **first** one per herb block (at the top) and remove duplicates.
+- Do not invent new `<!--SR:…-->` comments; the plugin owns scheduling.
+- Numbered lists (`①` / `1.`) follow the source; cloze only highlighted (or otherwise key) fragments inside items.
+
+## Comparison entries
+
+When the source contains a comparison (e.g. 川贝母与浙贝母对比, 桑白皮与葶苈子对比), write it as a separate block with **共性** and **个性** explicitly separated:
 
 ```markdown
-Applications:
-1. Cold: ==induce sweating==
-2. Cough: ==relieve asthma==
+## 川贝母与浙贝母对比
+共性：均能==清热化痰==、==散结消痈==，同治==热痰==、==瘰疬==、==乳痈==等。
+个性：
+川贝母：==甘润==，长于==润肺止咳==，多用于==燥痰==、==肺热燥咳==。
+浙贝母：==苦寒==，长于==清热散结==，多用于==热痰==、==风热咳嗽==。
 ```
 
-To make two cards, insert a blank line:
-
-```markdown
-1. Cold: ==induce sweating==
-
-2. Cough: ==relieve asthma==
-```
-
-### Append to an existing note
-
-```bash
-obsidian read file="Biology Flashcards"
-obsidian append file="Biology Flashcards" content="\n\nATP is produced in the ==mitochondria== through cellular respiration."
-```
-
----
-
-## Syntax notes
-
-**Cloze** — wrap hidden text with `==`:
-
-```markdown
-Traditional Chinese Medicine studies ==human life movement==.
-```
-
-Multiple deletions on one line are supported:
-
-```markdown
-The ==mitochondria== is the ==powerhouse== of the cell.
-```
-
-**Q&A** — question mark at end of line, or `?` / `？` on its own line:
-
-```markdown
-What is 2+2?
-4
-
-What is the area formula for a circle?
-?
-S = πr²
-```
-
-**Hint** — callout after the answer:
-
-```markdown
-What is the formula for the area of a circle?
-?
-S = πr²
-> [!hint] Think about the relationship between radius and area
-> π is approximately 3.14159...
-```
-
-**Deck tags** — file-level only:
-
-```markdown
----
-tags:
-  - easy-recall/math
----
-```
-
-or `#easy-recall/math` in the body.
-
-**Review comments** — after review, easy-recall injects `<!--SR:...-->` above the card. Do not create or edit those comments.
-
----
-
-## Starting template
-
-```markdown
----
-tags:
-  - easy-recall/{{deck_name}}
----
-
-# {{deck_name}} Flashcards
-
-{{cloze_or_qa_card}}
-
-{{next_card}}
-```
+- Put common effects / indications in a single **共性** line.
+- Put per-herb differences under **个性**, each on its own line.
+- Cloze the recall targets in both sections.
